@@ -16,7 +16,10 @@ export const PricingCard: React.FC<PricingCardProps> = ({
   const formattedCredits = (tier.credits / 1000000).toFixed(1);
 
   return (
-    <div className="relative flex flex-col rounded-lg border border-gray-200 bg-white p-6 shadow-sm transition-shadow hover:shadow-md dark:border-gray-700 dark:bg-gray-800">
+    <div
+      data-testid="pricing-card"
+      className="relative flex flex-col rounded-lg border border-gray-200 bg-white p-6 shadow-sm transition-shadow hover:shadow-md dark:border-gray-700 dark:bg-gray-800"
+    >
       {tier.discount > 0 && (
         <div className="absolute -top-3 right-4 rounded-full bg-green-500 px-3 py-1 text-xs font-semibold text-white">
           {tier.discount}% OFF
