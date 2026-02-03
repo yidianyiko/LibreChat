@@ -11,6 +11,10 @@ import {
 import { MarketplaceProvider } from '~/components/Agents/MarketplaceContext';
 import AgentMarketplace from '~/components/Agents/Marketplace';
 import { OAuthSuccess, OAuthError } from '~/components/OAuth';
+import { RechargePage } from '~/components/Recharge/RechargePage';
+import { PaymentSuccessPage } from '~/components/Recharge/PaymentSuccessPage';
+import { PaymentCancelPage } from '~/components/Recharge/PaymentCancelPage';
+import { RechargeHistoryPage } from '~/components/Recharge/RechargeHistoryPage';
 import { AuthContextProvider } from '~/hooks/AuthContext';
 import RouteErrorBoundary from './RouteErrorBoundary';
 import StartupLayout from './Layouts/Startup';
@@ -110,6 +114,22 @@ export const router = createBrowserRouter(
             {
               path: 'search',
               element: <Search />,
+            },
+            {
+              path: 'recharge',
+              element: <RechargePage />,
+            },
+            {
+              path: 'recharge/success',
+              element: <PaymentSuccessPage />,
+            },
+            {
+              path: 'recharge/cancel',
+              element: <PaymentCancelPage />,
+            },
+            {
+              path: 'recharge/history',
+              element: <RechargeHistoryPage />,
             },
             {
               path: 'agents',
