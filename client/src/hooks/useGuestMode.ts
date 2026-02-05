@@ -1,6 +1,7 @@
 import { useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthContext } from './AuthContext';
+import { isDemoMode } from '~/utils/demoMode';
 
 /**
  * Hook for handling guest mode functionality.
@@ -18,6 +19,10 @@ export default function useGuestMode() {
    */
   const redirectToLogin = useCallback(
     (returnUrl?: string) => {
+      if (isDemoMode()) {
+        navigate('/login', { replace: true });
+        return;
+      }
       const currentPath = returnUrl || window.location.pathname;
       navigate(`/login?redirect=${encodeURIComponent(currentPath)}`, { replace: true });
     },

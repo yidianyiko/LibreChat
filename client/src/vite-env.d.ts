@@ -3,9 +3,14 @@
 interface ImportMetaEnv {
   readonly VITE_ENABLE_LOGGER: string;
   readonly VITE_LOGGER_FILTER: string;
+  readonly VITE_DEMO_MODE: string;
   // Add other env variables here
 }
 
 interface ImportMeta {
   readonly env: ImportMetaEnv;
+}
+
+interface Window {
+  __LIBRECHAT_DEMO_MODE__?: boolean;
 }
