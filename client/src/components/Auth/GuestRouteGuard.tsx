@@ -1,12 +1,14 @@
 import { useEffect, useState } from 'react';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useAuthContext } from '~/hooks/AuthContext';
+import { isDemoMode } from '~/utils/demoMode';
 
 /**
  * Paths that guests are allowed to access without authentication.
  * All other routes will redirect to login.
  */
 const GUEST_ALLOWED_PATHS = ['/c', '/login', '/login/2fa'];
+const DEMO_ALLOWED_PATHS = ['/c/new', '/login', '/login/2fa'];
 
 /**
  * Check if a path is allowed for guests.
@@ -21,6 +23,11 @@ function isGuestAllowedPath(pathname: string): boolean {
     }
   }
   return false;
+}
+
+function isDemoAllowedPath(pathname: string): boolean {
+  const normalizedPath = pathname.endsWith('/') ? pathname.slice(0, -1) : pathname;
+  return DEMO_ALLOWED_PATHS.some((allowed) => normalizedPath === allowed);
 }
 
 /**
@@ -51,7 +58,8 @@ export default function GuestRouteGuard() {
   const [isReady, setIsReady] = useState(false);
 
   const normalizedPath = getNormalizedPathname(location.pathname);
-  const isAllowed = isGuestAllowedPath(normalizedPath);
+  const demoMode = isDemoMode();
+  const isAllowed = demoMode ? isDemoAllowedPath(normalizedPath) : isGuestAllowedPath(normalizedPath);
   const isGuest = !isAuthenticated;
   const shouldRedirect = isReady && isGuest && !isAllowed;
 
@@ -63,10 +71,14 @@ export default function GuestRouteGuard() {
 
   useEffect(() => {
     if (shouldRedirect) {
+      if (demoMode) {
+        navigate('/c/new', { replace: true });
+        return;
+      }
       const redirectPath = encodeURIComponent(location.pathname + location.search);
       navigate(`/login?redirect=${redirectPath}`, { replace: true });
     }
-  }, [shouldRedirect, location.pathname, location.search, navigate]);
+  }, [shouldRedirect, location.pathname, location.search, navigate, demoMode]);
 
   // Wait for auth state to be determined before rendering
   if (!isReady) {
