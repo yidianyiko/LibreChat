@@ -1,6 +1,11 @@
-import { EModelEndpoint, getEndpointField } from 'librechat-data-provider';
+import { EModelEndpoint, getEndpointField, LocalStorageKeys } from 'librechat-data-provider';
 import type { TEndpointsConfig, TConfig } from 'librechat-data-provider';
-import { getAvailableEndpoints, getEndpointsFilter, mapEndpoints } from './endpoints';
+import {
+  getAvailableEndpoints,
+  getEndpointsFilter,
+  mapEndpoints,
+  updateLastSelectedModel,
+} from './endpoints';
 
 const mockEndpointsConfig: TEndpointsConfig = {
   [EModelEndpoint.openAI]: { type: undefined, iconURL: 'openAI_icon.png', order: 0 },
@@ -81,5 +86,22 @@ describe('mapEndpoints', () => {
   it('returns sorted available endpoints', () => {
     const expectedOrder = [EModelEndpoint.openAI, EModelEndpoint.google, 'Mistral'];
     expect(mapEndpoints(mockEndpointsConfig)).toEqual(expectedOrder);
+  });
+});
+
+describe('updateLastSelectedModel', () => {
+  beforeEach(() => {
+    localStorage.clear();
+  });
+
+  it('handles null last conversation setup without throwing', () => {
+    localStorage.setItem(`${LocalStorageKeys.LAST_CONVO_SETUP}_0`, 'null');
+
+    expect(() =>
+      updateLastSelectedModel({ endpoint: EModelEndpoint.openAI, model: 'gpt-4' }),
+    ).not.toThrow();
+
+    const lastModels = JSON.parse(localStorage.getItem(LocalStorageKeys.LAST_MODEL) ?? '{}');
+    expect(lastModels[EModelEndpoint.openAI]).toBe('gpt-4');
   });
 });

@@ -104,9 +104,8 @@ export function updateLastSelectedModel({
     return;
   }
   /* Note: an empty string value is possible */
-  const lastConversationSetup = JSON.parse(
-    (localStorage.getItem(firstLocalConvoKey) ?? '{}') || '{}',
-  );
+  const lastConversationSetup =
+    JSON.parse((localStorage.getItem(firstLocalConvoKey) ?? '{}') || '{}') ?? {};
 
   if (lastConversationSetup.endpoint === endpoint) {
     lastConversationSetup.model = model;
