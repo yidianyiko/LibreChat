@@ -40,7 +40,7 @@ export default function ChatRoute() {
       const guestConversation: TConversation = {
         conversationId: Constants.NEW_CONVO,
         title: 'New Chat',
-        endpoint: null,
+        endpoint: EModelEndpoint.openAI, // Set a default endpoint for guest UI rendering
         createdAt: '',
         updatedAt: '',
       };

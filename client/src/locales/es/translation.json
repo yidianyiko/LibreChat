@@ -411,6 +411,7 @@
   "com_nav_lang_vietnamese": "Tiếng Việt",
   "com_nav_language": "Idioma",
   "com_nav_latex_parsing": "Analizar LaTeX en los mensajes (puede afectar el rendimiento)",
+  "com_nav_log_in": "Log in",
   "com_nav_log_out": "Cerrar sesión",
   "com_nav_long_audio_warning": "Los textos más extensos tomarán más tiempo en procesarse.",
   "com_nav_maximize_chat_space": "Maximizar espacio del chat",

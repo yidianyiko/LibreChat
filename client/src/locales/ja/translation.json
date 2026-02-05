@@ -529,6 +529,7 @@
   "com_nav_lang_vietnamese": "Tiếng Việt",
   "com_nav_language": "言語",
   "com_nav_latex_parsing": "メッセージ内の LaTeX の構文解析 (パフォーマンスに影響する可能性があります)",
+  "com_nav_log_in": "Log in",
   "com_nav_log_out": "ログアウト",
   "com_nav_long_audio_warning": "長いテキストの処理には時間がかかります。",
   "com_nav_maximize_chat_space": "チャット画面を最大化",
