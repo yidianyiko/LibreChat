@@ -16,6 +16,7 @@ import { RechargePage } from '~/components/Recharge/RechargePage';
 import { PaymentSuccessPage } from '~/components/Recharge/PaymentSuccessPage';
 import { PaymentCancelPage } from '~/components/Recharge/PaymentCancelPage';
 import { RechargeHistoryPage } from '~/components/Recharge/RechargeHistoryPage';
+import LandingPage from '~/components/LandingPage/LandingPage';
 import { AuthContextProvider } from '~/hooks/AuthContext';
 import RouteErrorBoundary from './RouteErrorBoundary';
 import StartupLayout from './Layouts/Startup';
@@ -38,6 +39,12 @@ const baseHref = baseEl?.getAttribute('href') || '/';
 
 export const router = createBrowserRouter(
   [
+    {
+      path: '/',
+      index: true,
+      element: <LandingPage />,
+      errorElement: <RouteErrorBoundary />,
+    },
     {
       path: 'share/:shareId',
       element: <ShareRoute />,
@@ -104,10 +111,6 @@ export const router = createBrowserRouter(
           path: '/',
           element: <Root />,
           children: [
-            {
-              index: true,
-              element: <Navigate to="/c/new" replace={true} />,
-            },
             {
               path: 'c/:conversationId?',
               element: <ChatRoute />,
