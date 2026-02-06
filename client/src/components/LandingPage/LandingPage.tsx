@@ -1,27 +1,84 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { 
-  Globe, 
-  ShieldCheck, 
-  Heart, 
-  Database, 
-  ChevronRight, 
-  Github, 
-  Twitter, 
+import {
+  Globe,
+  ShieldCheck,
+  Heart,
+  Database,
+  ChevronRight,
+  Github,
+  Twitter,
   Mail,
-  Lock,
-  MessageSquare,
   ArrowRightLeft,
   Sparkles,
   User,
-  Zap 
+  Zap,
+  type LucideIcon
 } from 'lucide-react';
+
+/**
+ * Translation structure types
+ */
+interface NavTranslation {
+  features: string;
+  pricing: string;
+  about: string;
+  login: string;
+}
+
+interface HeroTranslation {
+  tag: string;
+  title: string;
+  subtitle: string;
+  aiMessage: string;
+  chatBtn: string;
+  migrateBtn: string;
+}
+
+interface AdvantageItem {
+  title: string;
+  desc: string;
+}
+
+interface AdvantagesTranslation {
+  title: string;
+  core1: AdvantageItem;
+  core2: AdvantageItem;
+  core3: AdvantageItem;
+}
+
+interface MigrationTranslation {
+  title: string;
+  subtitle: string;
+  feature: string;
+}
+
+interface PricingTranslation {
+  title: string;
+  plan: string;
+  price: string;
+  period: string;
+  cta: string;
+  features: string[];
+}
+
+interface Translation {
+  nav: NavTranslation;
+  hero: HeroTranslation;
+  advantages: AdvantagesTranslation;
+  migration: MigrationTranslation;
+  pricing: PricingTranslation;
+}
+
+type SupportedLanguage = 'en' | 'ja' | 'ko';
+
+type Translations = Record<SupportedLanguage, Translation>;
 
 /**
  * 语言包配置
  * 包含英语、日语、韩语，结构完全一致以防止渲染报错
  */
-const translations = {
+const translations: Translations = {
   en: {
     nav: { features: "Features", pricing: "Pricing", about: "About", login: "Sign In" },
     hero: {
@@ -115,11 +172,19 @@ const translations = {
 };
 
 /**
+ * TypewriterMessage component props
+ */
+interface TypewriterMessageProps {
+  text: string;
+  delay?: number;
+}
+
+/**
  * 打字机效果组件
  */
-const TypewriterMessage = ({ text, delay = 50 }) => {
-  const [currentText, setCurrentText] = useState("");
-  const [currentIndex, setCurrentIndex] = useState(0);
+const TypewriterMessage: React.FC<TypewriterMessageProps> = ({ text, delay = 50 }) => {
+  const [currentText, setCurrentText] = useState<string>("");
+  const [currentIndex, setCurrentIndex] = useState<number>(0);
 
   useEffect(() => {
     setCurrentText("");
@@ -147,9 +212,17 @@ const TypewriterMessage = ({ text, delay = 50 }) => {
 };
 
 /**
+ * ChatPreview component props
+ */
+interface ChatPreviewProps {
+  message: string;
+  lang: SupportedLanguage;
+}
+
+/**
  * 模拟 ChatGPT 对话框预览
  */
-const ChatPreview = ({ message, lang }) => {
+const ChatPreview: React.FC<ChatPreviewProps> = ({ message, lang }) => {
   return (
     <div className="w-full max-w-2xl mx-auto mt-12 mb-8 relative">
       <div className="absolute -inset-10 bg-orange-100/50 blur-3xl -z-10 rounded-full"></div>
@@ -187,10 +260,33 @@ const ChatPreview = ({ message, lang }) => {
   );
 };
 
-const App = () => {
-  const [lang, setLang] = useState('en');
+/**
+ * Color configuration
+ */
+type ColorName = 'orange' | 'blue' | 'emerald';
+
+interface ColorConfig {
+  bg: string;
+  text: string;
+}
+
+type ColorMap = Record<ColorName, ColorConfig>;
+
+/**
+ * Feature card item
+ */
+interface FeatureCardItem extends AdvantageItem {
+  icon: LucideIcon;
+  color: ColorName;
+}
+
+/**
+ * Main LandingPage component
+ */
+const LandingPage: React.FC = () => {
+  const [lang, setLang] = useState<SupportedLanguage>('en');
   const t = translations[lang] || translations['en'];
-  const [scrolled, setScrolled] = useState(false);
+  const [scrolled, setScrolled] = useState<boolean>(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -199,11 +295,17 @@ const App = () => {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  const colorMap = {
+  const colorMap: ColorMap = {
     orange: { bg: 'bg-orange-100', text: 'text-orange-600' },
     blue: { bg: 'bg-blue-100', text: 'text-blue-600' },
     emerald: { bg: 'bg-emerald-100', text: 'text-emerald-600' }
   };
+
+  const features: FeatureCardItem[] = [
+    { icon: Zap, color: 'orange', ...t.advantages.core1 },
+    { icon: ShieldCheck, color: 'blue', ...t.advantages.core2 },
+    { icon: Heart, color: 'emerald', ...t.advantages.core3 }
+  ];
 
   return (
     <div className="min-h-screen bg-[#fcfcf9] text-gray-900 font-sans selection:bg-[#10a37f]/20 antialiased overflow-x-hidden">
@@ -223,7 +325,7 @@ const App = () => {
                 <span className="uppercase text-xs font-bold text-gray-700">{lang}</span>
               </button>
               <div className="absolute right-0 mt-2 w-36 bg-white border border-gray-200 rounded-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all p-1 shadow-xl">
-                {['en', 'ja', 'ko'].map(l => (
+                {(['en', 'ja', 'ko'] as const).map(l => (
                   <button key={l} onClick={() => setLang(l)} className="block w-full text-left px-4 py-2 text-xs font-medium text-gray-600 hover:bg-gray-50 hover:text-[#10a37f] rounded-lg transition-colors capitalize">
                     {l === 'en' ? 'English' : l === 'ja' ? '日本語' : '한국어'}
                   </button>
@@ -263,11 +365,7 @@ const App = () => {
             <div className="w-16 h-1.5 bg-[#10a37f] mx-auto rounded-full"></div>
           </div>
           <div className="grid md:grid-cols-3 gap-10">
-            {[ 
-              {icon: Zap, color: 'orange', ...t.advantages.core1}, 
-              {icon: ShieldCheck, color: 'blue', ...t.advantages.core2}, 
-              {icon: Heart, color: 'emerald', ...t.advantages.core3} 
-            ].map((f, i) => (
+            {features.map((f, i) => (
               <div key={i} className="p-8 rounded-2xl bg-[#fcfcf9] border border-gray-100 hover:shadow-xl transition-all group text-left">
                 <div className={`w-12 h-12 rounded-xl ${colorMap[f.color].bg} flex items-center justify-center ${colorMap[f.color].text} mb-6 group-hover:scale-110 transition-transform`}>
                   <f.icon size={24} />
@@ -365,4 +463,4 @@ const App = () => {
   );
 };
 
-export default App;
+export default LandingPage;

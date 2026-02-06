@@ -17,7 +17,7 @@ import { PaymentSuccessPage } from '~/components/Recharge/PaymentSuccessPage';
 import { PaymentCancelPage } from '~/components/Recharge/PaymentCancelPage';
 import { RechargeHistoryPage } from '~/components/Recharge/RechargeHistoryPage';
 import LandingPage from '~/components/LandingPage/LandingPage';
-import { AuthContextProvider } from '~/hooks/AuthContext';
+import { AuthContextProvider, useAuthContext } from '~/hooks/AuthContext';
 import RouteErrorBoundary from './RouteErrorBoundary';
 import StartupLayout from './Layouts/Startup';
 import LoginLayout from './Layouts/Login';
@@ -34,6 +34,19 @@ const AuthLayout = () => (
   </AuthContextProvider>
 );
 
+/**
+ * Landing page guard - redirects authenticated users to chat
+ */
+const LandingPageGuard = () => {
+  const { isAuthenticated } = useAuthContext();
+
+  if (isAuthenticated) {
+    return <Navigate to="/c/new" replace />;
+  }
+
+  return <LandingPage />;
+};
+
 const baseEl = document.querySelector('base');
 const baseHref = baseEl?.getAttribute('href') || '/';
 
@@ -42,7 +55,11 @@ export const router = createBrowserRouter(
     {
       path: '/',
       index: true,
-      element: <LandingPage />,
+      element: (
+        <AuthContextProvider>
+          <LandingPageGuard />
+        </AuthContextProvider>
+      ),
       errorElement: <RouteErrorBoundary />,
     },
     {
