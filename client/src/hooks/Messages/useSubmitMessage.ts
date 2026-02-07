@@ -3,12 +3,10 @@ import { useRecoilValue, useSetRecoilState } from 'recoil';
 import { replaceSpecialVars } from 'librechat-data-provider';
 import { useChatContext, useChatFormContext, useAddedChatContext } from '~/Providers';
 import { useAuthContext } from '~/hooks/AuthContext';
-import useGuestMode from '~/hooks/useGuestMode';
 import store from '~/store';
 
 export default function useSubmitMessage() {
   const { user } = useAuthContext();
-  const { requireAuth } = useGuestMode();
   const methods = useChatFormContext();
   const { conversation: addedConvo } = useAddedChatContext();
   const { ask, index, getMessages, setMessages, latestMessage } = useChatContext();
@@ -18,11 +16,6 @@ export default function useSubmitMessage() {
 
   const submitMessage = useCallback(
     (data?: { text: string }) => {
-      // Guest mode: redirect to login when trying to send a message
-      if (requireAuth()) {
-        return;
-      }
-
       if (!data) {
         return console.warn('No data provided to submitMessage');
       }
@@ -44,7 +37,7 @@ export default function useSubmitMessage() {
       );
       methods.reset();
     },
-    [ask, methods, addedConvo, setMessages, getMessages, latestMessage, requireAuth],
+    [ask, methods, addedConvo, setMessages, getMessages, latestMessage],
   );
 
   const submitPrompt = useCallback(

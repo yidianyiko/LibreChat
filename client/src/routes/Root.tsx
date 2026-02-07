@@ -62,9 +62,6 @@ export default function Root() {
     logout('/login?redirect=false');
   };
 
-  // Guest mode: render UI for both authenticated and unauthenticated users
-  // Actions will redirect to login via useGuestMode hook in individual components
-
   return (
     <SetConvoProvider>
       <FileMapContext.Provider value={fileMap}>

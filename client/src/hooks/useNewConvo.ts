@@ -37,14 +37,12 @@ import useAssistantListMap from './Assistants/useAssistantListMap';
 import { useResetChatBadges } from './useChatBadges';
 import { useApplyModelSpecEffects } from './Agents';
 import { usePauseGlobalAudio } from './Audio';
-import useGuestMode from './useGuestMode';
 import { useHasAccess } from '~/hooks';
 import store from '~/store';
 
 const useNewConvo = (index = 0) => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const { requireAuth, isGuest } = useGuestMode();
   const { data: startupConfig } = useGetStartupConfig();
   const applyModelSpecEffects = useApplyModelSpecEffects();
   const clearAllConversations = store.useClearConvoState();
@@ -274,11 +272,6 @@ const useNewConvo = (index = 0) => {
       keepAddedConvos?: boolean;
       disableParams?: boolean;
     } = {}) {
-      // Guest mode: redirect to login when trying to select model or create conversation
-      if (requireAuth()) {
-        return;
-      }
-
       pauseGlobalAudio();
       if (!saveBadgesState) {
         resetBadges();
@@ -364,7 +357,6 @@ const useNewConvo = (index = 0) => {
       saveDrafts,
       mutateAsync,
       resetBadges,
-      requireAuth,
       startupConfig,
       saveBadgesState,
       pauseGlobalAudio,

@@ -5,13 +5,16 @@
 Add these to your `.env` file:
 
 ```bash
-# Stripe API Keys (get from https://dashboard.stripe.com/test/apikeys)
+# Stripe Secret Key (get from https://dashboard.stripe.com/test/apikeys)
+# Used by backend to create checkout sessions
 STRIPE_SECRET_KEY=sk_test_...
-STRIPE_PUBLISHABLE_KEY=pk_test_...
 
 # Webhook Secret (get from https://dashboard.stripe.com/test/webhooks)
+# Used to verify webhook requests from Stripe
 STRIPE_WEBHOOK_SECRET=whsec_...
 ```
+
+**Note:** This integration uses Stripe Checkout (hosted payment page), so you don't need the Publishable Key. Users are redirected to Stripe's secure payment page.
 
 ## Setup Steps
 
@@ -21,8 +24,8 @@ STRIPE_WEBHOOK_SECRET=whsec_...
 
 ### 2. Get API Keys
 - Go to: https://dashboard.stripe.com/test/apikeys
-- Copy "Publishable key" -> `STRIPE_PUBLISHABLE_KEY`
 - Click "Reveal test key" -> Copy "Secret key" -> `STRIPE_SECRET_KEY`
+- Note: You don't need the Publishable key for this integration
 
 ### 3. Configure Webhook
 - Go to: https://dashboard.stripe.com/test/webhooks

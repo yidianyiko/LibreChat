@@ -34,21 +34,6 @@ export default function ChatRoute() {
   const { hasSetConversation, conversation, setConversation } = store.useCreateConversationAtom(index);
   const { newConversation } = useNewConvo();
 
-  // Guest mode: Initialize a default conversation for guests to prevent null errors
-  useEffect(() => {
-    if (!isAuthenticated && !conversation) {
-      const guestConversation: TConversation = {
-        conversationId: Constants.NEW_CONVO,
-        title: 'New Chat',
-        endpoint: EModelEndpoint.openAI, // Set a default endpoint for guest UI rendering
-        createdAt: '',
-        updatedAt: '',
-      };
-      setConversation(guestConversation);
-      hasSetConversation.current = true;
-    }
-  }, [isAuthenticated, conversation, setConversation, hasSetConversation]);
-
   const modelsQuery = useGetModelsQuery({
     enabled: isAuthenticated,
     refetchOnMount: 'always',
@@ -154,31 +139,23 @@ export default function ChatRoute() {
     );
   }
 
-  // Guest mode: render a basic chat view without conversation data
-  // Actions will redirect to login via useGuestMode hook
-  if (!isAuthenticated) {
-    return (
-      <ToolCallsMapProvider conversationId={Constants.NEW_CONVO}>
-        <ChatView index={index} />
-      </ToolCallsMapProvider>
-    );
-  }
-
-  // if not a conversation
+  // if not a conversation (search page)
   if (conversation?.conversationId === Constants.SEARCH) {
     return null;
   }
-  // if conversationId not match
-  if (conversation?.conversationId !== conversationId && !conversation) {
+
+  // if conversationId not match (but only if conversation exists)
+  if (conversation && conversation.conversationId !== conversationId) {
     return null;
   }
+
   // if conversationId is null
   if (!conversationId) {
     return null;
   }
 
   return (
-    <ToolCallsMapProvider conversationId={conversation.conversationId ?? ''}>
+    <ToolCallsMapProvider conversationId={conversation?.conversationId ?? conversationId}>
       <ChatView index={index} />
     </ToolCallsMapProvider>
   );

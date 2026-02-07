@@ -17,13 +17,11 @@ import {
   logger,
 } from '~/utils';
 import { useApplyModelSpecEffects } from '~/hooks/Agents';
-import useGuestMode from '~/hooks/useGuestMode';
 import store from '~/store';
 
 const useNavigateToConvo = (index = 0) => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const { requireAuth } = useGuestMode();
   const clearAllConversations = store.useClearConvoState();
   const applyModelSpecEffects = useApplyModelSpecEffects();
   const setSubmission = useSetRecoilState(store.submissionByIndex(index));
@@ -78,11 +76,6 @@ const useNavigateToConvo = (index = 0) => {
       currentConvoId?: string;
     },
   ) => {
-    // Guest mode: redirect to login when trying to access conversation history
-    if (requireAuth()) {
-      return;
-    }
-
     if (!conversation) {
       logger.warn('conversation', 'Conversation not provided to `navigateToConvo`');
       return;

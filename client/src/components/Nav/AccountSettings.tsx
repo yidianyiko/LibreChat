@@ -1,18 +1,19 @@
 import { useState, memo, useRef } from 'react';
 import * as Select from '@ariakit/react/select';
 import { useNavigate } from 'react-router-dom';
-import { FileText, LogOut, LogIn } from 'lucide-react';
+import { FileText, LogOut, Import } from 'lucide-react';
 import { GearIcon, DropdownMenuSeparator, Avatar } from '@librechat/client';
 import { MyFilesModal } from '~/components/Chat/Input/Files/MyFilesModal';
 import { useGetStartupConfig, useGetUserBalance } from '~/data-provider';
 import { useAuthContext } from '~/hooks/AuthContext';
-import { useLocalize, useGuestMode } from '~/hooks';
+import { useLocalize } from '~/hooks';
+import { useImportConversations } from '~/hooks/Conversations/useImportConversations';
+import { cn } from '~/utils';
 import Settings from './Settings';
 
 function AccountSettings() {
   const localize = useLocalize();
   const { user, isAuthenticated, logout } = useAuthContext();
-  const { isGuest } = useGuestMode();
   const navigate = useNavigate();
   const { data: startupConfig } = useGetStartupConfig();
   const balanceQuery = useGetUserBalance({
@@ -22,27 +23,8 @@ function AccountSettings() {
   const [showFiles, setShowFiles] = useState(false);
   const accountSettingsButtonRef = useRef<HTMLButtonElement>(null);
 
-  // Guest mode: Show login button instead of account settings
-  if (isGuest) {
-    return (
-      <button
-        type="button"
-        onClick={() => navigate('/login')}
-        className="mt-text-sm flex h-auto w-full items-center gap-2 rounded-xl p-2 text-sm transition-all duration-200 ease-in-out hover:bg-surface-active-alt"
-        aria-label={localize('com_nav_log_in')}
-      >
-        <div className="-ml-0.9 -mt-0.8 h-8 w-8 flex-shrink-0 flex items-center justify-center">
-          <LogIn className="icon-md text-text-primary" aria-hidden="true" />
-        </div>
-        <div
-          className="mt-2 grow overflow-hidden text-ellipsis whitespace-nowrap text-left text-text-primary"
-          style={{ marginTop: '0', marginLeft: '0' }}
-        >
-          {localize('com_nav_log_in')}
-        </div>
-      </button>
-    );
-  }
+  // Use the import conversations hook
+  const { fileInputRef, isUploading, handleFileChange, handleImportClick } = useImportConversations();
 
   return (
     <Select.SelectProvider>
@@ -110,6 +92,15 @@ function AccountSettings() {
         </Select.SelectItem>
         <Select.SelectItem
           value=""
+          onClick={handleImportClick}
+          disabled={isUploading}
+          className="select-item text-sm"
+        >
+          <Import className="icon-md" aria-hidden="true" />
+          {isUploading ? localize('com_ui_importing') : localize('com_ui_import_conversation_info')}
+        </Select.SelectItem>
+        <Select.SelectItem
+          value=""
           onClick={() => setShowSettings(true)}
           className="select-item text-sm"
         >
@@ -135,6 +126,14 @@ function AccountSettings() {
         />
       )}
       {showSettings && <Settings open={showSettings} onOpenChange={setShowSettings} />}
+      <input
+        ref={fileInputRef}
+        type="file"
+        className={cn('hidden')}
+        accept=".json"
+        onChange={handleFileChange}
+        aria-hidden="true"
+      />
     </Select.SelectProvider>
   );
 }

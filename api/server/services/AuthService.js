@@ -27,6 +27,7 @@ const {
 const { registerSchema } = require('~/strategies/validators');
 const { getAppConfig } = require('~/server/services/Config');
 const { sendEmail } = require('~/server/utils');
+const { createDefaultPresetForUser } = require('~/server/services/PresetService');
 
 const domains = {
   client: process.env.DOMAIN_CLIENT,
@@ -234,6 +235,18 @@ const registerUser = async (user, additionalData = {}) => {
       });
     } else {
       await updateUser(newUserId, { emailVerified: true });
+    }
+
+    // 为新用户创建默认预设
+    try {
+      await createDefaultPresetForUser(newUserId);
+      logger.info(`[registerUser] Created default preset for new user ${newUserId}`);
+    } catch (presetError) {
+      // 预设创建失败不应阻止用户注册
+      logger.error(
+        `[registerUser] Failed to create default preset for user ${newUserId}:`,
+        presetError,
+      );
     }
 
     return { status: 200, message: genericVerificationMessage };

@@ -9,13 +9,14 @@ LibreChat v0.8.2 - A self-hosted AI chat platform that unifies all major AI prov
 ## Repository Structure
 
 ```
-agents-1f3aeaa661/
+agents-c49e0371b6/
 ├── api/                      # Node.js/Express backend
 │   ├── server/               # Express server entry point and routes
 │   │   ├── controllers/      # Request handlers
 │   │   ├── services/         # Business logic layer
 │   │   ├── routes/           # API route definitions
-│   │   └── middleware/       # Express middleware
+│   │   ├── middleware/       # Express middleware
+│   │   └── scripts/          # Utility scripts (preset creation, verification)
 │   ├── models/               # Mongoose schemas and models
 │   ├── app/                  # Application-level utilities
 │   ├── strategies/           # Passport authentication strategies
@@ -33,11 +34,12 @@ agents-1f3aeaa661/
 │   ├── data-schemas/         # Mongoose schemas & TypeScript types
 │   ├── api/                  # Backend utilities & helpers
 │   └── client/               # Shared UI component library
-├── config/                   # CLI scripts (user mgmt, migrations)
+├── config/                   # CLI scripts (user mgmt, migrations, balance)
 ├── e2e/                      # Playwright E2E tests
 │   └── specs/                # Test specifications
 ├── librechat.yaml            # AI endpoint & model configuration
-├── docker-compose.yml        # Development Docker setup
+├── docker-compose.yml        # Production Docker setup
+├── docker-compose.dev.yml    # Development Docker setup (MongoDB, Meilisearch)
 └── deploy-compose.yml        # Production Docker deployment
 ```
 
@@ -84,6 +86,10 @@ npm run e2e:headed                       # Run with visible browser
 npm run e2e:debug                        # Interactive debug mode (PWDEBUG=1)
 npm run e2e:codegen                      # Generate test code interactively
 npm run e2e:report                       # View test results
+
+# Run specific test file
+cd api && npm test -- path/to/test.spec.js
+cd client && npm test -- ComponentName
 ```
 
 ### Linting & Formatting
@@ -103,6 +109,7 @@ npm run reset-password         # Reset user password
 npm run ban-user               # Ban user account
 npm run delete-user            # Delete user account
 npm run add-balance            # Add token balance to user
+npm run set-balance            # Set user balance to specific amount
 npm run list-balances          # View all user balances
 npm run user-stats             # View user statistics
 ```
@@ -110,7 +117,12 @@ npm run user-stats             # View user statistics
 ### Docker Deployment
 
 ```bash
-# Development (docker-compose.yml)
+# Development (docker-compose.dev.yml - only databases)
+docker compose -f docker-compose.dev.yml up -d     # Start MongoDB & Meilisearch
+docker compose -f docker-compose.dev.yml down      # Stop services
+docker compose -f docker-compose.dev.yml down -v   # Stop and remove volumes
+
+# Production (docker-compose.yml - full stack)
 docker compose up -d           # Start all services
 docker compose logs -f api     # Follow API logs
 docker compose logs -f mongodb # Follow MongoDB logs
@@ -129,6 +141,7 @@ npm run flush-cache                       # Clear Redis cache
 npm run reset-meili-sync                  # Reset Meilisearch sync
 npm run migrate:agent-permissions         # Migrate agent permissions
 npm run migrate:prompt-permissions        # Migrate prompt permissions
+npm run create-default-presets            # Create default presets
 ```
 
 ## Architecture
@@ -147,9 +160,9 @@ npm run migrate:prompt-permissions        # Migrate prompt permissions
 **Key directories:**
 - `server/routes/` - API endpoint definitions
 - `server/controllers/` - Request/response handling
-- `server/services/` - Business logic (Auth, Files, AI integrations)
+- `server/services/` - Business logic (Auth, Files, AI integrations, Stripe)
 - `server/middleware/` - Express middleware (auth, validation, rate limiting)
-- `models/` - Mongoose schemas (User, Conversation, Message, Agent, etc.)
+- `models/` - Mongoose schemas (User, Conversation, Message, Agent, Transaction, etc.)
 - `strategies/` - Passport authentication (JWT, Local, LDAP, OAuth)
 
 **Authentication:** JWT-based with refresh tokens. Supports OAuth2 (Google, GitHub, Discord, etc.), LDAP, SAML, and local authentication.
@@ -220,12 +233,18 @@ Frontend changes are reflected immediately with Vite HMR. Backend uses nodemon f
 4. Register route in `api/server/routes/index.js`
 5. Add authentication middleware if needed
 
+### Adding New Models
+
+1. Define schema in `packages/data-schemas/src/`
+2. Create model file in `api/models/`
+3. Export from `api/models/index.js`
+4. Rebuild schemas: `npm run build:data-schemas`
+
 ## Stripe Payment Integration
 
 Environment variables required in `.env`:
 ```bash
 STRIPE_SECRET_KEY=sk_test_...              # Stripe test/live secret key
-STRIPE_PUBLISHABLE_KEY=pk_test_...         # Stripe test/live publishable key
 STRIPE_WEBHOOK_SECRET=whsec_...            # Webhook signing secret
 ```
 
@@ -268,16 +287,40 @@ stripe listen --forward-to localhost:3080/api/recharge/webhook
 
 Setup guide: See `docs/STRIPE-SETUP.md`
 
-### Adding New Models
+## Balance System
 
-1. Define schema in `packages/data-schemas/src/`
-2. Create model file in `api/models/`
-3. Export from `api/models/index.js`
-4. Rebuild schemas: `npm run build:data-schemas`
+LibreChat has a built-in credit balance system for tracking usage and implementing billing.
+
+**Configuration** (`librechat.yaml`):
+```yaml
+balance:
+  enabled: true               # Enable balance system
+  startBalance: 1000000       # Initial credits ($1.00)
+  autoRefillEnabled: true     # Auto-refill enabled
+  refillIntervalValue: 30     # Refill every 30 days
+  refillIntervalUnit: 'days'
+  refillAmount: 500000        # Refill $0.50
+
+transactions:
+  enabled: true               # Enable transaction logging
+```
+
+**Credit conversion:** 1,000,000 credits = $1.00
+
+**Key files:**
+- **Routes**: `api/server/routes/balance.js` - Balance and transaction endpoints
+- **Model**: `api/models/Transaction.js` - Transaction schema
+- **CLI scripts**: `config/add-balance.js`, `config/set-balance.js`, `config/list-balances.js`
 
 ## Docker Architecture
 
-**Development setup** (`docker-compose.yml`):
+**Development setup** (`docker-compose.dev.yml`):
+- `mongodb` - MongoDB 8.0 (port 27017)
+- `meilisearch` - Search engine (port 7700)
+
+Run API and client locally with `npm run backend:dev` and `npm run frontend:dev`.
+
+**Production setup** (`docker-compose.yml`):
 - `api` - LibreChat API server (port 3080)
 - `mongodb` - MongoDB 8.0 (port 27017)
 - `meilisearch` - Search engine (port 7700)
@@ -378,6 +421,7 @@ docker exec -it chat-mongodb mongosh
 use LibreChat
 db.users.find().pretty()
 db.conversations.find().limit(5)
+db.transactions.find().sort({createdAt: -1}).limit(10)
 ```
 
 ### Clear Build Cache
@@ -417,6 +461,10 @@ Critical environment variables (see `.env.example` for complete list):
 - `DEBUG_LOGGING` - Enable debug logs
 - `MEILI_MASTER_KEY` - Meilisearch security
 - `RAG_PORT` - RAG API port
+
+**Stripe:**
+- `STRIPE_SECRET_KEY` - Stripe API key
+- `STRIPE_WEBHOOK_SECRET` - Webhook signature verification
 
 ## Bun Support
 

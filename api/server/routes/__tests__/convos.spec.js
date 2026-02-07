@@ -131,6 +131,46 @@ describe('Convos Routes', () => {
     jest.clearAllMocks();
   });
 
+  describe('POST /import', () => {
+    let originalTimeout;
+
+    beforeEach(() => {
+      originalTimeout = process.env.CONVERSATION_IMPORT_ASYNC_TIMEOUT_MS;
+    });
+
+    afterEach(() => {
+      process.env.CONVERSATION_IMPORT_ASYNC_TIMEOUT_MS = originalTimeout;
+      jest.useRealTimers();
+    });
+
+    it('should return 201 when import completes before timeout', async () => {
+      const { importConversations } = require('~/server/utils/import');
+      importConversations.mockResolvedValue(undefined);
+      process.env.CONVERSATION_IMPORT_ASYNC_TIMEOUT_MS = '1000';
+
+      const response = await request(app).post('/api/convos/import');
+
+      expect(response.status).toBe(201);
+      expect(response.body).toEqual({ message: 'Conversation(s) imported successfully' });
+      expect(importConversations).toHaveBeenCalledWith({
+        filepath: '/tmp/test-file.json',
+        requestUserId: 'test-user-123',
+      });
+    });
+
+    it('should return 202 when import exceeds timeout and continues in background', async () => {
+      const { importConversations } = require('~/server/utils/import');
+      importConversations.mockReturnValue(new Promise(() => {}));
+
+      process.env.CONVERSATION_IMPORT_ASYNC_TIMEOUT_MS = '1';
+
+      const response = await request(app).post('/api/convos/import');
+
+      expect(response.status).toBe(202);
+      expect(response.body.message).toMatch(/processing/i);
+    });
+  });
+
   describe('DELETE /all', () => {
     it('should delete all conversations, tool calls, and shared links for a user', async () => {
       const mockDbResponse = {

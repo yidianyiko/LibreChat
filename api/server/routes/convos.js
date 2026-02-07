@@ -240,11 +240,41 @@ router.post(
   configMiddleware,
   upload.single('file'),
   async (req, res) => {
+    const timeoutEnv = Number.parseInt(process.env.CONVERSATION_IMPORT_ASYNC_TIMEOUT_MS, 10);
+    const asyncTimeoutMs = Number.isFinite(timeoutEnv) && timeoutEnv > 0 ? timeoutEnv : 60000;
+    let timeoutId;
+
     try {
       /* TODO: optimize to return imported conversations and add manually */
-      await importConversations({ filepath: req.file.path, requestUserId: req.user.id });
+      const importPromise = importConversations({
+        filepath: req.file.path,
+        requestUserId: req.user.id,
+      });
+
+      const timeoutPromise = new Promise((resolve) => {
+        timeoutId = setTimeout(() => resolve('timeout'), asyncTimeoutMs);
+      });
+
+      const result = await Promise.race([importPromise.then(() => 'done'), timeoutPromise]);
+
+      if (result === 'timeout') {
+        res.status(202).json({
+          message: 'Import is processing in the background. Please wait and refresh later.',
+        });
+
+        importPromise.catch((error) => {
+          logger.error('Error processing file in background', error);
+        });
+
+        return;
+      }
+
+      clearTimeout(timeoutId);
       res.status(201).json({ message: 'Conversation(s) imported successfully' });
     } catch (error) {
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+      }
       logger.error('Error processing file', error);
       res.status(500).send('Error processing file');
     }

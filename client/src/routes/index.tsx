@@ -1,4 +1,6 @@
 import { createBrowserRouter, Navigate, Outlet } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { Spinner } from '@librechat/client';
 import {
   Login,
   VerifyEmail,
@@ -7,7 +9,7 @@ import {
   ApiErrorWatcher,
   TwoFactorScreen,
   RequestPasswordReset,
-  GuestRouteGuard,
+  ProtectedRoute,
 } from '~/components/Auth';
 import { MarketplaceProvider } from '~/components/Agents/MarketplaceContext';
 import AgentMarketplace from '~/components/Agents/Marketplace';
@@ -29,8 +31,8 @@ import Root from './Root';
 
 const AuthLayout = () => (
   <AuthContextProvider>
-    <GuestRouteGuard />
     <ApiErrorWatcher />
+    <Outlet />
   </AuthContextProvider>
 );
 
@@ -39,6 +41,22 @@ const AuthLayout = () => (
  */
 const LandingPageGuard = () => {
   const { isAuthenticated } = useAuthContext();
+  const [isReady, setIsReady] = useState(false);
+
+  // Wait for auth state to be determined
+  useEffect(() => {
+    const timer = setTimeout(() => setIsReady(true), 50);
+    return () => clearTimeout(timer);
+  }, []);
+
+  // Show loading while checking auth state
+  if (!isReady) {
+    return (
+      <div className="flex h-screen items-center justify-center" aria-live="polite" role="status">
+        <Spinner className="text-text-primary" />
+      </div>
+    );
+  }
 
   if (isAuthenticated) {
     return <Navigate to="/c/new" replace />;
@@ -125,48 +143,53 @@ export const router = createBrowserRouter(
         },
         dashboardRoutes,
         {
-          path: '/',
-          element: <Root />,
+          element: <ProtectedRoute />,
           children: [
             {
-              path: 'c/:conversationId?',
-              element: <ChatRoute />,
-            },
-            {
-              path: 'search',
-              element: <Search />,
-            },
-            {
-              path: 'recharge',
-              element: <RechargePage />,
-            },
-            {
-              path: 'recharge/success',
-              element: <PaymentSuccessPage />,
-            },
-            {
-              path: 'recharge/cancel',
-              element: <PaymentCancelPage />,
-            },
-            {
-              path: 'recharge/history',
-              element: <RechargeHistoryPage />,
-            },
-            {
-              path: 'agents',
-              element: (
-                <MarketplaceProvider>
-                  <AgentMarketplace />
-                </MarketplaceProvider>
-              ),
-            },
-            {
-              path: 'agents/:category',
-              element: (
-                <MarketplaceProvider>
-                  <AgentMarketplace />
-                </MarketplaceProvider>
-              ),
+              path: '/',
+              element: <Root />,
+              children: [
+                {
+                  path: 'c/:conversationId?',
+                  element: <ChatRoute />,
+                },
+                {
+                  path: 'search',
+                  element: <Search />,
+                },
+                {
+                  path: 'recharge',
+                  element: <RechargePage />,
+                },
+                {
+                  path: 'recharge/success',
+                  element: <PaymentSuccessPage />,
+                },
+                {
+                  path: 'recharge/cancel',
+                  element: <PaymentCancelPage />,
+                },
+                {
+                  path: 'recharge/history',
+                  element: <RechargeHistoryPage />,
+                },
+                {
+                  path: 'agents',
+                  element: (
+                    <MarketplaceProvider>
+                      <AgentMarketplace />
+                    </MarketplaceProvider>
+                  ),
+                },
+                {
+                  path: 'agents/:category',
+                  element: (
+                    <MarketplaceProvider>
+                      <AgentMarketplace />
+                    </MarketplaceProvider>
+                  ),
+                },
+              ],
             },
           ],
         },
