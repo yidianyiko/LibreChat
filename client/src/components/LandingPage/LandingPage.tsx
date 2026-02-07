@@ -14,6 +14,8 @@ import {
   User,
   Zap,
   CheckCircle2,
+  History,
+  Download,
   type LucideIcon
 } from 'lucide-react';
 
@@ -52,6 +54,10 @@ interface MigrationTranslation {
   title: string;
   subtitle: string;
   feature: string;
+  feat1: string;
+  feat2: string;
+  status: string;
+  restoring: string;
 }
 
 interface PricingTier {
@@ -107,7 +113,11 @@ const translations: Translations = {
     migration: {
       title: "Don't Start From Scratch",
       subtitle: "Import your ChatGPT history seamlessly. Keep your context, your jokes, and your shared journey alive.",
-      feature: "Instant Import (.json / .md)"
+      feature: "Instant Import (.json / .md)",
+      feat1: "Memory Mapping",
+      feat2: "Instruction Sync",
+      status: "Importing Context",
+      restoring: "Restoring custom instructions..."
     },
     pricing: {
       title: "Simple Pricing",
@@ -153,7 +163,11 @@ const translations: Translations = {
     migration: {
       title: "语境保留",
       subtitle: "无缝导入你的 ChatGPT 历史。保留你的上下文、笑话和共同旅程。",
-      feature: "即时导入 (.json / .md)"
+      feature: "即时导入 (.json / .md)",
+      feat1: "记忆映射",
+      feat2: "指令同步",
+      status: "导入中",
+      restoring: "正在恢复自定义指令..."
     },
     pricing: {
       title: "简单定价",
@@ -199,7 +213,11 @@ const translations: Translations = {
     migration: {
       title: "No empieces de cero",
       subtitle: "Importa tu historial de ChatGPT sin complicaciones. Mantén tu contexto, tus bromas y tu viaje compartido.",
-      feature: "Importación instantánea (.json / .md)"
+      feature: "Importación instantánea (.json / .md)",
+      feat1: "Mapeo de memoria",
+      feat2: "Sincronización de instrucciones",
+      status: "Importando contexto",
+      restoring: "Restaurando instrucciones personalizadas..."
     },
     pricing: {
       title: "Precios Simples",
@@ -245,7 +263,11 @@ const translations: Translations = {
     migration: {
       title: "ゼロから始めないで",
       subtitle: "ChatGPTの履歴をシームレスにインポート。コンテキストや思い出をそのままに。",
-      feature: "即時インポート (.json / .md)"
+      feature: "即時インポート (.json / .md)",
+      feat1: "メモリマッピング",
+      feat2: "インストラクション同期",
+      status: "コンテキストインポート中",
+      restoring: "カスタム指示を復元中..."
     },
     pricing: {
       title: "シンプルな料金体系",
@@ -291,7 +313,11 @@ const translations: Translations = {
     migration: {
       title: "처음부터 시작하지 마세요",
       subtitle: "ChatGPT 기록을 원활하게 가져오세요. 맥락과 추억을 그대로 유지할 수 있습니다.",
-      feature: "즉시 가져오기 (.json / .md)"
+      feature: "즉시 가져오기 (.json / .md)",
+      feat1: "메모리 매핑",
+      feat2: "인스트럭션 동기화",
+      status: "컨텍스트 가져오는 중",
+      restoring: "사용자 지정 지시 복원 중..."
     },
     pricing: {
       title: "단순한 가격 정책",
@@ -572,36 +598,57 @@ const LandingPage: React.FC = () => {
       {/* 数据迁移区域 */}
       <section className="py-24 px-6 bg-[#fcfcf9]">
         <div className="max-w-6xl mx-auto flex flex-col md:flex-row items-center gap-16">
-          <div className="flex-1 order-2 md:order-1">
-             <div className="p-2 rounded-2xl bg-white border border-gray-200 shadow-2xl overflow-hidden transform md:-rotate-2 hover:rotate-0 transition-transform duration-500">
-                <div className="bg-gray-50 p-4 border-b border-gray-200 flex space-x-2">
-                   <div className="w-2 h-2 rounded-full bg-gray-300"></div>
-                   <div className="w-2 h-2 rounded-full bg-gray-300"></div>
-                   <div className="w-2 h-2 rounded-full bg-gray-300"></div>
-                </div>
-                <div className="p-8">
-                   <div className="flex items-center space-x-4 mb-6">
-                      <div className="w-10 h-10 bg-[#10a37f] rounded flex items-center justify-center text-white"><Database size={20} /></div>
-                      <div className="text-sm font-bold text-gray-700">ChatGPT_Export.json</div>
-                   </div>
-                   <div className="h-4 w-3/4 bg-gray-100 rounded-full mb-4"></div>
-                   <div className="h-4 w-full bg-gray-100 rounded-full mb-4"></div>
-                   <div className="h-4 w-1/2 bg-gray-100 rounded-full"></div>
-                   <div className="mt-8 pt-8 border-t border-gray-100 flex justify-between items-center">
-                      <span className="text-xs font-bold text-gray-400">STATUS: READY TO MIGRATE</span>
-                      <ArrowRightLeft className="text-[#10a37f] animate-pulse" />
-                   </div>
-                </div>
-             </div>
-          </div>
-          <div className="flex-1 order-1 md:order-2">
+          <div className="flex-1 order-1 md:order-2 text-left">
             <h2 className="text-4xl font-extrabold mb-6 leading-tight">{t.migration.title}</h2>
-            <p className="text-gray-500 text-lg mb-8 leading-relaxed">
-              {t.migration.subtitle}
-            </p>
+            <p className="text-gray-500 text-lg mb-8 leading-relaxed">{t.migration.subtitle}</p>
+            <div className="space-y-4 mb-6">
+              <div className="flex items-center space-x-3">
+                <div className="w-10 h-10 rounded-xl bg-gray-100 flex items-center justify-center text-[#10a37f]"><History size={20} /></div>
+                <span className="text-sm font-bold text-gray-700">{t.migration.feat1}</span>
+              </div>
+              <div className="flex items-center space-x-3">
+                <div className="w-10 h-10 rounded-xl bg-gray-100 flex items-center justify-center text-[#10a37f]"><Download size={20} /></div>
+                <span className="text-sm font-bold text-gray-700">{t.migration.feat2}</span>
+              </div>
+            </div>
             <div className="flex items-center space-x-3 text-[#10a37f] font-bold">
-               <Sparkles size={20} />
-               <span>{t.migration.feature}</span>
+              <Sparkles size={20} />
+              <span>{t.migration.feature}</span>
+            </div>
+          </div>
+          <div className="flex-1 order-2 md:order-1">
+            <div className="p-8 md:p-10 rounded-3xl bg-gradient-to-br from-[#fcfcf9] to-gray-100 border border-gray-100 shadow-2xl">
+              <div className="space-y-6">
+                {/* Source file indicator */}
+                <div className="flex items-center justify-between p-4 bg-white rounded-2xl shadow-sm border border-gray-50">
+                  <div className="flex items-center space-x-3">
+                    <div className="w-8 h-8 bg-gray-900 rounded-lg flex items-center justify-center text-white"><Database size={16} /></div>
+                    <span className="text-xs font-bold font-mono">Archive.json</span>
+                  </div>
+                  <CheckCircle2 size={20} className="text-[#10a37f]" />
+                </div>
+                {/* Transfer arrow animation */}
+                <div className="relative py-4 flex flex-col items-center">
+                  <div className="h-16 w-px bg-gradient-to-b from-gray-200 via-[#10a37f] to-gray-200 animate-pulse"></div>
+                  <div className="w-10 h-10 bg-white border border-gray-100 rounded-full flex items-center justify-center shadow-lg -mt-8 z-10 text-[#10a37f] rotate-90">
+                    <ArrowRightLeft size={16} />
+                  </div>
+                </div>
+                {/* Import progress card */}
+                <div className="bg-white p-6 rounded-2xl shadow-lg border border-[#10a37f]/10">
+                  <div className="flex items-center justify-between mb-4">
+                    <span className="text-xs font-bold uppercase text-gray-400">{t.migration.status}</span>
+                    <span className="text-xs font-bold text-[#10a37f]">98.2%</span>
+                  </div>
+                  <div className="h-1.5 w-full bg-gray-100 rounded-full overflow-hidden">
+                    <div className="h-full w-[98%] bg-[#10a37f] rounded-full"></div>
+                  </div>
+                  <div className="mt-3 flex items-center space-x-2">
+                    <div className="w-2 h-2 bg-[#10a37f] rounded-full animate-ping"></div>
+                    <p className="text-xs font-medium text-gray-400">{t.migration.restoring}</p>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </div>
