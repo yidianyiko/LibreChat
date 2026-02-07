@@ -70,7 +70,7 @@ interface Translation {
   pricing: PricingTranslation;
 }
 
-type SupportedLanguage = 'en' | 'ja' | 'ko';
+type SupportedLanguage = 'en' | 'zh' | 'es' | 'ja' | 'ko';
 
 type Translations = Record<SupportedLanguage, Translation>;
 
