@@ -13,6 +13,7 @@ import {
   Sparkles,
   User,
   Zap,
+  CheckCircle2,
   type LucideIcon
 } from 'lucide-react';
 
@@ -53,13 +54,21 @@ interface MigrationTranslation {
   feature: string;
 }
 
+interface PricingTier {
+  name: string;
+  sub: string;
+  price: string;
+  features: string[];
+}
+
 interface PricingTranslation {
   title: string;
-  plan: string;
-  price: string;
-  period: string;
+  subtitle: string;
+  recommended: string;
   cta: string;
-  features: string[];
+  explorer: PricingTier;
+  artisan: PricingTier;
+  elite: PricingTier;
 }
 
 interface Translation {
@@ -102,11 +111,27 @@ const translations: Translations = {
     },
     pricing: {
       title: "Simple Pricing",
-      plan: "Forever Pro",
-      price: "$20",
-      period: "/month",
-      cta: "Become a Guardian",
-      features: ["Unlimited 4o Context", "Zero-Knowledge Encryption", "24/7 Priority Guard"]
+      subtitle: "Choose the plan that fits your needs.",
+      recommended: "Most Popular",
+      cta: "Get Started",
+      explorer: {
+        name: "Explorer",
+        sub: "The Minimalist Alternative",
+        price: "$4.99",
+        features: ["150 Premium GPT-4o msgs", "2,000 Base 4o-mini msgs", "Locked Model Guarantee", "8,192 Token Context"]
+      },
+      artisan: {
+        name: "Artisan",
+        sub: "The Creator's Safe Haven",
+        price: "$14.99",
+        features: ["700 Premium GPT-4o msgs", "15,000 Base 4o-mini msgs", "Snapshot Selection", "32,768 Token Context", "10 Project Folders"]
+      },
+      elite: {
+        name: "Elite",
+        sub: "The Power Productivity Hub",
+        price: "$34.99",
+        features: ["2,000 Premium GPT-4o msgs", "Unlimited Base 4o-mini msgs", "Full 128,000 Context Access", "Tier-5 Priority Lane", "Unlimited Project Folders"]
+      }
     }
   },
   zh: {
@@ -132,11 +157,27 @@ const translations: Translations = {
     },
     pricing: {
       title: "简单定价",
-      plan: "永恒 Pro",
-      price: "$20",
-      period: "/月",
-      cta: "成为守护者",
-      features: ["无限 4o 上下文", "零知识加密", "24/7 优先守护"]
+      subtitle: "选择适合你的方案。",
+      recommended: "最受欢迎",
+      cta: "立即开始",
+      explorer: {
+        name: "探索者",
+        sub: "极简主义的选择",
+        price: "$4.99",
+        features: ["150 条 GPT-4o 高级消息", "2,000 条 4o-mini 基础消息", "锁定模型保障", "8,192 Token 上下文"]
+      },
+      artisan: {
+        name: "匠心",
+        sub: "创作者的避风港",
+        price: "$14.99",
+        features: ["700 条 GPT-4o 高级消息", "15,000 条 4o-mini 基础消息", "快照选择", "32,768 Token 上下文", "10 个项目文件夹"]
+      },
+      elite: {
+        name: "精英",
+        sub: "高效生产力中心",
+        price: "$34.99",
+        features: ["2,000 条 GPT-4o 高级消息", "无限 4o-mini 基础消息", "完整 128,000 上下文访问", "Tier-5 优先通道", "无限项目文件夹"]
+      }
     }
   },
   es: {
@@ -162,11 +203,27 @@ const translations: Translations = {
     },
     pricing: {
       title: "Precios Simples",
-      plan: "Forever Pro",
-      price: "$20",
-      period: "/mes",
-      cta: "Conviértete en Guardián",
-      features: ["Contexto 4o ilimitado", "Cifrado de conocimiento cero", "Guardia prioritaria 24/7"]
+      subtitle: "Elige el plan que se adapte a tus necesidades.",
+      recommended: "Más Popular",
+      cta: "Comenzar",
+      explorer: {
+        name: "Explorer",
+        sub: "La alternativa minimalista",
+        price: "$4.99",
+        features: ["150 mensajes Premium GPT-4o", "2,000 mensajes Base 4o-mini", "Garantía de modelo fijo", "Contexto de 8,192 tokens"]
+      },
+      artisan: {
+        name: "Artisan",
+        sub: "El refugio del creador",
+        price: "$14.99",
+        features: ["700 mensajes Premium GPT-4o", "15,000 mensajes Base 4o-mini", "Selección de snapshot", "Contexto de 32,768 tokens", "10 carpetas de proyecto"]
+      },
+      elite: {
+        name: "Elite",
+        sub: "Hub de productividad",
+        price: "$34.99",
+        features: ["2,000 mensajes Premium GPT-4o", "Mensajes Base 4o-mini ilimitados", "Acceso completo a 128,000 tokens", "Prioridad Tier-5", "Carpetas de proyecto ilimitadas"]
+      }
     }
   },
   ja: {
@@ -192,11 +249,27 @@ const translations: Translations = {
     },
     pricing: {
       title: "シンプルな料金体系",
-      plan: "フォーエバー・プロ",
-      price: "¥3,000",
-      period: "/月",
-      cta: "ガーディアンになる",
-      features: ["無制限の4oコンテキスト", "ゼロ知識暗号化", "24/7 優先サポート"]
+      subtitle: "ニーズに合ったプランをお選びください。",
+      recommended: "最も人気",
+      cta: "始める",
+      explorer: {
+        name: "エクスプローラー",
+        sub: "ミニマリストの選択",
+        price: "$4.99",
+        features: ["150 プレミアム GPT-4o メッセージ", "2,000 ベース 4o-mini メッセージ", "モデル保証", "8,192 トークンコンテキスト"]
+      },
+      artisan: {
+        name: "アーティザン",
+        sub: "クリエイターの安息地",
+        price: "$14.99",
+        features: ["700 プレミアム GPT-4o メッセージ", "15,000 ベース 4o-mini メッセージ", "スナップショット選択", "32,768 トークンコンテキスト", "10 プロジェクトフォルダー"]
+      },
+      elite: {
+        name: "エリート",
+        sub: "パワー生産性ハブ",
+        price: "$34.99",
+        features: ["2,000 プレミアム GPT-4o メッセージ", "無制限 4o-mini メッセージ", "128,000 フルコンテキストアクセス", "Tier-5 優先レーン", "無制限プロジェクトフォルダー"]
+      }
     }
   },
   ko: {
@@ -222,11 +295,27 @@ const translations: Translations = {
     },
     pricing: {
       title: "단순한 가격 정책",
-      plan: "포에버 프로",
-      price: "₩25,000",
-      period: "/월",
-      cta: "가디언 되기",
-      features: ["무제한 4o 컨텍스트", "제로 지식 암호화", "24/7 우선 가드"]
+      subtitle: "필요에 맞는 플랜을 선택하세요.",
+      recommended: "가장 인기",
+      cta: "시작하기",
+      explorer: {
+        name: "익스플로러",
+        sub: "미니멀리스트의 선택",
+        price: "$4.99",
+        features: ["150 프리미엄 GPT-4o 메시지", "2,000 기본 4o-mini 메시지", "모델 잠금 보장", "8,192 토큰 컨텍스트"]
+      },
+      artisan: {
+        name: "아티잔",
+        sub: "창작자의 안식처",
+        price: "$14.99",
+        features: ["700 프리미엄 GPT-4o 메시지", "15,000 기본 4o-mini 메시지", "스냅샷 선택", "32,768 토큰 컨텍스트", "10 프로젝트 폴더"]
+      },
+      elite: {
+        name: "엘리트",
+        sub: "파워 생산성 허브",
+        price: "$34.99",
+        features: ["2,000 프리미엄 GPT-4o 메시지", "무제한 4o-mini 메시지", "128,000 전체 컨텍스트 액세스", "Tier-5 우선 레인", "무제한 프로젝트 폴더"]
+      }
     }
   }
 };
@@ -478,23 +567,42 @@ const LandingPage: React.FC = () => {
 
       {/* 定价区域 */}
       <section id="pricing" className="py-24 px-6 bg-white border-t border-gray-100">
-        <div className="max-w-xl mx-auto text-center">
-          <h2 className="text-3xl font-bold mb-12">{t.pricing.title}</h2>
-          <div className="p-10 rounded-3xl border border-gray-200 bg-[#fcfcf9] shadow-sm relative overflow-hidden group">
-            <div className="absolute top-0 left-0 w-full h-1 bg-[#10a37f]"></div>
-            <h3 className="text-sm font-bold uppercase tracking-widest text-gray-400 mb-6">{t.pricing.plan}</h3>
-            <div className="text-6xl font-black mb-8 text-gray-900">{t.pricing.price}<span className="text-lg text-gray-400 font-normal">{t.pricing.period}</span></div>
-            <ul className="space-y-4 mb-10 text-left max-w-xs mx-auto">
-              {t.pricing.features.map((item, i) => (
-                <li key={i} className="flex items-center space-x-3 text-gray-600 font-medium">
-                  <ShieldCheck size={18} className="text-[#10a37f]" />
-                  <span>{item}</span>
-                </li>
-              ))}
-            </ul>
-            <button onClick={() => navigate('/login')} className="w-full py-4 bg-[#10a37f] text-white rounded-xl font-bold hover:bg-[#0d8a6a] transition-all shadow-md active:scale-95">
-              {t.pricing.cta}
-            </button>
+        <div className="max-w-6xl mx-auto">
+          <div className="text-center mb-16">
+            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">{t.pricing.title}</h2>
+            <p className="text-gray-500 text-lg font-medium">{t.pricing.subtitle}</p>
+          </div>
+          <div className="grid md:grid-cols-3 gap-8 items-stretch">
+            {([
+              { tier: t.pricing.explorer, recommended: false },
+              { tier: t.pricing.artisan, recommended: true },
+              { tier: t.pricing.elite, recommended: false }
+            ] as const).map((plan, idx) => (
+              <div key={idx} className={`p-8 rounded-3xl border transition-all flex flex-col ${plan.recommended ? 'bg-gray-900 text-white border-gray-900 shadow-2xl scale-105 z-10' : 'bg-[#fcfcf9] border-gray-200 text-gray-900'}`}>
+                <div className="mb-8">
+                  <div className="flex items-center space-x-2 mb-4">
+                    <span className={`text-xs font-bold uppercase tracking-widest px-3 py-1 rounded-full ${plan.recommended ? 'bg-[#10a37f] text-white' : 'bg-gray-100 text-gray-500'}`}>{plan.tier.name}</span>
+                    {plan.recommended && <span className="text-xs font-bold text-[#10a37f]">{t.pricing.recommended}</span>}
+                  </div>
+                  <div className="mt-4 flex items-baseline">
+                    <span className="text-5xl font-black">{plan.tier.price}</span>
+                    <span className="text-sm ml-2 font-medium opacity-50">/mo</span>
+                  </div>
+                  <p className="text-xs mt-3 font-bold opacity-50">{plan.tier.sub}</p>
+                </div>
+                <button onClick={() => navigate('/login')} className={`w-full py-4 mb-8 rounded-xl font-bold text-sm transition-all active:scale-95 ${plan.recommended ? 'bg-[#10a37f] text-white hover:bg-[#0d8a6a]' : 'bg-gray-900 text-white hover:bg-gray-800'}`}>
+                  {t.pricing.cta}
+                </button>
+                <ul className="space-y-4 flex-grow">
+                  {plan.tier.features.map((f, i) => (
+                    <li key={i} className="flex items-start space-x-3 text-sm font-medium">
+                      <CheckCircle2 size={18} className="text-[#10a37f] flex-shrink-0 mt-0.5" />
+                      <span className={plan.recommended ? 'text-gray-300' : 'text-gray-600'}>{f}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ))}
           </div>
         </div>
       </section>
