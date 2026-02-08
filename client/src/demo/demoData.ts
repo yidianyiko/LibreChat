@@ -10,7 +10,7 @@ import type {
 const demoTimestamp = new Date(0).toISOString();
 
 export const demoStartupConfig: TStartupConfig = {
-  appTitle: 'LibreChat Demo',
+  appTitle: 'keep4oforever Demo',
   socialLogins: [],
   discordLoginEnabled: false,
   facebookLoginEnabled: false,
@@ -59,7 +59,7 @@ export const getDemoMessages = (conversationId: string = Constants.NEW_CONVO): T
     messageId: 'demo-user-1',
     conversationId,
     parentMessageId: null,
-    text: 'Show me how LibreChat looks in demo mode.',
+    text: 'Show me how keep4oforever looks in demo mode.',
     isCreatedByUser: true,
     sender: 'user',
     createdAt: demoTimestamp,

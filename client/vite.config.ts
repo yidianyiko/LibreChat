@@ -58,8 +58,8 @@ export default defineConfig(({ command }) => ({
       },
       includeAssets: [],
       manifest: {
-        name: 'LibreChat',
-        short_name: 'LibreChat',
+        name: 'keep4oforever',
+        short_name: 'keep4oforever',
         display: 'standalone',
         background_color: '#000000',
         theme_color: '#009688',

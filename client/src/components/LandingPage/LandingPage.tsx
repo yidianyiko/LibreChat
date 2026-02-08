@@ -510,10 +510,28 @@ const LanguageSwitcher: React.FC<LanguageSwitcherProps> = ({ currentLang, onLang
 };
 
 /**
+ * Detect browser language and map to supported language
+ */
+const detectBrowserLanguage = (): SupportedLanguage => {
+  const browserLang = navigator.language || navigator.languages?.[0] || 'en';
+  const langCode = browserLang.toLowerCase().split('-')[0];
+
+  const langMap: Record<string, SupportedLanguage> = {
+    en: 'en',
+    zh: 'zh',
+    es: 'es',
+    ja: 'ja',
+    ko: 'ko',
+  };
+
+  return langMap[langCode] || 'en';
+};
+
+/**
  * Main LandingPage component
  */
 const LandingPage: React.FC = () => {
-  const [lang, setLang] = useState<SupportedLanguage>('en');
+  const [lang, setLang] = useState<SupportedLanguage>(detectBrowserLanguage);
   const t = translations[lang] || translations['en'];
   const [scrolled, setScrolled] = useState<boolean>(false);
   const navigate = useNavigate();

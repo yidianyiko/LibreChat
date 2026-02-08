@@ -1,48 +1,26 @@
 const Stripe = require('stripe');
 const { logger } = require('~/config');
 
-// Stripe 价格配置
-// 说明：1000 tokenCredits = $0.001 USD，即 1,000,000 credits = $1.00
+// Stripe 订阅价格配置
+// 月度订阅套餐：Explorer / Artisan / Elite
 const PRICING_TIERS = [
   {
-    id: 'tier_5',
-    name: '$5 套餐',
-    description: '500万额度 (约5000次对话)',
-    credits: 5000000,
-    price: 500, // $5.00 (单位：美分)
-    discount: 0,
+    id: 'explorer',
+    name: 'Explorer',
+    description: 'The Minimalist Alternative - 150 Premium GPT-4o msgs, 2,000 Base 4o-mini msgs',
+    price: 499, // $4.99/mo (单位：美分)
   },
   {
-    id: 'tier_10',
-    name: '$10 套餐',
-    description: '1000万额度 (约10000次对话)',
-    credits: 10000000,
-    price: 990, // $9.90 (1% 折扣)
-    discount: 1,
+    id: 'artisan',
+    name: 'Artisan',
+    description: 'The Creator\'s Safe Haven - 700 Premium GPT-4o msgs, 15,000 Base 4o-mini msgs',
+    price: 1499, // $14.99/mo
   },
   {
-    id: 'tier_25',
-    name: '$25 套餐',
-    description: '2500万额度 (约25000次对话)',
-    credits: 25000000,
-    price: 2400, // $24.00 (4% 折扣)
-    discount: 4,
-  },
-  {
-    id: 'tier_50',
-    name: '$50 套餐',
-    description: '5000万额度 (约50000次对话)',
-    credits: 50000000,
-    price: 4700, // $47.00 (6% 折扣)
-    discount: 6,
-  },
-  {
-    id: 'tier_100',
-    name: '$100 套餐',
-    description: '1亿额度 (约100000次对话)',
-    credits: 100000000,
-    price: 9000, // $90.00 (10% 折扣)
-    discount: 10,
+    id: 'elite',
+    name: 'Elite',
+    description: 'The Power Productivity Hub - 2,000 Premium GPT-4o msgs, Unlimited Base 4o-mini msgs',
+    price: 3499, // $34.99/mo
   },
 ];
 
@@ -121,11 +99,14 @@ class StripeService {
                 description: pricingTier.description,
               },
               unit_amount: pricingTier.price,
+              recurring: {
+                interval: 'month',
+              },
             },
             quantity: 1,
           },
         ],
-        mode: 'payment',
+        mode: 'subscription',
         success_url: successUrl,
         cancel_url: cancelUrl,
         customer_email: userEmail,
@@ -133,7 +114,6 @@ class StripeService {
         metadata: {
           userId: userId,
           tierId: tierId,
-          credits: pricingTier.credits.toString(),
         },
       });
 
@@ -170,32 +150,31 @@ class StripeService {
   }
 
   /**
-   * 处理支付成功事件
+   * 处理订阅成功事件
    * @param {object} session - Stripe Checkout Session 对象
    */
   async handlePaymentSuccess(session) {
-    const { userId, tierId, credits } = session.metadata;
+    const { userId, tierId } = session.metadata;
 
-    if (!userId || !tierId || !credits) {
+    if (!userId || !tierId) {
       logger.error('[StripeService] Missing metadata in session:', session.id);
       throw new Error('Invalid session metadata');
     }
 
-    logger.info(`[StripeService] Payment successful: user=${userId}, tier=${tierId}, credits=${credits}`);
+    logger.info(`[StripeService] Subscription successful: user=${userId}, tier=${tierId}`);
 
     return {
       userId,
       tierId,
-      credits: parseInt(credits, 10),
       sessionId: session.id,
-      paymentIntent: session.payment_intent,
+      subscriptionId: session.subscription,
       amountTotal: session.amount_total,
       customerEmail: session.customer_email,
     };
   }
 
   /**
-   * 获取支付记录（从 Stripe）
+   * 获取订阅记录（从 Stripe）
    * @param {string} userId - 用户 ID
    * @param {number} limit - 返回记录数量
    */
@@ -212,16 +191,16 @@ class StripeService {
 
       // 过滤出属于该用户的记录
       const userSessions = sessions.data.filter(
-        session => session.metadata?.userId === userId && session.payment_status === 'paid'
+        session => session.metadata?.userId === userId && session.status === 'complete'
       );
 
       return userSessions.map(session => ({
         sessionId: session.id,
         tierId: session.metadata.tierId,
-        credits: parseInt(session.metadata.credits, 10),
+        subscriptionId: session.subscription,
         amount: session.amount_total,
         currency: session.currency,
-        paymentStatus: session.payment_status,
+        status: session.status,
         createdAt: new Date(session.created * 1000),
       }));
     } catch (error) {
