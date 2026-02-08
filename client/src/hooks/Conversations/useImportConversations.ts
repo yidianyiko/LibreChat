@@ -92,21 +92,20 @@ export function useImportConversations() {
   const handleFileUpload = useCallback(
     async (file: File) => {
       try {
-        const startupConfig = queryClient.getQueryData<TStartupConfig>([QueryKeys.startupConfig]);
-        const maxFileSize = startupConfig?.conversationImportMaxFileSize;
-        if (maxFileSize && file.size > maxFileSize) {
-          const size = (maxFileSize / (1024 * 1024)).toFixed(2);
-          showToast({
-            message: localize('com_error_files_upload_too_large', { 0: size }),
-            status: NotificationSeverity.ERROR,
-          });
-          setIsUploading(false);
-          resetProgressState();
-          return;
-        }
-
         // For files under the chunk threshold, use the existing simple upload
         if (file.size < CHUNK_THRESHOLD) {
+          const startupConfig = queryClient.getQueryData<TStartupConfig>([QueryKeys.startupConfig]);
+          const maxFileSize = startupConfig?.conversationImportMaxFileSize;
+          if (maxFileSize && file.size > maxFileSize) {
+            const size = (maxFileSize / (1024 * 1024)).toFixed(2);
+            showToast({
+              message: localize('com_error_files_upload_too_large', { 0: size }),
+              status: NotificationSeverity.ERROR,
+            });
+            setIsUploading(false);
+            resetProgressState();
+            return;
+          }
           const formData = new FormData();
           formData.append('file', file, encodeURIComponent(file.name || 'File'));
           uploadFile.mutate(formData);

@@ -34,9 +34,9 @@ export default function ImportProgressModal({
     localize('com_ui_import_progress_saving'),
   ];
 
-  // Simulate progress
+  // Simulate progress (disabled during chunked upload — chunk-based useEffect handles it)
   useEffect(() => {
-    if (!open || isComplete || isError) {
+    if (!open || isComplete || isError || (currentChunk != null && totalChunks != null)) {
       return;
     }
 
@@ -69,7 +69,7 @@ export default function ImportProgressModal({
       clearInterval(progressInterval);
       clearInterval(messageInterval);
     };
-  }, [open, isComplete, isError, progressMessages.length]);
+  }, [open, isComplete, isError, currentChunk, totalChunks, progressMessages.length]);
 
   // Override simulated progress with chunk-based progress when chunked upload is active
   useEffect(() => {
