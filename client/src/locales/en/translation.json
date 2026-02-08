@@ -1047,6 +1047,8 @@
   "com_ui_import_progress_reading": "Reading file...",
   "com_ui_import_progress_saving": "Saving to database...",
   "com_ui_importing": "Importing",
+  "com_ui_import_chunk_progress": "Uploading batch {{current}} of {{total}}...",
+  "com_ui_import_chunk_parsing": "Splitting large file into batches...",
   "com_ui_include_shadcnui": "Include shadcn/ui components instructions",
   "com_ui_initializing": "Initializing...",
   "com_ui_input": "Input",

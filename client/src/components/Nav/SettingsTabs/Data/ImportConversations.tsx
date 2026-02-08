@@ -9,6 +9,8 @@ import { NotificationSeverity } from '~/common';
 import { useLocalize } from '~/hooks';
 import { cn, logger } from '~/utils';
 
+const CHUNK_THRESHOLD = 90 * 1024 * 1024; // 90MB
+
 function ImportConversations() {
   const localize = useLocalize();
   const queryClient = useQueryClient();
@@ -19,12 +21,16 @@ function ImportConversations() {
   const [fileName, setFileName] = useState('');
   const [isComplete, setIsComplete] = useState(false);
   const [isError, setIsError] = useState(false);
+  const [currentChunk, setCurrentChunk] = useState<number | undefined>(undefined);
+  const [totalChunks, setTotalChunks] = useState<number | undefined>(undefined);
 
   const resetProgressState = useCallback(() => {
     setShowProgressModal(false);
     setFileName('');
     setIsComplete(false);
     setIsError(false);
+    setCurrentChunk(undefined);
+    setTotalChunks(undefined);
   }, []);
 
   const handleSuccess = useCallback(
@@ -71,6 +77,20 @@ function ImportConversations() {
     onMutate: () => setIsUploading(true),
   });
 
+  const uploadSingleFile = useCallback(
+    (blob: Blob, name: string): Promise<void> => {
+      return new Promise((resolve, reject) => {
+        const formData = new FormData();
+        formData.append('file', blob, encodeURIComponent(name));
+        uploadFile.mutate(formData, {
+          onSuccess: () => resolve(),
+          onError: (err) => reject(err),
+        });
+      });
+    },
+    [uploadFile],
+  );
+
   const handleFileUpload = useCallback(
     async (file: File) => {
       try {
@@ -87,9 +107,69 @@ function ImportConversations() {
           return;
         }
 
-        const formData = new FormData();
-        formData.append('file', file, encodeURIComponent(file.name || 'File'));
-        uploadFile.mutate(formData);
+        // For files under the chunk threshold, use the existing simple upload
+        if (file.size < CHUNK_THRESHOLD) {
+          const formData = new FormData();
+          formData.append('file', file, encodeURIComponent(file.name || 'File'));
+          uploadFile.mutate(formData);
+          return;
+        }
+
+        // Large file: read, parse, and potentially chunk
+        const text = await file.text();
+        let parsed: unknown;
+        try {
+          parsed = JSON.parse(text);
+        } catch {
+          // Not valid JSON - let the server handle the error via normal upload
+          const formData = new FormData();
+          formData.append('file', file, encodeURIComponent(file.name || 'File'));
+          uploadFile.mutate(formData);
+          return;
+        }
+
+        if (!Array.isArray(parsed)) {
+          // Not an array - upload as-is and let the server handle it
+          const formData = new FormData();
+          formData.append('file', file, encodeURIComponent(file.name || 'File'));
+          uploadFile.mutate(formData);
+          return;
+        }
+
+        // Dynamic import of the chunker utility
+        const { splitJsonArrayIntoChunks } = await import('~/utils/importChunker');
+        const chunks = splitJsonArrayIntoChunks(parsed, CHUNK_THRESHOLD);
+
+        if (chunks.length <= 1) {
+          // Only one chunk needed - upload normally
+          const formData = new FormData();
+          formData.append('file', file, encodeURIComponent(file.name || 'File'));
+          uploadFile.mutate(formData);
+          return;
+        }
+
+        // Multiple chunks: upload sequentially
+        setTotalChunks(chunks.length);
+        setIsUploading(true);
+
+        for (let i = 0; i < chunks.length; i++) {
+          setCurrentChunk(i + 1);
+          const chunkJson = JSON.stringify(chunks[i]);
+          const blob = new Blob([chunkJson], { type: 'application/json' });
+          const chunkName = `${file.name || 'File'}_part${i + 1}of${chunks.length}.json`;
+
+          await uploadSingleFile(blob, chunkName);
+        }
+
+        // All chunks uploaded successfully
+        queryClient.invalidateQueries([QueryKeys.allConversations]);
+        setIsComplete(true);
+        setIsUploading(false);
+
+        showToast({
+          message: localize('com_ui_import_conversation_success'),
+          status: NotificationSeverity.SUCCESS,
+        });
       } catch (error) {
         logger.error('File processing error:', error);
         setIsUploading(false);
@@ -100,7 +180,7 @@ function ImportConversations() {
         });
       }
     },
-    [uploadFile, showToast, localize, queryClient, resetProgressState],
+    [uploadFile, uploadSingleFile, showToast, localize, queryClient, resetProgressState],
   );
 
   const handleFileChange = useCallback(
@@ -172,6 +252,8 @@ function ImportConversations() {
         isComplete={isComplete}
         isError={isError}
         onClose={resetProgressState}
+        currentChunk={currentChunk}
+        totalChunks={totalChunks}
       />
     </div>
   );

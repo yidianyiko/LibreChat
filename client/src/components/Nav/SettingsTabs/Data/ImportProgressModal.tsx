@@ -10,6 +10,8 @@ interface ImportProgressModalProps {
   isComplete: boolean;
   isError: boolean;
   onClose: () => void;
+  currentChunk?: number;
+  totalChunks?: number;
 }
 
 export default function ImportProgressModal({
@@ -18,6 +20,8 @@ export default function ImportProgressModal({
   isComplete,
   isError,
   onClose,
+  currentChunk,
+  totalChunks,
 }: ImportProgressModalProps) {
   const localize = useLocalize();
   const [progress, setProgress] = useState(0);
@@ -67,6 +71,16 @@ export default function ImportProgressModal({
     };
   }, [open, isComplete, isError, progressMessages.length]);
 
+  // Override simulated progress with chunk-based progress when chunked upload is active
+  useEffect(() => {
+    if (currentChunk != null && totalChunks != null && totalChunks > 0) {
+      const chunkWeight = 100 / totalChunks;
+      const completedChunksProgress = (currentChunk - 1) * chunkWeight;
+      const intraChunkTarget = chunkWeight * 0.9;
+      setProgress(completedChunksProgress + intraChunkTarget);
+    }
+  }, [currentChunk, totalChunks]);
+
   // Complete the progress when done
   useEffect(() => {
     if (isComplete && !isError) {
@@ -102,6 +116,16 @@ export default function ImportProgressModal({
             <FileText className="h-6 w-6" />
             <span className="max-w-[200px] truncate text-sm font-medium">{fileName}</span>
           </div>
+
+          {/* Chunk progress indicator */}
+          {totalChunks != null && totalChunks > 1 && currentChunk != null && (
+            <span className="text-xs text-gray-500 dark:text-gray-400">
+              {localize('com_ui_import_chunk_progress', {
+                current: String(currentChunk),
+                total: String(totalChunks),
+              })}
+            </span>
+          )}
 
           {/* Progress bar */}
           <div className="w-full">
