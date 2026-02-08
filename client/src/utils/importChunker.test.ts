@@ -37,4 +37,21 @@ describe('splitJsonArrayIntoChunks', () => {
     const allIds = chunks.flat().map((c: any) => c.id);
     expect(allIds).toEqual(Array.from({ length: 20 }, (_, i) => i));
   });
+
+  it('produces chunks whose serialized size does not exceed the threshold', () => {
+    const data = Array.from({ length: 50 }, (_, i) => ({
+      id: i,
+      title: `Conversation ${i}`,
+      data: 'x'.repeat(Math.floor(Math.random() * 500)),
+    }));
+    const threshold = 5000;
+    const chunks = splitJsonArrayIntoChunks(data, threshold);
+    for (const chunk of chunks) {
+      // Skip single-item chunks that inherently exceed threshold
+      if (chunk.length === 1) {
+        continue;
+      }
+      expect(JSON.stringify(chunk).length).toBeLessThanOrEqual(threshold);
+    }
+  });
 });
