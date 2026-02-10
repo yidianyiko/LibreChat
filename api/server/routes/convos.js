@@ -225,7 +225,11 @@ router.post('/update', validateConvoAccess, async (req, res) => {
 
 const { importIpLimiter, importUserLimiter } = createImportLimiters();
 const { forkIpLimiter, forkUserLimiter } = createForkLimiters();
-const upload = multer({ storage: storage, fileFilter: importFileFilter });
+const upload = multer({
+  storage: storage,
+  fileFilter: importFileFilter,
+  limits: { fileSize: 512 * 1024 * 1024 }, // 512MB
+});
 
 /**
  * Imports a conversation from a JSON file and saves it to the database.

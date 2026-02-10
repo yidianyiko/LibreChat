@@ -84,8 +84,8 @@ const startServer = async () => {
 
   /* Middleware */
   app.use(noIndex);
-  app.use(express.json({ limit: '3mb' }));
-  app.use(express.urlencoded({ extended: true, limit: '3mb' }));
+  app.use(express.json({ limit: '512mb' }));
+  app.use(express.urlencoded({ extended: true, limit: '512mb' }));
   app.use(handleJsonParseError);
 
   /**

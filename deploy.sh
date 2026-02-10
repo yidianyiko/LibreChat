@@ -13,6 +13,7 @@
 # 使用：
 #   ./deploy.sh                          # 交互式部署
 #   ./deploy.sh --server 54.64.181.104    # 指定服务器 IP
+#   ./deploy.sh --no-cache               # 强制重新构建（忽略 Docker 缓存）
 #   ./deploy.sh --init-only              # 仅初始化远程目录，不构建
 #   ./deploy.sh --rollback                # 回滚到上一版本
 ################################################################################
@@ -41,6 +42,7 @@ ROLLBACK_IMAGE_FILE="${DEPLOY_DIR}/rollback_image.txt"
 
 # 标志变量
 INIT_ONLY=false
+NO_CACHE=true  # 默认强制重新构建，避免 Docker 缓存问题
 
 # 日志函数
 log_info() {
@@ -248,6 +250,13 @@ EOF
         log_warning "本地 librechat.yaml 不存在，跳过同步"
     fi
 
+    if [ -f "client/nginx.conf" ]; then
+        scp client/nginx.conf "${SERVER_HOST}:${PROJECT_DIR}/client/nginx.conf"
+        log_success "已同步 nginx.conf"
+    else
+        log_warning "本地 client/nginx.conf 不存在，跳过同步"
+    fi
+
     log_success "配置文件传输完成"
 }
 
@@ -274,9 +283,17 @@ EOF
 # 构建 Docker 镜像
 build_image() {
     log_info "开始构建 Docker 镜像: ${IMAGE_TAG}"
+
+    # 构建选项
+    local BUILD_OPTS="-f Dockerfile.multi --target api-build"
+    if [ "${NO_CACHE}" = "true" ]; then
+        log_warning "使用 --no-cache 强制重新构建所有层"
+        BUILD_OPTS="${BUILD_OPTS} --no-cache"
+    fi
+
     log_info "这可能需要几分钟..."
 
-    if docker build -f Dockerfile.multi --target api-build -t "${IMAGE_TAG}" .; then
+    if docker build ${BUILD_OPTS} -t "${IMAGE_TAG}" .; then
         log_success "镜像构建成功"
     else
         log_error "镜像构建失败"
@@ -315,19 +332,36 @@ transfer_image() {
 load_image_on_server() {
     log_info "在服务器上加载镜像..."
 
-    ssh "${SERVER_HOST}" bash -s -- "${TIMESTAMP}" "${IMAGE_NAME}" "${PROJECT_DIR}" << 'EOF'
+    # 使用 -T 禁用伪终端分配，避免 sudo 挂起
+    ssh -T "${SERVER_HOST}" bash << EOF
         set -e
-        TIMESTAMP=$1
-        IMAGE_NAME=$2
-        PROJECT_DIR=$3
-        TARBALL="/tmp/${IMAGE_NAME}-${TIMESTAMP}.tar.gz"
-        IMAGE_TAG="${IMAGE_NAME}:${TIMESTAMP}"
+        TIMESTAMP="${TIMESTAMP}"
+        IMAGE_NAME="${IMAGE_NAME}"
+        PROJECT_DIR="${PROJECT_DIR}"
+        TARBALL="/tmp/\${IMAGE_NAME}-\${TIMESTAMP}.tar.gz"
+        IMAGE_TAG="\${IMAGE_NAME}:\${TIMESTAMP}"
 
-        echo "加载镜像: ${IMAGE_TAG}"
-        sudo docker load < "${TARBALL}"
+        echo "加载镜像: \${IMAGE_TAG}"
+
+        # 加载镜像并显示结果
+        if sudo docker load < "\${TARBALL}" 2>&1; then
+            echo "Docker load 命令执行成功"
+        else
+            echo "Docker load 命令失败"
+            exit 1
+        fi
+
+        # 验证镜像是否存在
+        if sudo docker images --format "{{.Repository}}:{{.Tag}}" | grep -q "^\${IMAGE_TAG}\$"; then
+            echo "镜像验证成功: \${IMAGE_TAG}"
+        else
+            echo "警告: 镜像验证失败"
+            exit 1
+        fi
 
         # 清理远程 tarball
-        rm -f "${TARBALL}"
+        rm -f "\${TARBALL}"
+        echo "清理完成"
 
         echo "镜像加载成功"
 EOF
@@ -546,6 +580,14 @@ while [[ $# -gt 0 ]]; do
             INIT_ONLY=true
             shift
             ;;
+        --no-cache)
+            NO_CACHE=true
+            shift
+            ;;
+        --use-cache)
+            NO_CACHE=false
+            shift
+            ;;
         --rollback|-r)
             ROLLBACK=true
             shift
@@ -558,6 +600,7 @@ while [[ $# -gt 0 ]]; do
             echo "  --server, -s <IP>    服务器 IP 地址 (默认: 54.64.181.104)"
             echo "  --user, -u <USER>    SSH 用户名 (默认: ubuntu)"
             echo "  --init-only          仅初始化远程目录，不构建镜像"
+            echo "  --no-cache           强制重新构建所有 Docker 层（忽略缓存）"
             echo "  --rollback, -r       回滚到上一版本"
             echo "  --help, -h           显示此帮助"
             echo ""
@@ -567,6 +610,7 @@ while [[ $# -gt 0 ]]; do
             echo ""
             echo "示例:"
             echo "  $0                           # 完整部署流程"
+            echo "  $0 --no-cache                # 强制重新构建并部署"
             echo "  $0 --init-only               # 仅初始化目录"
             echo "  $0 --server 1.2.3.4          # 指定服务器"
             echo "  $0 --rollback                # 回滚版本"
