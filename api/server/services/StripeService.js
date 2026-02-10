@@ -1,35 +1,32 @@
 const Stripe = require('stripe');
 const { logger } = require('~/config');
 
-// Stripe 订阅价格配置
-// 月度订阅套餐：Explorer / Artisan / Elite
-// credits 字段定义每个订阅层级对应的月度积分
+// Stripe 一次性充值价格配置
+// 充值套餐：Explorer / Artisan / Elite
+// credits 字段定义每个套餐对应的单次充值积分
 const PRICING_TIERS = [
   {
     id: 'explorer',
     name: 'Explorer',
     description: 'The Minimalist Alternative - 150 Premium GPT-4o msgs, 2,000 Base 4o-mini msgs',
-    price: 499, // $4.99/mo (单位：美分)
+    price: 499, // $4.99 (单位：美分)
     credits: 5000000, // 500万积分
   },
   {
     id: 'artisan',
     name: 'Artisan',
     description: 'The Creator\'s Safe Haven - 700 Premium GPT-4o msgs, 15,000 Base 4o-mini msgs',
-    price: 1499, // $14.99/mo
+    price: 1499, // $14.99
     credits: 15000000, // 1500万积分
   },
   {
     id: 'elite',
     name: 'Elite',
     description: 'The Power Productivity Hub - 2,000 Premium GPT-4o msgs, Unlimited Base 4o-mini msgs',
-    price: 3499, // $34.99/mo
+    price: 3499, // $34.99
     credits: 35000000, // 3500万积分
   },
 ];
-
-// 用于存储已处理的 session IDs，防止重复处理
-const processedSessions = new Set();
 
 class StripeService {
   constructor() {
@@ -106,14 +103,11 @@ class StripeService {
                 description: pricingTier.description,
               },
               unit_amount: pricingTier.price,
-              recurring: {
-                interval: 'month',
-              },
             },
             quantity: 1,
           },
         ],
-        mode: 'subscription',
+        mode: 'payment',
         success_url: successUrl,
         cancel_url: cancelUrl,
         customer_email: userEmail,
@@ -157,7 +151,7 @@ class StripeService {
   }
 
   /**
-   * 处理订阅成功事件
+   * 处理支付成功事件
    * @param {object} session - Stripe Checkout Session 对象
    * @returns {object} 包含验证后的支付信息和计算的积分
    * @throws {Error} 如果验证失败
@@ -195,12 +189,6 @@ class StripeService {
       throw new Error(`Payment not completed: status is ${session.payment_status}`);
     }
 
-    // 4. 幂等性检查 - 防止同一 session 被处理多次
-    if (processedSessions.has(session.id)) {
-      logger.warn('[StripeService] Session already processed (in-memory cache):', session.id);
-      throw new Error(`Session ${session.id} has already been processed`);
-    }
-
     // 5. 验证支付金额是否匹配定价（防止价格篡改）
     const expectedAmount = pricingTier.price;
     // 注意：对于订阅，amount_total 可能包含税费等，我们检查是否 >= 预期价格
@@ -213,22 +201,10 @@ class StripeService {
       throw new Error('Payment amount does not match expected price');
     }
 
-    // 6. 标记 session 为已处理
-    processedSessions.add(session.id);
-
-    // 7. 定期清理过期的 session ID（防止内存泄漏）
-    // 保留最近 1000 条记录
-    if (processedSessions.size > 1000) {
-      const iterator = processedSessions.values();
-      for (let i = 0; i < 100; i++) {
-        processedSessions.delete(iterator.next().value);
-      }
-    }
-
-    // 8. 从服务端配置计算积分（不信任 metadata 中的 credits）
+    // 6. 从服务端配置计算积分（不信任 metadata 中的 credits）
     const credits = pricingTier.credits;
 
-    logger.info(`[StripeService] Subscription validated successfully:`, {
+    logger.info(`[StripeService] Payment validated successfully:`, {
       sessionId: session.id,
       userId,
       tierId,
@@ -248,7 +224,7 @@ class StripeService {
   }
 
   /**
-   * 获取订阅记录（从 Stripe）
+   * 获取支付记录（从 Stripe）
    * @param {string} userId - 用户 ID
    * @param {number} limit - 返回记录数量
    */
