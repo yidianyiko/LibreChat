@@ -200,11 +200,34 @@ export function useImportConversations() {
     fileInputRef.current?.click();
   }, []);
 
+  /** Start import with a File (e.g. from custom dialog). Validates JSON and triggers upload. */
+  const startImport = useCallback(
+    (file: File) => {
+      const isJson =
+        file.name.toLowerCase().endsWith('.json') || file.type === 'application/json';
+      if (!isJson) {
+        showToast({
+          message: localize('com_ui_import_conversation_file_type_error'),
+          status: NotificationSeverity.ERROR,
+        });
+        return;
+      }
+      setFileName(file.name);
+      setShowProgressModal(true);
+      setIsUploading(true);
+      setIsComplete(false);
+      setIsError(false);
+      handleFileUpload(file);
+    },
+    [handleFileUpload, localize, showToast],
+  );
+
   return {
     fileInputRef,
     isUploading,
     handleFileChange,
     handleImportClick,
+    startImport,
     // Modal state
     showProgressModal,
     fileName,

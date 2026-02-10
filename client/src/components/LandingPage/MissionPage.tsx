@@ -117,40 +117,31 @@ const MissionPage: React.FC = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-[#faf9f7] text-gray-900 font-sans selection:bg-[#10a37f]/20 antialiased overflow-x-hidden">
-      {/* Navigation */}
-      <nav className={`fixed top-0 w-full z-[100] transition-all duration-300 ${scrolled ? 'py-3 bg-white/95 backdrop-blur-md border-b border-gray-100 shadow-sm' : 'py-5 bg-transparent'}`}>
-        <div className="max-w-7xl mx-auto px-6 flex justify-between items-center">
-          {/* Logo */}
+    <div className="min-h-screen bg-[#fcfcf9] text-[#111827] font-sans selection:bg-[#10a37f]/10 antialiased overflow-x-hidden">
+      {/* Nav - Gemini style: py-4 when scrolled, py-8 transparent */}
+      <nav className={`fixed top-0 w-full z-[100] transition-all duration-500 ${scrolled ? 'py-4 bg-white/90 backdrop-blur-md border-b border-gray-100 shadow-sm' : 'py-8 bg-transparent'}`}>
+        <div className="max-w-7xl mx-auto px-6 md:px-10 flex justify-between items-center">
           <Link to="/" className="flex items-center space-x-3 cursor-pointer group">
-            <div className="w-10 h-10 bg-gray-900 text-white rounded-full flex items-center justify-center font-bold text-sm shadow-sm group-hover:scale-105 transition-transform">
+            <div className="w-10 h-10 bg-black text-white rounded-2xl flex items-center justify-center shadow-sm group-hover:bg-[#10a37f] group-hover:text-white transition-all">
               <Sparkles size={18} />
             </div>
-            <span className="text-base font-bold tracking-[0.2em] text-gray-900 uppercase">KEEP4OFOREVER</span>
+            <span className="text-sm font-black tracking-[0.3em] uppercase text-gray-900">keep4oforever</span>
           </Link>
-          {/* Nav Items */}
-          <div className="hidden md:flex items-center space-x-8">
-            <Link 
-              to="/"
-              className="text-xs font-bold tracking-wider text-gray-500 hover:text-gray-900 transition-colors"
-            >
+          <div className="hidden md:flex items-center space-x-8 md:space-x-10">
+            <Link to="/" className="text-[10px] uppercase tracking-[0.2em] font-bold text-gray-400 hover:text-black">
               {t.nav.home}
             </Link>
-            <Link 
-              to="/#pricing"
-              className="text-xs font-bold tracking-wider text-gray-500 hover:text-gray-900 transition-colors"
-            >
+            <a href="/#pricing" className="text-[10px] uppercase tracking-[0.2em] font-bold text-gray-400 hover:text-black">
               {t.nav.pricing}
-            </Link>
-            <span 
-              className="text-xs font-bold tracking-wider text-gray-900 border-b-2 border-gray-900 pb-1"
-            >
+            </a>
+            <span className="text-[10px] uppercase tracking-[0.2em] font-bold text-black underline underline-offset-4">
               {t.nav.mission}
             </span>
             <LanguageSwitcher currentLang={lang} onLangChange={setLang} />
-            <button 
-              onClick={() => navigate('/login')} 
-              className="px-6 py-2.5 bg-gray-900 text-white text-xs font-bold tracking-wider rounded-full hover:bg-gray-800 transition-all active:scale-95"
+            <button
+              type="button"
+              onClick={() => navigate('/login')}
+              className="px-6 md:px-8 py-3 bg-black text-white text-[10px] font-bold uppercase tracking-[0.2em] rounded-full hover:bg-[#10a37f] transition-all shadow-xl"
             >
               {t.nav.login}
             </button>
@@ -158,43 +149,40 @@ const MissionPage: React.FC = () => {
         </div>
       </nav>
 
-      {/* Mission Content */}
-      <section className="pt-32 pb-24 px-6">
-        <div className="max-w-4xl mx-auto">
-          {/* Title */}
-          <h1 className="text-5xl md:text-6xl font-black tracking-tight mb-4 text-gray-900 italic">
-            {t.missionPage.title}
-          </h1>
-          <div className="w-20 h-1 bg-[#10a37f] mb-16"></div>
+      {/* Mission Content - Gemini layout: title, green bar, three items, return home */}
+      <section className="pt-40 md:pt-48 pb-24 md:pb-32 px-6 md:px-10 max-w-4xl mx-auto text-left">
+        <h1 className="text-5xl md:text-6xl font-black mb-8 text-gray-900" style={{ letterSpacing: '-0.04em' }}>
+          {t.missionPage.title}
+        </h1>
+        <div className="h-1 w-20 bg-[#10a37f] rounded-full mb-20" />
 
-          {/* Mission Items */}
-          <div className="space-y-16">
-            {missionItems.map((item, idx) => (
-              <div key={idx} className="flex items-start space-x-6">
-                <div className="flex-shrink-0 w-10 h-10 flex items-center justify-center text-[#10a37f]">
-                  <item.icon size={28} strokeWidth={1.5} />
-                </div>
+        <div className="space-y-20 text-lg text-gray-600 font-medium leading-relaxed">
+          {missionItems.map((item, idx) => {
+            const IconComp = item.icon;
+            return (
+              <div key={idx} className="flex items-start space-x-6 text-left">
+                <IconComp
+                  className={`mt-1 flex-shrink-0 ${idx === 1 ? 'text-[#10a37f]' : 'text-black'}`}
+                  size={24}
+                />
                 <div>
-                  <h2 className="text-2xl font-black text-gray-900 mb-2">
+                  <h2 className="text-2xl font-black text-gray-900 mb-4 tracking-tight text-left">
                     {item.title}
                   </h2>
-                  <p className="text-gray-500 text-lg leading-relaxed">
-                    {item.desc}
-                  </p>
+                  <p className="text-left">{item.desc}</p>
                 </div>
               </div>
-            ))}
-          </div>
+            );
+          })}
+        </div>
 
-          {/* Return Home Link */}
-          <div className="mt-20">
-            <Link 
-              to="/"
-              className="text-xs font-bold tracking-wider text-gray-400 hover:text-gray-600 transition-colors uppercase"
-            >
-              {t.missionPage.returnHome}
-            </Link>
-          </div>
+        <div className="mt-20">
+          <Link
+            to="/"
+            className="flex items-center space-x-2 text-gray-400 hover:text-black transition-colors font-bold uppercase text-xs tracking-widest"
+          >
+            <span>{t.missionPage.returnHome}</span>
+          </Link>
         </div>
       </section>
     </div>

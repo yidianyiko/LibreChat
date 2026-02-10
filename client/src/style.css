@@ -2,6 +2,14 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Landing page (Gemini-style) - optional use */
+:root {
+  --brand-green: #10a37f;
+  --bg-warm: #fcfcf9;
+  --text-main: #111827;
+  --text-muted: #6b7280;
+}
+
 /* Custom Variables */
 :root {
   --white: #fff;
@@ -2671,6 +2679,22 @@ html {
 .account-settings-popover .select-item[data-active-item] {
   box-shadow: 0 0 0 2px hsl(var(--ring));
 }
+
+/* Sidebar account popover: vertical spacing and icon alignment */
+.account-settings-popover .account-settings-actions {
+  gap: 0.25rem;
+}
+.account-settings-popover .account-settings-item {
+  padding: 0.5rem 0.75rem;
+  min-height: 2.25rem;
+  align-items: center;
+}
+.account-settings-popover .account-settings-item .icon-md {
+  flex-shrink: 0;
+  width: 1.125rem;
+  height: 1.125rem;
+}
+
 
 .popover-ui[data-enter] {
   opacity: 1;

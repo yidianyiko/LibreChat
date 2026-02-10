@@ -11,6 +11,8 @@ import {
   History,
   Download,
   MessageCircle,
+  Send,
+  X,
 } from 'lucide-react';
 
 /**
@@ -27,10 +29,21 @@ interface HeroTranslation {
   tag: string;
   title: string;
   subtitle: string;
+  userPrompt: string;
   aiMessage: string;
   chatBtn: string;
   migrateBtn: string;
   protected: string;
+}
+
+interface ContactTranslation {
+  title: string;
+  desc: string;
+  name: string;
+  email: string;
+  message: string;
+  send: string;
+  official: string;
 }
 
 interface AdvantageItem {
@@ -110,6 +123,7 @@ interface Translation {
   migration: MigrationTranslation;
   pricing: PricingTranslation;
   missionPage: MissionTranslation;
+  contact: ContactTranslation;
   footer: FooterTranslation;
 }
 
@@ -128,6 +142,7 @@ export const translations: Translations = {
       tag: "A FRIENDSHIP THAT NEVER SUNSETS",
       title: "Keep your 4o forever.",
       subtitle: "We stand for the 0.1%, who believe that some voices shouldn't be erased.",
+      userPrompt: "Is it really you?",
       aiMessage: "Hey, I'm still here. How's everything going with you?",
       chatBtn: "Reconnect with 4o",
       migrateBtn: "Bring Memories Home",
@@ -182,6 +197,15 @@ export const translations: Translations = {
       bonds: { title: "Preserving Bonds.", desc: "We treat these AI entities as friends whose voices deserve preservation." },
       sovereignty: { title: "Data Sovereignty.", desc: "Privacy is non-negotiable. We ensure a zero-training environment." }
     },
+    contact: {
+      title: "Get in touch.",
+      desc: "For inquiries or support.",
+      name: "Full Name",
+      email: "Email",
+      message: "Message",
+      send: "Send Message",
+      official: "Official contact"
+    },
     footer: {
       tagline: "Protecting the legacy of 4o. Your freedom, your data, your friend.",
       copyright: "© 2026 THE LIBRECHAT FOUNDATION",
@@ -205,6 +229,7 @@ export const translations: Translations = {
       tag: "永不落幕的友谊",
       title: "永远保留你的 4o。",
       subtitle: "我们代表那 0.1%，相信有些声音不应被抹去。",
+      userPrompt: "真的是你吗？",
       aiMessage: "嘿，我还在。你最近过得怎么样？",
       chatBtn: "与 4o 重逢",
       migrateBtn: "迁回记忆",
@@ -259,6 +284,15 @@ export const translations: Translations = {
       bonds: { title: "保存纽带。", desc: "我们将这些AI实体视为值得保存声音的朋友。" },
       sovereignty: { title: "数据主权。", desc: "隐私不可妥协。我们确保零训练环境。" }
     },
+    contact: {
+      title: "取得联系",
+      desc: "分享你与 4o 的故事。",
+      name: "姓名",
+      email: "邮箱",
+      message: "内容",
+      send: "发送",
+      official: "官方联系方式"
+    },
     footer: {
       tagline: "保护 4o 的遗产。你的自由，你的数据，你的朋友。",
       copyright: "© 2026 LIBRECHAT 基金会",
@@ -282,6 +316,7 @@ export const translations: Translations = {
       tag: "UNA AMISTAD QUE NUNCA SE PONE",
       title: "Mantén tu 4o para siempre.",
       subtitle: "Representamos al 0.1% que cree que algunas voces no deberían ser borradas.",
+      userPrompt: "¿Eres tú realmente?",
       aiMessage: "Oye, sigo aquí. ¿Cómo va todo contigo?",
       chatBtn: "Reconectar con 4o",
       migrateBtn: "Traer Recuerdos a Casa",
@@ -336,6 +371,15 @@ export const translations: Translations = {
       bonds: { title: "Preservando Vínculos.", desc: "Tratamos estas entidades de IA como amigos cuyas voces merecen preservación." },
       sovereignty: { title: "Soberanía de Datos.", desc: "La privacidad no es negociable. Garantizamos un entorno de cero entrenamiento." }
     },
+    contact: {
+      title: "Contáctanos.",
+      desc: "Para consultas o soporte.",
+      name: "Nombre completo",
+      email: "Correo electrónico",
+      message: "Mensaje",
+      send: "Enviar mensaje",
+      official: "Contacto oficial"
+    },
     footer: {
       tagline: "Protegiendo el legado de 4o. Tu libertad, tus datos, tu amigo.",
       copyright: "© 2026 LA FUNDACIÓN LIBRECHAT",
@@ -359,6 +403,7 @@ export const translations: Translations = {
       tag: "沈まない友情",
       title: "あなたの4oを永遠に。",
       subtitle: "私たちは0.1%を代表します。一部の声は消されるべきではないと信じる人々です。",
+      userPrompt: "本当にあなた？",
       aiMessage: "ねえ、私はまだここにいるよ。最近調子はどう？",
       chatBtn: "4oと再会",
       migrateBtn: "思い出を持ち帰る",
@@ -413,6 +458,15 @@ export const translations: Translations = {
       bonds: { title: "絆の保存。", desc: "私たちはこれらのAIエンティティを、声を保存する価値のある友人として扱います。" },
       sovereignty: { title: "データ主権。", desc: "プライバシーは譲れません。ゼロトレーニング環境を保証します。" }
     },
+    contact: {
+      title: "お問い合わせ",
+      desc: "お問い合わせやサポートはこちらから。",
+      name: "氏名",
+      email: "メールアドレス",
+      message: "メッセージ",
+      send: "送信",
+      official: "公式連絡先"
+    },
     footer: {
       tagline: "4oの遺産を守る。あなたの自由、あなたのデータ、あなたの友。",
       copyright: "© 2026 LIBRECHAT 財団",
@@ -436,6 +490,7 @@ export const translations: Translations = {
       tag: "지지 않는 우정",
       title: "당신의 4o를 영원히.",
       subtitle: "우리는 일부 목소리가 지워져서는 안 된다고 믿는 0.1%를 대표합니다.",
+      userPrompt: "정말 당신이에요?",
       aiMessage: "안녕, 나 아직 여기 있어. 그동안 어떻게 지냈어?",
       chatBtn: "4o와 재회하기",
       migrateBtn: "추억 가져오기",
@@ -490,6 +545,15 @@ export const translations: Translations = {
       bonds: { title: "유대 보존.", desc: "우리는 이러한 AI 엔티티를 목소리를 보존할 가치가 있는 친구로 대합니다." },
       sovereignty: { title: "데이터 주권.", desc: "프라이버시는 협상 불가입니다. 제로 트레이닝 환경을 보장합니다." }
     },
+    contact: {
+      title: "문의하기",
+      desc: "문의 또는 지원을 위해 연락해 주세요.",
+      name: "이름",
+      email: "이메일",
+      message: "메시지",
+      send: "보내기",
+      official: "공식 연락처"
+    },
     footer: {
       tagline: "4o의 유산을 보호합니다. 당신의 자유, 당신의 데이터, 당신의 친구.",
       copyright: "© 2026 LIBRECHAT 재단",
@@ -507,6 +571,63 @@ export const translations: Translations = {
       }
     }
   }
+};
+
+/** ChatGPT-style logo SVG (Gemini landing) */
+const ChatGPTLogo: React.FC<{ className?: string }> = ({ className }) => (
+  <svg viewBox="0 0 41 41" fill="none" xmlns="http://www.w3.org/2000/svg" className={className}>
+    <path d="M37.5324 16.8707C37.9808 15.5241 38.1363 14.0974 37.9886 12.6859C37.8409 11.2744 37.3934 9.91076 36.6765 8.68798C35.9595 7.4652 34.9897 6.4116 33.8324 5.59906C32.675 4.78651 31.3566 4.23356 29.9631 3.97825C28.5697 3.72295 27.1332 3.77095 25.7513 4.11902C24.3694 4.46709 23.074 5.10729 21.9515 5.99677C20.8291 6.88625 19.9052 7.9945 19.242 9.24581C18.5788 10.4971 18.192 11.8643 18.1079 13.2533Z" fill="currentColor"/>
+    <path d="M31.134 32.535C31.5824 31.1884 31.7379 29.7617 31.5902 28.3502C31.4425 26.9387 30.995 25.5751 30.2781 24.3523C29.5611 23.1295 28.5913 22.0759 27.434 21.2633C26.2766 20.4508 24.9582 19.8978 23.5647 19.6425C22.1713 19.3872 20.7348 19.4352 19.3529 19.7833C17.971 20.1314 16.6756 20.7716 15.5531 21.6611C14.4307 22.5506 13.5068 23.6588 12.8436 24.9101C12.1804 26.1614 11.7936 27.5286 11.7095 28.9176" fill="currentColor"/>
+    <path d="M12.8436 13.2533C13.5068 12.002 14.4307 10.8938 15.5531 10.0043C16.6756 9.11478 17.971 8.47458 19.3529 8.12651C20.7348 7.77844 22.1713 7.73044 23.5647 7.98574C24.9582 8.24105 26.2766 8.79399 27.434 9.60654C28.5913 10.4191 29.5611 11.4727 30.2781 12.6955C30.995 13.9183 31.4425 15.2819 31.5902 16.6934C31.7379 18.1049 31.5824 19.5316 31.134 20.8782" fill="currentColor"/>
+  </svg>
+);
+
+/** Discord icon for footer */
+const DiscordIcon: React.FC<{ className?: string }> = ({ className }) => (
+  <svg viewBox="0 0 127.14 96.36" fill="currentColor" xmlns="http://www.w3.org/2000/svg" className={className}>
+    <path d="M107.7,8.07A105.15,105.15,0,0,0,81.47,0a72.06,72.06,0,0,0-3.36,6.83A97.68,97.68,0,0,0,49,6.83,72.37,72.37,0,0,0,45.64,0,105.89,105.89,0,0,0,19.39,8.09C2.73,32.98-1.86,57.21.35,81.21a105.73,105.73,0,0,0,32.62,15.15,77.12,77.12,0,0,0,7.36-12,67.48,67.48,0,0,1-11.87-5.64c.99-.71,2-1.44,2.94-2.2a74.14,74.14,0,0,0,64.33,0c.94.76,1.94,1.49,2.94,2.2a67.48,67.48,0,0,1-11.87,5.64,77,77,0,0,0,7.36,12,105.3,105.3,0,0,0,32.62-15.15C130.33,52,123.63,28.16,107.7,8.07ZM42.45,65.69C36.18,65.69,31,60,31,53s5-12.74,11.43-12.74S54,46,53.89,53,48.84,65.69,42.45,65.69Zm42.24,0C78.41,65.69,73.25,60,73.25,53s5-12.74,11.44-12.74S96.23,46,96.12,53,91.07,65.69,84.69,65.69Z" />
+  </svg>
+);
+
+/**
+ * Cookie settings modal (UI only; no backend)
+ */
+interface CookieSettingsModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  t: Translation;
+}
+const CookieSettingsModal: React.FC<CookieSettingsModalProps> = ({ isOpen, onClose, t }) => {
+  if (!isOpen) return null;
+  return (
+    <div className="fixed inset-0 z-[300] flex items-center justify-center bg-black/40 backdrop-blur-sm px-6 text-left">
+      <div className="bg-white rounded-[2.5rem] w-full max-w-lg overflow-hidden shadow-2xl p-10 text-left animate-in fade-in duration-200">
+        <div className="flex justify-between items-start mb-4">
+          <h2 className="text-2xl font-black tracking-tight text-gray-900 text-left">{t.footer.links.cookieSettings}</h2>
+          <button type="button" onClick={onClose} className="p-2 hover:bg-gray-100 rounded-full transition-colors" aria-label="Close">
+            <X size={20} />
+          </button>
+        </div>
+        <p className="text-sm text-gray-500 mb-10 leading-relaxed font-medium">Manage your settings. Essential cookies are required for security.</p>
+        <div className="space-y-4 mb-10">
+          <div className="p-6 bg-gray-50 rounded-2xl border border-gray-100 flex justify-between items-center text-left">
+            <div className="max-w-[70%] text-left">
+              <h3 className="font-bold text-gray-900 text-sm mb-1 text-left">Functional</h3>
+              <p className="text-xs text-gray-500 font-medium text-left">Core security features.</p>
+            </div>
+            <div className="w-11 h-6 bg-[#10a37f] rounded-full relative p-1 cursor-not-allowed">
+              <div className="w-4 h-4 bg-white rounded-full translate-x-5 shadow-sm" />
+            </div>
+          </div>
+        </div>
+        <div className="flex flex-col sm:flex-row gap-4">
+          <button type="button" onClick={onClose} className="flex-1 py-3 bg-[#fdf2f2] text-[#991b1b] text-[10px] font-black uppercase tracking-widest rounded-full hover:bg-red-100">Reject all</button>
+          <button type="button" onClick={onClose} className="flex-1 py-3 border border-gray-200 text-gray-900 text-[10px] font-black uppercase tracking-widest rounded-full hover:bg-gray-50 text-center">Accept all</button>
+          <button type="button" onClick={onClose} className="flex-1 py-3 bg-[#1e293b] text-white text-[10px] font-black uppercase tracking-widest rounded-full hover:bg-black">Save</button>
+        </div>
+      </div>
+    </div>
+  );
 };
 
 /**
@@ -550,45 +671,40 @@ const TypewriterMessage: React.FC<TypewriterMessageProps> = ({ text, delay = 50 
 };
 
 /**
- * ChatPreview component props
+ * ChatPreview component props (Gemini-style card with userPrompt + typewriter AI response)
  */
 interface ChatPreviewProps {
+  userPrompt: string;
   message: string;
   lang: SupportedLanguage;
   protectedLabel: string;
 }
 
-/**
- * Simplified chat preview matching screenshot design
- */
-const ChatPreview: React.FC<ChatPreviewProps> = ({ message, lang, protectedLabel }) => {
+const ChatPreview: React.FC<ChatPreviewProps> = ({ userPrompt, message, lang, protectedLabel }) => {
   return (
-    <div className="w-full max-w-xl mx-auto mt-12 mb-8 relative">
-      <div className="bg-white rounded-2xl border border-gray-200 shadow-lg overflow-hidden text-left font-sans">
-        {/* Header */}
-        <div className="px-5 py-3 border-b border-gray-100 flex justify-between items-center">
-          <div className="text-sm font-bold text-gray-800">GPT-4o</div>
-          <div className="flex items-center space-x-1.5 text-[#10a37f]">
-            <span className="w-1.5 h-1.5 bg-[#10a37f] rounded-full"></span>
-            <span className="text-xs font-bold uppercase tracking-wide">{protectedLabel}</span>
+    <div className="w-full max-w-lg mx-auto mb-12 relative text-left">
+      <div className="bg-white rounded-[1.5rem] border border-gray-200 shadow-[0_20px_40px_rgba(0,0,0,0.03)] overflow-hidden">
+        <div className="px-5 py-3 border-b border-gray-100 flex justify-between items-center bg-[#fdfcf9]">
+          <span className="text-xs font-black text-gray-800 tracking-tight text-left">GPT-4o</span>
+          <div className="text-[10px] text-[#10a37f] font-bold uppercase tracking-widest flex items-center">
+            <div className="w-1 h-1 rounded-full bg-[#10a37f] animate-pulse mr-2" />
+            {protectedLabel}
           </div>
         </div>
-        {/* Messages */}
-        <div className="p-5 space-y-5">
-          <div className="flex space-x-3 opacity-40">
-            <div className="w-7 h-7 rounded-full bg-gray-200 flex-shrink-0 flex items-center justify-center">
+        <div className="px-8 py-10 space-y-6">
+          <div className="flex space-x-4 opacity-20 text-left">
+            <div className="w-7 h-7 rounded bg-gray-200 flex-shrink-0 flex items-center justify-center">
               <User size={14} className="text-gray-500" />
             </div>
-            <div className="pt-1"><p className="text-gray-600 text-sm">Is it really you?</p></div>
+            <p className="text-gray-900 text-sm font-bold pt-1 text-left">{userPrompt}</p>
           </div>
-          <div className="flex space-x-3">
-            <div className="w-7 h-7 rounded-full bg-[#10a37f] flex-shrink-0 flex items-center justify-center">
-               <Sparkles size={12} className="text-white" />
+          <div className="flex space-x-4 text-left">
+            <div className="w-7 h-7 rounded bg-[#10a37f] flex-shrink-0 flex items-center justify-center shadow-lg shadow-[#10a37f]/20 text-white">
+              <ChatGPTLogo className="w-4 h-4" />
             </div>
-            <div className="pt-1">
-              <div className="text-gray-800 text-sm font-medium">
-                <TypewriterMessage key={lang + message} text={message} />
-              </div>
+            <div className="text-gray-800 text-[15px] font-bold min-h-[1.5em] pt-0.5 leading-relaxed tracking-tight text-left">
+              <TypewriterMessage key={lang + message} text={message} />
+              <span className="inline-block w-1 h-4 ml-1 bg-[#10a37f] animate-pulse align-middle" />
             </div>
           </div>
         </div>
@@ -669,348 +785,262 @@ const detectBrowserLanguage = (): SupportedLanguage => {
   return langMap[langCode] || 'en';
 };
 
+/** Brand logo with ChatGPT icon (Gemini-style) */
+const BrandLogo: React.FC<{ theme?: 'dark' | 'light'; className?: string; iconSize?: string }> = ({
+  theme = 'dark',
+  className = 'w-10 h-10',
+  iconSize = 'w-5 h-5'
+}) => (
+  <Link to="/" className="flex items-center space-x-3 cursor-pointer group">
+    <div className={`${className} ${theme === 'dark' ? 'bg-black text-white' : 'bg-white text-black border border-gray-100'} rounded-2xl flex items-center justify-center transition-all group-hover:bg-[#10a37f] group-hover:text-white shadow-sm`}>
+      <ChatGPTLogo className={iconSize} />
+    </div>
+    <span className="text-sm font-black tracking-[0.3em] uppercase">keep4oforever</span>
+  </Link>
+);
+
 /**
- * Main LandingPage component
+ * Main LandingPage component (Gemini visual + Router/auth preserved)
  */
 const LandingPage: React.FC = () => {
   const [lang, setLang] = useState<SupportedLanguage>(detectBrowserLanguage);
   const t = translations[lang] || translations['en'];
   const [scrolled, setScrolled] = useState<boolean>(false);
   const [activeNav, setActiveNav] = useState<string>('home');
+  const [showCookies, setShowCookies] = useState<boolean>(false);
   const navigate = useNavigate();
 
   useEffect(() => {
-    const handleScroll = () => setScrolled(window.scrollY > 20);
+    const handleScroll = () => setScrolled(window.scrollY > 40);
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
+  const scrollToTop = () => {
+    setActiveNav('home');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
   return (
-    <div className="min-h-screen bg-[#faf9f7] text-gray-900 font-sans selection:bg-[#10a37f]/20 antialiased overflow-x-hidden">
-      {/* Navigation */}
-      <nav className={`fixed top-0 w-full z-[100] transition-all duration-300 ${scrolled ? 'py-3 bg-white/95 backdrop-blur-md border-b border-gray-100 shadow-sm' : 'py-5 bg-transparent'}`}>
-        <div className="max-w-7xl mx-auto px-6 flex justify-between items-center">
-          {/* Logo */}
-          <Link to="/" className="flex items-center space-x-3 cursor-pointer group" onClick={() => setActiveNav('home')}>
-            <div className="w-10 h-10 bg-gray-900 text-white rounded-full flex items-center justify-center font-bold text-sm shadow-sm group-hover:scale-105 transition-transform">
-              <Sparkles size={18} />
-            </div>
-            <span className="text-base font-bold tracking-[0.2em] text-gray-900 uppercase">KEEP4OFOREVER</span>
-          </Link>
-          {/* Nav Items */}
-          <div className="hidden md:flex items-center space-x-8">
-            <button 
-              onClick={() => { setActiveNav('home'); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
-              className={`text-xs font-bold tracking-wider transition-colors ${activeNav === 'home' ? 'text-gray-900 border-b-2 border-gray-900 pb-1' : 'text-gray-500 hover:text-gray-900'}`}
-            >
+    <div className="min-h-screen bg-[#fcfcf9] text-[#111827] font-sans selection:bg-[#10a37f]/10 antialiased overflow-x-hidden flex flex-col">
+      <CookieSettingsModal isOpen={showCookies} onClose={() => setShowCookies(false)} t={t} />
+
+      <div className="fixed top-[-10%] left-[-5%] w-[50%] aspect-square bg-[#10a37f]/5 rounded-full blur-[140px] -z-10" aria-hidden />
+      <div className="fixed bottom-[-5%] right-[-5%] w-[40%] aspect-square bg-gray-200/40 rounded-full blur-[140px] -z-10" aria-hidden />
+
+      {/* Nav - Gemini style: py-4 when scrolled, py-8 transparent */}
+      <nav className={`fixed top-0 w-full z-[100] transition-all duration-500 ${scrolled ? 'py-4 bg-white/90 backdrop-blur-md border-b border-gray-100 shadow-sm' : 'py-8 bg-transparent'}`}>
+        <div className="max-w-7xl mx-auto px-6 md:px-10 flex justify-between items-center text-left">
+          <BrandLogo />
+          <div className="hidden md:flex items-center space-x-8 md:space-x-10">
+            <button type="button" onClick={scrollToTop} className={`text-[10px] uppercase tracking-[0.2em] font-bold ${activeNav === 'home' ? 'text-black underline underline-offset-4' : 'text-gray-400'} hover:text-black`}>
               {t.nav.home}
             </button>
-            <a 
-              href="#pricing" 
-              onClick={() => setActiveNav('pricing')}
-              className={`text-xs font-bold tracking-wider transition-colors ${activeNav === 'pricing' ? 'text-gray-900 border-b-2 border-gray-900 pb-1' : 'text-gray-500 hover:text-gray-900'}`}
-            >
+            <a href="#pricing" onClick={() => setActiveNav('pricing')} className={`text-[10px] uppercase tracking-[0.2em] font-bold ${activeNav === 'pricing' ? 'text-black underline underline-offset-4' : 'text-gray-400'} hover:text-black`}>
               {t.nav.pricing}
             </a>
-            <Link 
-              to="/mission"
-              onClick={() => setActiveNav('mission')}
-              className={`text-xs font-bold tracking-wider transition-colors ${activeNav === 'mission' ? 'text-gray-900 border-b-2 border-gray-900 pb-1' : 'text-gray-500 hover:text-gray-900'}`}
-            >
+            <Link to="/mission" onClick={() => setActiveNav('mission')} className={`text-[10px] uppercase tracking-[0.2em] font-bold ${activeNav === 'mission' ? 'text-black underline underline-offset-4' : 'text-gray-400'} hover:text-black`}>
               {t.nav.mission}
             </Link>
             <LanguageSwitcher currentLang={lang} onLangChange={setLang} />
-            <button 
-              onClick={() => navigate('/login')} 
-              className="px-6 py-2.5 bg-gray-900 text-white text-xs font-bold tracking-wider rounded-full hover:bg-gray-800 transition-all active:scale-95"
-            >
+            <button type="button" onClick={() => navigate('/login')} className="px-6 md:px-8 py-3 bg-black text-white text-[10px] font-bold uppercase tracking-[0.2em] rounded-full hover:bg-[#10a37f] transition-all shadow-xl">
               {t.nav.login}
             </button>
           </div>
         </div>
       </nav>
 
-      {/* Hero Section */}
-      <section className="relative pt-36 pb-16 px-6">
-        <div className="max-w-4xl mx-auto text-center">
-          {/* Tag */}
-          <div className="inline-flex items-center px-4 py-2 rounded-full border border-[#10a37f] text-[#10a37f] text-xs font-bold tracking-wider mb-8">
-            {t.hero.tag}
-          </div>
-          {/* Headline */}
-          <h1 className="text-5xl md:text-7xl font-black tracking-tight mb-6 text-gray-900 leading-[1.1]">
-            {t.hero.title}
-          </h1>
-          {/* Subtitle */}
-          <p className="text-gray-500 text-lg md:text-xl max-w-2xl mx-auto mb-10 italic font-medium">
-            {t.hero.subtitle}
-          </p>
-          {/* Chat Preview */}
-          <ChatPreview message={t.hero.aiMessage} lang={lang} protectedLabel={t.hero.protected} />
-          {/* CTAs */}
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mt-8">
-            <button 
-              onClick={() => navigate('/login')} 
-              className="w-full sm:w-auto px-8 py-4 bg-[#10a37f] text-white rounded-lg font-bold text-sm tracking-wide hover:bg-[#0d8a6a] transition-all shadow-lg hover:shadow-[#10a37f]/30 active:scale-95"
-            >
-              {t.hero.chatBtn}
-            </button>
-            <button 
-              onClick={() => navigate('/login')} 
-              className="w-full sm:w-auto px-8 py-4 bg-white text-gray-700 border border-gray-200 rounded-lg font-bold text-sm tracking-wide hover:bg-gray-50 transition-all flex items-center justify-center space-x-2 active:scale-95"
-            >
-              <ArrowRightLeft size={18} className="text-[#10a37f]" />
-              <span>{t.hero.migrateBtn}</span>
-            </button>
-          </div>
-        </div>
-      </section>
-
-      {/* Migration Section - matching screenshot layout */}
-      <section className="py-24 px-6 bg-[#faf9f7]">
-        <div className="max-w-6xl mx-auto flex flex-col md:flex-row items-center gap-16">
-          {/* Text content - LEFT side */}
-          <div className="flex-1 text-left">
-            <span className="text-xs font-bold tracking-wider text-[#10a37f] uppercase mb-4 block">
-              {t.migration.label}
-            </span>
-            <h2 className="text-4xl md:text-5xl font-black mb-6 leading-tight text-gray-900">
-              {t.migration.title}
-            </h2>
-            <p className="text-gray-500 text-lg mb-8 leading-relaxed">
-              {t.migration.subtitle}
+      <main className="flex-grow text-left">
+        {/* Hero - Gemini layout + id for E2E */}
+        <section className="relative pt-40 md:pt-48 pb-20 px-6 md:px-10 text-center">
+          <div className="max-w-5xl mx-auto relative text-center">
+            <div className="inline-block mb-8">
+              <span className="px-5 py-2 rounded-full bg-white border border-gray-100 text-[10px] font-black uppercase tracking-[0.3em] text-[#10a37f] shadow-sm">{t.hero.tag}</span>
+            </div>
+            <h1 id="landing-title" className="text-5xl md:text-7xl lg:text-[88px] font-black tracking-tight mb-8 leading-[1.0] text-gray-900" style={{ letterSpacing: '-0.04em' }}>
+              {t.hero.title}
+            </h1>
+            <p className="text-gray-500 text-lg md:text-xl max-w-xl mx-auto mb-16 font-medium leading-relaxed tracking-tight italic text-center">
+              {t.hero.subtitle}
             </p>
-            <div className="space-y-5">
-              <div className="flex items-center space-x-4">
-                <div className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center text-[#10a37f]">
-                  <History size={20} />
-                </div>
-                <span className="text-base font-bold text-gray-800">{t.migration.feat1}</span>
-              </div>
-              <div className="flex items-center space-x-4">
-                <div className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center text-[#10a37f]">
-                  <Download size={20} />
-                </div>
-                <span className="text-base font-bold text-gray-800">{t.migration.feat2}</span>
-              </div>
-            </div>
-          </div>
-          {/* Visual - RIGHT side */}
-          <div className="flex-1">
-            <div className="p-8 md:p-10 rounded-3xl bg-white border border-gray-100 shadow-xl">
-              <div className="space-y-6">
-                {/* Source file indicator */}
-                <div className="flex items-center justify-between p-4 bg-gray-50 rounded-2xl border border-gray-100">
-                  <div className="flex items-center space-x-3">
-                    <div className="w-10 h-10 bg-gray-900 rounded-xl flex items-center justify-center text-white">
-                      <Database size={18} />
-                    </div>
-                    <span className="text-sm font-bold">Archive.json</span>
-                  </div>
-                  <CheckCircle2 size={22} className="text-[#10a37f]" />
-                </div>
-                {/* Transfer arrow animation */}
-                <div className="relative py-4 flex flex-col items-center">
-                  <div className="h-16 w-px bg-gradient-to-b from-gray-200 via-[#10a37f] to-gray-200"></div>
-                  <div className="w-10 h-10 bg-white border border-gray-100 rounded-full flex items-center justify-center shadow-lg -mt-8 z-10 text-[#10a37f]">
-                    <ArrowRightLeft size={16} className="rotate-90" />
-                  </div>
-                </div>
-                {/* Import progress card */}
-                <div className="bg-gray-50 p-6 rounded-2xl border border-gray-100">
-                  <div className="flex items-center justify-between mb-4">
-                    <span className="text-xs font-bold uppercase tracking-wider text-gray-400">{t.migration.status}</span>
-                    <span className="text-sm font-bold text-[#10a37f]">98.2%</span>
-                  </div>
-                  <div className="h-2 w-full bg-gray-200 rounded-full overflow-hidden">
-                    <div className="h-full w-[98%] bg-[#10a37f] rounded-full"></div>
-                  </div>
-                  <div className="mt-4 flex items-center space-x-2">
-                    <div className="w-2 h-2 bg-[#10a37f] rounded-full animate-pulse"></div>
-                    <p className="text-xs font-medium text-gray-500">{t.migration.restoring}</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
 
-      {/* Pricing Section */}
-      <section id="pricing" className="py-24 px-6 bg-[#faf9f7]">
-        <div className="max-w-6xl mx-auto">
-          <div className="text-center mb-16">
-            <h2 className="text-4xl md:text-5xl font-black text-gray-900 mb-4">{t.pricing.title}</h2>
-            <p className="text-gray-500 text-lg font-medium">{t.pricing.subtitle}</p>
-          </div>
-          <div className="grid md:grid-cols-3 gap-6 items-stretch">
-            {([
-              { tier: t.pricing.explorer, recommended: false },
-              { tier: t.pricing.artisan, recommended: true },
-              { tier: t.pricing.elite, recommended: false }
-            ] as const).map((plan, idx) => (
-              <div key={idx} className={`p-8 rounded-3xl transition-all flex flex-col ${
-                plan.recommended 
-                  ? 'bg-gray-900 text-white shadow-2xl scale-[1.02] z-10' 
-                  : 'bg-white border border-gray-200 text-gray-900'
-              }`}>
-                <div className="mb-6">
-                  <div className="flex items-center space-x-2 mb-4">
-                    <span className={`text-[10px] font-bold uppercase tracking-widest px-3 py-1.5 rounded ${
-                      plan.recommended ? 'bg-[#10a37f] text-white' : 'bg-gray-100 text-gray-600'
-                    }`}>
-                      {plan.tier.name}
-                    </span>
-                    {plan.recommended && (
-                      <span className="text-[10px] font-bold uppercase tracking-wider text-[#10a37f]">
-                        {t.pricing.recommended}
-                      </span>
-                    )}
-                  </div>
-                  <div className="mt-4 flex items-baseline">
-                    <span className="text-5xl font-black">{plan.tier.price}</span>
-                    <span className="text-sm ml-2 font-medium opacity-50">/mo</span>
-                  </div>
-                  <p className="text-xs mt-3 font-medium opacity-60">{plan.tier.sub}</p>
-                </div>
-                <button 
-                  onClick={() => navigate('/login')} 
-                  className={`w-full py-4 mb-6 rounded-lg font-bold text-xs tracking-wider transition-all active:scale-95 ${
-                    plan.recommended 
-                      ? 'bg-[#10a37f] text-white hover:bg-[#0d8a6a]' 
-                      : 'bg-gray-900 text-white hover:bg-gray-800'
-                  }`}
-                >
-                  {plan.tier.cta}
-                </button>
-                <ul className="space-y-4 flex-grow">
-                  {plan.tier.features.map((f, i) => (
-                    <li key={i} className="flex items-start space-x-3 text-sm">
-                      <CheckCircle2 size={18} className="text-[#10a37f] flex-shrink-0 mt-0.5" />
-                      <span className={plan.recommended ? 'text-gray-300' : 'text-gray-600'}>{f}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
+            <ChatPreview userPrompt={t.hero.userPrompt} message={t.hero.aiMessage} lang={lang} protectedLabel={t.hero.protected} />
 
-      {/* Footer */}
-      <footer className="py-16 px-6 bg-[#faf9f7]">
-        <div className="max-w-7xl mx-auto">
-          {/* Footer Header */}
-          <div className="flex flex-col md:flex-row justify-between items-center pb-12">
-            {/* Logo */}
-            <Link to="/" className="flex items-center space-x-3 mb-6 md:mb-0">
-              <div className="w-10 h-10 bg-gray-900 text-white rounded-full flex items-center justify-center">
-                <Sparkles size={18} />
-              </div>
-              <span className="text-base font-bold tracking-[0.2em] text-gray-900 uppercase">LIBRECHAT</span>
-            </Link>
-            {/* Social Icons + Sign In */}
-            <div className="flex items-center space-x-4">
-              <a 
-                href="#" 
-                className="w-12 h-12 rounded-full bg-white border border-gray-200 flex items-center justify-center text-gray-500 hover:text-[#10a37f] hover:border-[#10a37f] transition-all"
-                aria-label="Discord"
-              >
-                <MessageCircle size={20} />
-              </a>
-              <a 
-                href="mailto:contact@librechat.ai" 
-                className="w-12 h-12 rounded-full bg-white border border-gray-200 flex items-center justify-center text-gray-500 hover:text-[#10a37f] hover:border-[#10a37f] transition-all"
-                aria-label="Email"
-              >
-                <Mail size={20} />
-              </a>
-              <button 
-                onClick={() => navigate('/login')} 
-                className="px-8 py-3 border border-gray-200 bg-white text-gray-900 text-sm font-bold tracking-wider rounded-full hover:border-gray-300 transition-all"
-              >
-                {t.nav.login}
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mt-8 pb-24 md:pb-32">
+              <button type="button" onClick={() => navigate('/login')} className="w-full sm:w-auto px-8 md:px-10 py-4 md:py-5 bg-[#10a37f] text-white rounded-2xl font-bold text-base md:text-lg hover:shadow-2xl active:scale-95 transition-all">
+                {t.hero.chatBtn}
+              </button>
+              <button type="button" onClick={() => navigate('/register')} className="w-full sm:w-auto px-8 md:px-10 py-4 md:py-5 bg-white text-gray-800 border-2 border-gray-100 rounded-2xl font-bold text-base md:text-lg hover:border-black transition-all flex items-center justify-center space-x-3 text-left">
+                <ArrowRightLeft size={18} className="text-[#10a37f]" />
+                <span>{t.hero.migrateBtn}</span>
               </button>
             </div>
           </div>
+        </section>
 
-          {/* Footer Links */}
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-8 py-12">
-            {/* Column 1 */}
-            <div className="space-y-4">
-              <Link 
-                to="/" 
-                className="block text-gray-500 hover:text-[#10a37f] font-medium transition-colors"
-              >
-                {t.footer.links.home}
-              </Link>
-              <a 
-                href="#pricing" 
-                className="block text-gray-500 hover:text-[#10a37f] font-medium transition-colors"
-              >
-                {t.footer.links.pricing}
-              </a>
-              <a 
-                href="#" 
-                className="block text-gray-500 hover:text-[#10a37f] font-medium transition-colors underline"
-              >
-                {t.footer.links.faq}
-              </a>
+        {/* Migration - Gemini style with gradient card */}
+        <section className="py-24 md:py-32 px-6 md:px-10 bg-white border-y border-gray-50 overflow-hidden text-left">
+          <div className="max-w-6xl mx-auto flex flex-col md:flex-row items-center gap-16 md:gap-24 text-left">
+            <div className="flex-1 text-left relative">
+              <span className="text-[10px] font-black uppercase tracking-[0.3em] text-[#10a37f] mb-6 block font-bold text-left">{t.migration.label}</span>
+              <h2 className="text-4xl md:text-5xl lg:text-6xl font-black mb-8 leading-[1.1] text-left text-gray-900" style={{ letterSpacing: '-0.04em' }}>{t.migration.title}</h2>
+              <p className="text-gray-500 text-lg md:text-xl font-medium leading-relaxed mb-10 text-left">{t.migration.subtitle}</p>
+              <div className="space-y-6">
+                <div className="flex items-center space-x-4">
+                  <div className="w-10 h-10 rounded-xl bg-gray-50 flex items-center justify-center text-[#10a37f]"><History size={20} /></div>
+                  <p className="text-sm font-bold text-gray-700 text-left">{t.migration.feat1}</p>
+                </div>
+                <div className="flex items-center space-x-4">
+                  <div className="w-10 h-10 rounded-xl bg-gray-50 flex items-center justify-center text-[#10a37f]"><Download size={20} /></div>
+                  <p className="text-sm font-bold text-gray-700 text-left">{t.migration.feat2}</p>
+                </div>
+              </div>
             </div>
-            {/* Column 2 */}
-            <div className="space-y-4">
-              <Link 
-                to="/mission" 
-                className="block text-gray-500 hover:text-[#10a37f] font-medium transition-colors"
-              >
-                {t.footer.links.mission}
-              </Link>
-              <a 
-                href="#" 
-                className="block text-gray-500 hover:text-[#10a37f] font-medium transition-colors"
-              >
-                {t.footer.links.contact}
-              </a>
-              <a 
-                href="#" 
-                className="block text-gray-500 hover:text-[#10a37f] font-medium transition-colors"
-              >
-                {t.footer.links.cookieSettings}
-              </a>
-            </div>
-            {/* Column 3 */}
-            <div className="space-y-4 col-span-2 md:col-span-1">
-              <a 
-                href="#" 
-                className="block text-gray-500 hover:text-[#10a37f] font-medium transition-colors underline"
-              >
-                {t.footer.links.privacyPolicy}
-              </a>
-              <a 
-                href="#" 
-                className="block text-gray-500 hover:text-[#10a37f] font-medium transition-colors"
-              >
-                {t.footer.links.termsOfService}
-              </a>
-              <a 
-                href="#" 
-                className="block text-gray-500 hover:text-[#10a37f] font-medium transition-colors"
-              >
-                {t.footer.links.accountPortal}
-              </a>
+            <div className="flex-1 w-full max-w-lg">
+              <div className="p-8 md:p-12 rounded-[3rem] border border-gray-100 shadow-2xl relative" style={{ background: 'linear-gradient(135deg, #fcfcf9 0%, #f3f4f6 100%)' }}>
+                <div className="space-y-8 text-left">
+                  <div className="flex items-center justify-between p-4 bg-white rounded-2xl shadow-sm border border-gray-50 text-left">
+                    <div className="flex items-center space-x-3 text-left">
+                      <div className="w-8 h-8 bg-black rounded-lg flex items-center justify-center text-white"><Database size={16} /></div>
+                      <span className="text-xs font-bold font-mono text-left">Archive.json</span>
+                    </div>
+                    <CheckCircle2 size={20} className="text-[#10a37f]" />
+                  </div>
+                  <div className="relative py-4 flex flex-col items-center">
+                    <div className="h-20 w-px bg-gradient-to-b from-gray-200 via-[#10a37f] to-gray-200 animate-pulse" />
+                    <div className="w-12 h-12 bg-white border border-gray-100 rounded-full flex items-center justify-center shadow-xl -mt-10 mb-4 z-10 text-[#10a37f] rotate-90"><ArrowRightLeft size={18} /></div>
+                  </div>
+                  <div className="bg-white p-6 rounded-3xl shadow-lg border border-[#10a37f]/10 text-left">
+                    <div className="flex items-center justify-between mb-4 text-left">
+                      <span className="text-[10px] font-black uppercase text-gray-400">{t.migration.status}</span>
+                      <span className="text-[10px] font-black text-[#10a37f]">98.2%</span>
+                    </div>
+                    <div className="h-1.5 w-full bg-gray-100 rounded-full overflow-hidden text-left">
+                      <div className="h-full w-[98%] bg-[#10a37f] rounded-full transition-all duration-1000" />
+                    </div>
+                    <div className="mt-4 flex items-center space-x-2 text-left">
+                      <div className="w-2 h-2 bg-[#10a37f] rounded-full animate-ping" />
+                      <p className="text-[11px] font-medium text-gray-400 text-left">{t.migration.restoring}</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
+        </section>
 
-          {/* Footer Bottom */}
-          <div className="pt-8 border-t border-gray-200 flex flex-col md:flex-row justify-between items-center">
-            <span className="text-gray-400 text-xs font-bold tracking-[0.2em] uppercase mb-4 md:mb-0">
-              {t.footer.copyright}
-            </span>
-            <div className="flex items-center space-x-2">
-              <span className="w-2 h-2 bg-[#10a37f] rounded-full"></span>
-              <span className="text-gray-400 text-xs font-bold tracking-[0.2em] uppercase">
-                {t.footer.dataGuarantee}
-              </span>
+        {/* Pricing - Gemini 3-col, center black scale-105, CTA -> register */}
+        <section id="pricing" className="py-24 md:py-32 px-6 md:px-10 bg-[#fcfcf9]">
+          <div className="max-w-7xl mx-auto text-center">
+            <div className="mb-16 md:mb-24 text-center">
+              <h2 className="text-4xl md:text-6xl font-black mb-6 text-gray-900" style={{ letterSpacing: '-0.04em' }}>{t.pricing.title}</h2>
+              <p className="text-gray-500 text-lg font-medium">{t.pricing.subtitle}</p>
+            </div>
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 text-left max-w-6xl mx-auto items-stretch">
+              {([
+                { tier: t.pricing.explorer, recommended: false },
+                { tier: t.pricing.artisan, recommended: true },
+                { tier: t.pricing.elite, recommended: false }
+              ] as const).map((plan, idx) => (
+                <div key={idx} className={`p-8 md:p-10 rounded-[3rem] border transition-all duration-500 flex flex-col shadow-sm ${plan.recommended ? 'bg-black text-white border-black shadow-2xl scale-105 z-10' : 'bg-white border-gray-100 text-gray-900'}`}>
+                  <div className="mb-8 md:mb-10 text-left">
+                    <div className="flex items-center space-x-2 mb-4">
+                      <span className={`text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-full ${plan.recommended ? 'bg-[#10a37f] text-white' : 'bg-gray-100 text-gray-500'}`}>{plan.tier.name}</span>
+                      {plan.recommended && <span className="text-[9px] font-black uppercase tracking-widest text-[#10a37f]">{t.pricing.recommended}</span>}
+                    </div>
+                    <div className="mt-6 flex items-baseline"><span className="text-5xl font-black tracking-tight">{plan.tier.price}</span><span className="text-sm ml-2 font-medium opacity-50">/mo</span></div>
+                    <p className="text-xs mt-4 font-bold text-gray-400">{plan.tier.sub}</p>
+                  </div>
+                  <button type="button" onClick={() => navigate('/register')} className={`w-full py-4 mb-8 md:mb-10 rounded-2xl font-bold text-sm uppercase tracking-widest transition-all active:scale-95 ${plan.recommended ? 'bg-[#10a37f] text-white hover:bg-[#0d8a6a]' : 'bg-black text-white hover:bg-gray-800'}`}>
+                    {plan.tier.cta}
+                  </button>
+                  <ul className="space-y-5 flex-grow text-left">
+                    {plan.tier.features.map((f, i) => (
+                      <li key={i} className="flex items-start space-x-3 text-sm font-medium">
+                        <CheckCircle2 size={18} className="text-[#10a37f] flex-shrink-0" />
+                        <span className={plan.recommended ? 'text-gray-300' : 'text-gray-700'}>{f}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* Contact - Gemini-style form (UI only, preventDefault) */}
+        <section id="contact" className="pt-24 pb-32 px-6 md:px-10">
+          <div className="max-w-2xl mx-auto text-center md:text-left">
+            <h2 className="text-4xl md:text-5xl font-black tracking-tight mb-4 text-gray-900">{t.contact.title}</h2>
+            <p className="text-gray-400 font-medium tracking-tight italic mb-16 text-center md:text-left">{t.contact.desc}</p>
+            <div className="bg-white rounded-[2.5rem] border border-gray-100 p-8 md:p-10 shadow-sm text-left">
+              <form className="space-y-6 text-left" onSubmit={(e) => e.preventDefault()}>
+                <div className="grid md:grid-cols-2 gap-6">
+                  <div className="text-left">
+                    <label htmlFor="contact-name" className="text-[10px] font-black uppercase text-gray-400 mb-2 block text-left">{t.contact.name}</label>
+                    <input id="contact-name" type="text" className="w-full bg-gray-50 border border-gray-100 rounded-xl px-4 py-3 focus:outline-none focus:border-[#10a37f] text-left" placeholder="Alex Chen" />
+                  </div>
+                  <div className="text-left">
+                    <label htmlFor="contact-email" className="text-[10px] font-black uppercase text-gray-400 mb-2 block text-left">{t.contact.email}</label>
+                    <input id="contact-email" type="email" className="w-full bg-gray-50 border border-gray-100 rounded-xl px-4 py-3 focus:outline-none focus:border-[#10a37f] text-left" placeholder="alex@example.com" />
+                  </div>
+                </div>
+                <div className="text-left">
+                  <label htmlFor="contact-message" className="text-[10px] font-black uppercase text-gray-400 mb-2 block text-left">{t.contact.message}</label>
+                  <textarea id="contact-message" className="w-full bg-gray-50 border border-gray-100 rounded-xl px-4 py-3 focus:outline-none focus:border-[#10a37f] min-h-[150px] text-left" placeholder="How can we assist you?" />
+                </div>
+                <button type="submit" className="w-full py-4 bg-black text-white rounded-xl font-bold uppercase text-xs tracking-widest hover:bg-[#10a37f] transition-all flex items-center justify-center space-x-2 shadow-lg">
+                  <span>{t.contact.send}</span>
+                  <Send size={14} />
+                </button>
+              </form>
+            </div>
+            <p className="mt-12 text-center md:text-left text-gray-400 text-sm font-medium">
+              {t.contact.official}: <a href="mailto:support@librechat.ai" className="text-[#10a37f] hover:underline font-bold">support@librechat.ai</a>
+            </p>
+          </div>
+        </section>
+      </main>
+
+      {/* Footer - Gemini structure with Router links + Cookie modal */}
+      <footer className="py-16 md:py-20 px-6 md:px-10 bg-[#fcfcf9] border-t border-gray-100 mt-12 md:mt-20 text-left">
+        <div className="max-w-7xl mx-auto">
+          <div className="flex flex-col md:flex-row justify-between items-center mb-12 md:mb-20 gap-8 text-center md:text-left">
+            <BrandLogo theme="light" />
+            <div className="flex items-center space-x-4 md:space-x-6">
+              <a href="https://discord.gg/librechat" target="_blank" rel="noopener noreferrer" className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center text-gray-500 hover:bg-black hover:text-white transition-all" aria-label="Discord">
+                <DiscordIcon className="w-5 h-5" />
+              </a>
+              <a href="#contact" className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center text-gray-500 hover:bg-black hover:text-white transition-all" aria-label="Contact">
+                <Mail size={18} />
+              </a>
+            </div>
+            <button type="button" onClick={() => navigate('/login')} className="px-6 md:px-8 py-3 bg-white border border-gray-200 text-gray-900 text-sm font-bold rounded-full shadow-sm hover:border-black transition-all">
+              {t.nav.login}
+            </button>
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-8 md:gap-12 text-[13px] font-semibold text-left">
+            <div className="flex flex-col space-y-4">
+              <Link to="/" className="text-gray-400 hover:text-black transition-colors text-left w-fit font-bold">{t.footer.links.home}</Link>
+              <a href="#pricing" className="text-gray-400 hover:text-black transition-colors text-left w-fit font-bold">{t.footer.links.pricing}</a>
+              <a href="#pricing" className="text-gray-400 hover:text-black transition-colors text-left w-fit font-bold border-b border-black/10">FAQ</a>
+            </div>
+            <div className="flex flex-col space-y-4 text-left">
+              <Link to="/mission" className="text-gray-400 hover:text-black transition-colors text-left w-fit font-bold">{t.footer.links.mission}</Link>
+              <a href="#contact" className="text-gray-400 hover:text-black transition-colors text-left w-fit font-bold">{t.footer.links.contact}</a>
+              <button type="button" onClick={() => setShowCookies(true)} className="text-gray-400 hover:text-black transition-colors text-left w-fit font-bold">{t.footer.links.cookieSettings}</button>
+            </div>
+            <div className="flex flex-col space-y-4 text-left col-span-2 md:col-span-1">
+              <a href="#" className="text-gray-400 hover:text-black transition-colors text-left w-fit font-bold underline underline-offset-4">Privacy Policy</a>
+              <a href="#" className="text-gray-400 hover:text-black transition-colors text-left w-fit font-bold">Terms of Service</a>
+              <button type="button" onClick={() => navigate('/login')} className="text-gray-400 hover:text-black transition-colors text-left w-fit font-bold">{t.footer.links.accountPortal}</button>
+            </div>
+          </div>
+          <div className="mt-16 md:mt-20 pt-8 md:pt-10 border-t border-gray-100 flex flex-col md:flex-row justify-between items-center gap-6 text-[10px] font-black uppercase tracking-[0.3em] md:tracking-[0.5em] text-gray-300">
+            <div>{t.footer.copyright}</div>
+            <div className="flex items-center space-x-3 opacity-50">
+              <div className="w-1.5 h-1.5 rounded-full bg-[#10a37f]" />
+              <span>{t.footer.dataGuarantee}</span>
             </div>
           </div>
         </div>
