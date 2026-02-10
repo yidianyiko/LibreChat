@@ -84,7 +84,15 @@ const startServer = async () => {
 
   /* Middleware */
   app.use(noIndex);
-  app.use(express.json({ limit: '512mb' }));
+
+  // JSON parser: exclude webhook route to preserve raw body for signature verification
+  app.use((req, res, next) => {
+    if (req.path === '/api/recharge/webhook') {
+      next();
+    } else {
+      express.json({ limit: '512mb' })(req, res, next);
+    }
+  });
   app.use(express.urlencoded({ extended: true, limit: '512mb' }));
   app.use(handleJsonParseError);
 
