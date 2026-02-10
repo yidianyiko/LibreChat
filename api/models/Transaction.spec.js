@@ -440,6 +440,35 @@ describe('Transactions Config Tests', () => {
     expect(transactions[0].rawAmount).toBe(-100);
   });
 
+  test('createTransaction should persist metadata when provided', async () => {
+    const userId = new mongoose.Types.ObjectId();
+    const initialBalance = 0;
+    await Balance.create({ user: userId, tokenCredits: initialBalance });
+
+    await createTransaction({
+      user: userId,
+      conversationId: 'test-conversation-id',
+      model: 'gpt-3.5-turbo',
+      context: 'stripe_recharge',
+      endpointTokenConfig: null,
+      rawAmount: 5000000,
+      tokenType: 'credits',
+      balance: { enabled: true },
+      metadata: {
+        sessionId: 'cs_test_123',
+        amountPaid: 499,
+        currency: 'usd',
+        tierId: 'explorer',
+      },
+    });
+
+    const [tx] = await Transaction.find({ user: userId, context: 'stripe_recharge' }).lean();
+    expect(tx).toBeDefined();
+    expect(tx.metadata).toBeDefined();
+    expect(tx.metadata.sessionId).toBe('cs_test_123');
+    expect(tx.metadata.amountPaid).toBe(499);
+  });
+
   test('createTransaction should save when balance.enabled is true even if transactions config is missing', async () => {
     // Arrange
     const userId = new mongoose.Types.ObjectId();

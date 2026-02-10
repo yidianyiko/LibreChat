@@ -7,6 +7,25 @@ const { Transaction } = require('~/db/models');
 
 const router = express.Router();
 
+let ensureStripeRechargeIndexPromise;
+async function ensureStripeRechargeIndex() {
+  if (!ensureStripeRechargeIndexPromise) {
+    ensureStripeRechargeIndexPromise = Transaction.collection.createIndex(
+      { context: 1, 'metadata.sessionId': 1 },
+      {
+        name: 'uniq_stripe_recharge_session',
+        unique: true,
+        partialFilterExpression: { 'metadata.sessionId': { $exists: true } },
+      },
+    ).catch((err) => {
+      // Don't cache a rejection; allow the next webhook delivery to retry index creation.
+      ensureStripeRechargeIndexPromise = null;
+      throw err;
+    });
+  }
+  return ensureStripeRechargeIndexPromise;
+}
+
 /**
  * GET /api/recharge/pricing
  * 获取所有价格套餐
@@ -107,83 +126,85 @@ router.post('/create-checkout-session', requireJwtAuth, checkBan, async (req, re
 router.post(
   '/webhook',
   webhookLimiter,
-  express.raw({ type: 'application/json' }),
-  async (req, res) => {
-    const signature = req.headers['stripe-signature'];
+	  express.raw({ type: 'application/json' }),
+	  async (req, res) => {
+	    const signature = req.headers['stripe-signature'];
 
-    try {
-      const stripeService = getStripeService();
+	    try {
+	      const stripeService = getStripeService();
 
-      if (!stripeService.isEnabled()) {
-        logger.error('[Recharge Webhook] Stripe service is not enabled');
-        return res.status(503).send('Stripe service not configured');
-      }
+	      if (!stripeService.isEnabled()) {
+	        logger.error('[Recharge Webhook] Stripe service is not enabled');
+	        return res.status(503).send('Stripe service not configured');
+	      }
 
-      // 验证 webhook 签名
-      const event = stripeService.verifyWebhookSignature(req.body, signature);
+	      // Ensure DB-level idempotency under concurrency (multi-instance safe).
+	      await ensureStripeRechargeIndex();
 
-      logger.info(`[Recharge Webhook] Received event: ${event.type}`);
+	      // 验证 webhook 签名
+	      const event = stripeService.verifyWebhookSignature(req.body, signature);
 
-      // 处理 checkout.session.completed 事件
-      if (event.type === 'checkout.session.completed') {
-        const session = event.data.object;
+	      logger.info(`[Recharge Webhook] Received event: ${event.type}`);
 
-        // 数据库级别幂等性检查 - 检查是否已处理过此 session
-        const existingTransaction = await Transaction.findOne({
-          'metadata.sessionId': session.id,
-          context: 'stripe_recharge',
-        }).lean();
+	      // 处理 checkout.session.completed 事件
+	      if (event.type === 'checkout.session.completed') {
+	        const session = event.data.object;
 
-        if (existingTransaction) {
-          logger.warn(`[Recharge Webhook] Session ${session.id} already processed, skipping`);
-          return res.json({ received: true, message: 'Already processed' });
-        }
+	        // 提取并验证支付信息（服务端计算 credits）
+	        const paymentInfo = await stripeService.handlePaymentSuccess(session);
+	        const { userId, credits, sessionId, amountTotal, tierId } = paymentInfo;
 
-        // 提取并验证支付信息（服务端计算 credits）
-        const paymentInfo = await stripeService.handlePaymentSuccess(session);
-        const { userId, credits, sessionId, amountTotal, tierId } = paymentInfo;
+	        if (!credits || credits <= 0) {
+	          logger.error(`[Recharge Webhook] Invalid credits value: ${credits}`);
+	          return res.status(400).json({ received: false, error: 'Invalid credits value' });
+	        }
 
-        if (!credits || credits <= 0) {
-          logger.error(`[Recharge Webhook] Invalid credits value: ${credits}`);
-          return res.status(400).json({ received: false, error: 'Invalid credits value' });
-        }
+	        logger.info(
+	          `[Recharge Webhook] Processing payment for user ${userId}: ${credits} credits (tier: ${tierId})`,
+	        );
 
-        logger.info(
-          `[Recharge Webhook] Processing payment for user ${userId}: ${credits} credits (tier: ${tierId})`,
-        );
+	        try {
+	          // 使用 createTransaction 添加额度并记录交易（会自动更新余额）
+	          const result = await createTransaction({
+	            user: userId,
+	            tokenType: 'credits',
+	            context: 'stripe_recharge',
+	            rawAmount: credits,
+	            balance: { enabled: true },
+	            metadata: {
+	              sessionId,
+	              stripeEventId: event.id,
+	              amountPaid: amountTotal,
+	              currency: 'usd',
+	              tierId: tierId,
+	            },
+	          });
 
-        // 使用 createTransaction 添加额度并记录交易（会自动更新余额）
-        const result = await createTransaction({
-          user: userId,
-          tokenType: 'credits',
-          context: 'stripe_recharge',
-          rawAmount: credits,
-          balance: { enabled: true },
-          metadata: {
-            sessionId,
-            amountPaid: amountTotal,
-            currency: 'usd',
-            tierId: tierId,
-          },
-        });
+	          if (!result?.balance) {
+	            logger.error(`[Recharge Webhook] Failed to update balance for user ${userId}`);
+	            return res.status(500).json({ received: false, error: 'Failed to update balance' });
+	          }
 
-        if (!result?.balance) {
-          logger.error(`[Recharge Webhook] Failed to update balance for user ${userId}`);
-          return res.status(500).json({ received: false, error: 'Failed to update balance' });
-        }
+	          logger.info(
+	            `[Recharge Webhook] Successfully added ${credits} credits to user ${userId}, new balance: ${result.balance}`,
+	          );
+	        } catch (error) {
+	          // DB-level idempotency: treat duplicates as "already processed"
+	          if (error && error.code === 11000) {
+	            logger.warn(`[Recharge Webhook] Session ${session.id} already processed, skipping`);
+	            return res.json({ received: true, message: 'Already processed' });
+	          }
+	          throw error;
+	        }
+	      }
 
-        logger.info(
-          `[Recharge Webhook] Successfully added ${credits} credits to user ${userId}, new balance: ${result.balance}`,
-        );
-      }
-
-      res.json({ received: true });
-    } catch (error) {
-      logger.error('[Recharge Webhook] Error processing webhook:', error);
-      res.status(400).send(`Webhook Error: ${error.message}`);
-    }
-  },
-);
+	      res.json({ received: true });
+	    } catch (error) {
+	      logger.error('[Recharge Webhook] Error processing webhook:', error);
+	      res.status(400).send(`Webhook Error: ${error.message}`);
+	    }
+	  },
+	);
 
 /**
  * GET /api/recharge/history
@@ -197,7 +218,7 @@ router.get('/history', requireJwtAuth, checkBan, async (req, res) => {
     // 从数据库获取交易记录
     const transactions = await Transaction.find({
       user: userId,
-      action: 'recharge',
+      tokenType: 'credits',
       context: 'stripe_recharge',
     })
       .sort({ createdAt: -1 })
@@ -207,7 +228,7 @@ router.get('/history', requireJwtAuth, checkBan, async (req, res) => {
     res.json({
       history: transactions.map((tx) => ({
         id: tx._id,
-        credits: tx.tokenCredits,
+        credits: tx.rawAmount,
         amount: tx.metadata?.amountPaid || 0,
         currency: tx.metadata?.currency || 'usd',
         tierId: tx.metadata?.tierId,
@@ -251,18 +272,20 @@ router.get('/verify-session/:sessionId', requireJwtAuth, checkBan, async (req, r
       });
     }
 
-    // 检查支付状态
-    const isPaid = session.payment_status === 'paid';
-    const credits = parseInt(session.metadata?.credits || '0', 10);
+	    // 检查支付状态
+	    const isPaid = session.payment_status === 'paid';
+	    const tierId = session.metadata?.tierId;
+	    const tier = tierId ? stripeService.getPricingTierById(tierId) : null;
+	    const credits = tier?.credits ?? 0;
 
-    res.json({
-      sessionId,
-      paymentStatus: session.payment_status,
-      isPaid,
-      credits,
-      tierId: session.metadata?.tierId,
-      amountTotal: session.amount_total,
-    });
+	    res.json({
+	      sessionId,
+	      paymentStatus: session.payment_status,
+	      isPaid,
+	      credits,
+	      tierId,
+	      amountTotal: session.amount_total,
+	    });
   } catch (error) {
     logger.error('[Recharge API] Error verifying session:', error);
     res.status(500).json({

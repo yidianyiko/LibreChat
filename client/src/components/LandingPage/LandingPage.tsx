@@ -172,21 +172,21 @@ export const translations: Translations = {
         name: "EXPLORER PLAN",
         sub: "The Minimalist Alternative",
         price: "$4.99",
-        cta: "UPGRADE TO EXPLORER",
+        cta: "BUY EXPLORER",
         features: ["150 Premium GPT-4o msgs", "2,000 Base 4o-mini msgs", "Locked Model Guarantee", "8,192 Token Context"]
       },
       artisan: {
         name: "ARTISAN PLAN",
         sub: "The Creator's Safe Haven",
         price: "$14.99",
-        cta: "UPGRADE TO ARTISAN",
+        cta: "BUY ARTISAN",
         features: ["700 Premium GPT-4o msgs", "15,000 Base 4o-mini msgs", "Snapshot Selection", "32,768 Token Context", "10 Project Folders"]
       },
       elite: {
         name: "ELITE PLAN",
         sub: "The Power Productivity Hub",
         price: "$34.99",
-        cta: "UPGRADE TO ELITE",
+        cta: "BUY ELITE",
         features: ["2,000 Premium GPT-4o msgs", "Unlimited Base 4o-mini msgs", "Full 128,000 Context Access", "Tier-5 Priority Lane", "Unlimited Project Folders"]
       }
     },
@@ -259,21 +259,21 @@ export const translations: Translations = {
         name: "探索者方案",
         sub: "极简主义的选择",
         price: "$4.99",
-        cta: "升级到探索者",
+        cta: "购买探索者",
         features: ["150 条 GPT-4o 高级消息", "2,000 条 4o-mini 基础消息", "锁定模型保障", "8,192 Token 上下文"]
       },
       artisan: {
         name: "匠心方案",
         sub: "创作者的避风港",
         price: "$14.99",
-        cta: "升级到匠心",
+        cta: "购买匠心",
         features: ["700 条 GPT-4o 高级消息", "15,000 条 4o-mini 基础消息", "快照选择", "32,768 Token 上下文", "10 个项目文件夹"]
       },
       elite: {
         name: "精英方案",
         sub: "高效生产力中心",
         price: "$34.99",
-        cta: "升级到精英",
+        cta: "购买精英",
         features: ["2,000 条 GPT-4o 高级消息", "无限 4o-mini 基础消息", "完整 128,000 上下文访问", "Tier-5 优先通道", "无限项目文件夹"]
       }
     },
@@ -346,21 +346,21 @@ export const translations: Translations = {
         name: "PLAN EXPLORER",
         sub: "La alternativa minimalista",
         price: "$4.99",
-        cta: "ACTUALIZAR A EXPLORER",
+        cta: "COMPRAR EXPLORER",
         features: ["150 mensajes Premium GPT-4o", "2,000 mensajes Base 4o-mini", "Garantía de modelo fijo", "Contexto de 8,192 tokens"]
       },
       artisan: {
         name: "PLAN ARTISAN",
         sub: "El refugio del creador",
         price: "$14.99",
-        cta: "ACTUALIZAR A ARTISAN",
+        cta: "COMPRAR ARTISAN",
         features: ["700 mensajes Premium GPT-4o", "15,000 mensajes Base 4o-mini", "Selección de snapshot", "Contexto de 32,768 tokens", "10 carpetas de proyecto"]
       },
       elite: {
         name: "PLAN ELITE",
         sub: "Hub de productividad",
         price: "$34.99",
-        cta: "ACTUALIZAR A ELITE",
+        cta: "COMPRAR ELITE",
         features: ["2,000 mensajes Premium GPT-4o", "Mensajes Base 4o-mini ilimitados", "Acceso completo a 128,000 tokens", "Prioridad Tier-5", "Carpetas de proyecto ilimitadas"]
       }
     },
@@ -433,21 +433,21 @@ export const translations: Translations = {
         name: "エクスプローラープラン",
         sub: "ミニマリストの選択",
         price: "$4.99",
-        cta: "エクスプローラーにアップグレード",
+        cta: "エクスプローラーを購入",
         features: ["150 プレミアム GPT-4o メッセージ", "2,000 ベース 4o-mini メッセージ", "モデル保証", "8,192 トークンコンテキスト"]
       },
       artisan: {
         name: "アーティザンプラン",
         sub: "クリエイターの安息地",
         price: "$14.99",
-        cta: "アーティザンにアップグレード",
+        cta: "アーティザンを購入",
         features: ["700 プレミアム GPT-4o メッセージ", "15,000 ベース 4o-mini メッセージ", "スナップショット選択", "32,768 トークンコンテキスト", "10 プロジェクトフォルダー"]
       },
       elite: {
         name: "エリートプラン",
         sub: "パワー生産性ハブ",
         price: "$34.99",
-        cta: "エリートにアップグレード",
+        cta: "エリートを購入",
         features: ["2,000 プレミアム GPT-4o メッセージ", "無制限 4o-mini メッセージ", "128,000 フルコンテキストアクセス", "Tier-5 優先レーン", "無制限プロジェクトフォルダー"]
       }
     },
@@ -520,21 +520,21 @@ export const translations: Translations = {
         name: "익스플로러 플랜",
         sub: "미니멀리스트의 선택",
         price: "$4.99",
-        cta: "익스플로러로 업그레이드",
+        cta: "익스플로러 구매",
         features: ["150 프리미엄 GPT-4o 메시지", "2,000 기본 4o-mini 메시지", "모델 잠금 보장", "8,192 토큰 컨텍스트"]
       },
       artisan: {
         name: "아티잔 플랜",
         sub: "창작자의 안식처",
         price: "$14.99",
-        cta: "아티잔으로 업그레이드",
+        cta: "아티잔 구매",
         features: ["700 프리미엄 GPT-4o 메시지", "15,000 기본 4o-mini 메시지", "스냅샷 선택", "32,768 토큰 컨텍스트", "10 프로젝트 폴더"]
       },
       elite: {
         name: "엘리트 플랜",
         sub: "파워 생산성 허브",
         price: "$34.99",
-        cta: "엘리트로 업그레이드",
+        cta: "엘리트 구매",
         features: ["2,000 프리미엄 GPT-4o 메시지", "무제한 4o-mini 메시지", "128,000 전체 컨텍스트 액세스", "Tier-5 우선 레인", "무제한 프로젝트 폴더"]
       }
     },
@@ -948,7 +948,7 @@ const LandingPage: React.FC = () => {
                       <span className={`text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-full ${plan.recommended ? 'bg-[#10a37f] text-white' : 'bg-gray-100 text-gray-500'}`}>{plan.tier.name}</span>
                       {plan.recommended && <span className="text-[9px] font-black uppercase tracking-widest text-[#10a37f]">{t.pricing.recommended}</span>}
                     </div>
-                    <div className="mt-6 flex items-baseline"><span className="text-5xl font-black tracking-tight">{plan.tier.price}</span><span className="text-sm ml-2 font-medium opacity-50">/mo</span></div>
+                    <div className="mt-6 flex items-baseline"><span className="text-5xl font-black tracking-tight">{plan.tier.price}</span><span className="text-sm ml-2 font-medium opacity-50">one-time</span></div>
                     <p className="text-xs mt-4 font-bold text-gray-400">{plan.tier.sub}</p>
                   </div>
                   <button type="button" onClick={() => navigate('/register')} className={`w-full py-4 mb-8 md:mb-10 rounded-2xl font-bold text-sm uppercase tracking-widest transition-all active:scale-95 ${plan.recommended ? 'bg-[#10a37f] text-white hover:bg-[#0d8a6a]' : 'bg-black text-white hover:bg-gray-800'}`}>

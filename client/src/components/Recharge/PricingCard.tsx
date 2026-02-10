@@ -55,8 +55,8 @@ export const PricingCard: React.FC<PricingCardProps> = ({
 }) => {
   const formattedPrice = (tier.price / 100).toFixed(2);
   const { sub, features } = TIER_DISPLAY[tier.id] ?? DEFAULT_DISPLAY;
-  const planName = tier.name.toUpperCase() + ' PLAN';
-  const ctaText = 'UPGRADE TO ' + tier.name.toUpperCase();
+  const planName = tier.name.toUpperCase() + ' PACK';
+  const ctaText = 'BUY ' + tier.name.toUpperCase();
 
   return (
     <div
@@ -84,7 +84,7 @@ export const PricingCard: React.FC<PricingCardProps> = ({
         </div>
         <div className="mt-6 flex items-baseline">
           <span className="text-5xl font-black tracking-tight">${formattedPrice}</span>
-          <span className="text-sm ml-2 font-medium opacity-50">/mo</span>
+          <span className="text-sm ml-2 font-medium opacity-50">one-time</span>
         </div>
         <p className="text-xs mt-4 font-bold text-gray-400">{sub}</p>
       </div>
