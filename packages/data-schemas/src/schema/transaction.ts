@@ -8,6 +8,7 @@ export interface ITransaction extends Document {
   model?: string;
   context?: string;
   valueKey?: string;
+  metadata?: Record<string, unknown>;
   rate?: number;
   rawAmount?: number;
   tokenValue?: number;
@@ -45,6 +46,9 @@ const transactionSchema: Schema<ITransaction> = new Schema(
     },
     valueKey: {
       type: String,
+    },
+    metadata: {
+      type: mongoose.Schema.Types.Mixed,
     },
     rate: Number,
     rawAmount: Number,

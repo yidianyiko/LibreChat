@@ -4,12 +4,16 @@ const rechargeRouter = require('../recharge');
 const { getStripeService } = require('~/server/services/StripeService');
 
 jest.mock('~/server/services/StripeService');
+jest.mock('~/models/Transaction', () => ({
+  createTransaction: jest.fn(),
+}));
 jest.mock('~/server/middleware', () => ({
   requireJwtAuth: (req, res, next) => {
     req.user = { id: 'test-user-id', email: 'test@example.com' };
     next();
   },
   checkBan: (req, res, next) => next(),
+  webhookLimiter: (_req, _res, next) => next(),
 }));
 
 const app = express();
@@ -31,10 +35,23 @@ describe('Recharge API Routes', () => {
           discount: 0,
         },
       ]),
+      getPricingTierById: jest.fn().mockImplementation((tierId) => {
+        if (tierId === 'tier_5') {
+          return { id: 'tier_5', credits: 5000000, price: 500 };
+        }
+        return null;
+      }),
       createCheckoutSession: jest.fn().mockResolvedValue({
         id: 'cs_test_123',
         url: 'https://checkout.stripe.com/c/pay/cs_test_123',
       }),
+      stripe: {
+        checkout: {
+          sessions: {
+            retrieve: jest.fn(),
+          },
+        },
+      },
     };
 
     getStripeService.mockReturnValue(mockStripeService);
@@ -112,6 +129,24 @@ describe('Recharge API Routes', () => {
         .expect(400);
 
       expect(response.body.message).toContain('Invalid pricing tier');
+    });
+  });
+
+  describe('GET /api/recharge/verify-session/:sessionId', () => {
+    it('computes credits from tierId when metadata.credits is absent', async () => {
+      mockStripeService.stripe.checkout.sessions.retrieve.mockResolvedValue({
+        id: 'cs_test_123',
+        payment_status: 'paid',
+        amount_total: 499,
+        metadata: { userId: 'test-user-id', tierId: 'tier_5' },
+      });
+
+      const response = await request(app)
+        .get('/api/recharge/verify-session/cs_test_123')
+        .expect(200);
+
+      expect(response.body.isPaid).toBe(true);
+      expect(response.body.credits).toBe(5000000);
     });
   });
 });
