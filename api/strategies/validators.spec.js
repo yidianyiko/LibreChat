@@ -2,6 +2,9 @@
 const { errorsToString } = require('librechat-data-provider');
 const { loginSchema, registerSchema } = require('./validators');
 
+const VALID_PASSWORD = 'Password123!';
+const VALID_PASSWORD_2 = 'Password124!';
+
 describe('Zod Schemas', () => {
   describe('loginSchema', () => {
     it('should validate a correct login object', () => {
@@ -81,8 +84,8 @@ describe('Zod Schemas', () => {
         name: 'John Doe',
         username: 'john_doe',
         email: 'john@example.com',
-        password: 'password123',
-        confirm_password: 'password123',
+        password: VALID_PASSWORD,
+        confirm_password: VALID_PASSWORD,
       });
 
       expect(result.success).toBe(true);
@@ -92,8 +95,8 @@ describe('Zod Schemas', () => {
       const result = registerSchema.safeParse({
         name: 'John Doe',
         email: 'john@example.com',
-        password: 'password123',
-        confirm_password: 'password123',
+        password: VALID_PASSWORD,
+        confirm_password: VALID_PASSWORD,
       });
 
       expect(result.success).toBe(true);
@@ -104,8 +107,8 @@ describe('Zod Schemas', () => {
         name: 'Jo',
         username: 'john_doe',
         email: 'john@example.com',
-        password: 'password123',
-        confirm_password: 'password123',
+        password: VALID_PASSWORD,
+        confirm_password: VALID_PASSWORD,
       });
 
       expect(result.success).toBe(false);
@@ -116,8 +119,8 @@ describe('Zod Schemas', () => {
         name: 'John Doe',
         username: '',
         email: 'john@example.com',
-        password: 'password123',
-        confirm_password: 'password123',
+        password: VALID_PASSWORD,
+        confirm_password: VALID_PASSWORD,
       });
 
       expect(result.success).toBe(true);
@@ -131,8 +134,8 @@ describe('Zod Schemas', () => {
           name,
           username: 'john_doe',
           email: 'john@example.com',
-          password: 'password123',
-          confirm_password: 'password123',
+          password: VALID_PASSWORD,
+          confirm_password: VALID_PASSWORD,
         });
         expect(result.success).toBe(true);
       });
@@ -145,8 +148,8 @@ describe('Zod Schemas', () => {
           name: 'John Doe',
           username,
           email: 'john@example.com',
-          password: 'password123',
-          confirm_password: 'password123',
+          password: VALID_PASSWORD,
+          confirm_password: VALID_PASSWORD,
         });
         expect(result.success).toBe(true);
       });
@@ -157,8 +160,8 @@ describe('Zod Schemas', () => {
         name: 'John Doe',
         username: 'john_doe',
         email: 'john@example.com',
-        password: 'password123',
-        confirm_password: 'password124',
+        password: VALID_PASSWORD,
+        confirm_password: VALID_PASSWORD_2,
       });
       expect(result.success).toBe(false);
     });
@@ -168,8 +171,8 @@ describe('Zod Schemas', () => {
         name: 'John Doe',
         username: 'john_doe',
         email: 'john@domain',
-        password: 'password123',
-        confirm_password: 'password123',
+        password: VALID_PASSWORD,
+        confirm_password: VALID_PASSWORD,
       });
       expect(result.success).toBe(false);
     });
@@ -179,8 +182,8 @@ describe('Zod Schemas', () => {
         name: 'John Doe',
         username: 'john_doe',
         email: 'john@domain@com',
-        password: 'password123',
-        confirm_password: 'password123',
+        password: VALID_PASSWORD,
+        confirm_password: VALID_PASSWORD,
       });
       expect(result.success).toBe(false);
     });
@@ -190,8 +193,8 @@ describe('Zod Schemas', () => {
         name: 'a'.repeat(81),
         username: 'john_doe',
         email: 'john@example.com',
-        password: 'password123',
-        confirm_password: 'password123',
+        password: VALID_PASSWORD,
+        confirm_password: VALID_PASSWORD,
       });
       expect(result.success).toBe(false);
     });
@@ -201,8 +204,8 @@ describe('Zod Schemas', () => {
         name: 'John Doe',
         username: 'a'.repeat(81),
         email: 'john@example.com',
-        password: 'password123',
-        confirm_password: 'password123',
+        password: VALID_PASSWORD,
+        confirm_password: VALID_PASSWORD,
       });
       expect(result.success).toBe(false);
     });
@@ -256,8 +259,8 @@ describe('Zod Schemas', () => {
         name: 'John Doe',
         username: 'john_doe',
         email: 'john@example.com',
-        password: 'password123',
-        confirm_password: 'password123',
+        password: VALID_PASSWORD,
+        confirm_password: VALID_PASSWORD,
         extraField: "I shouldn't be here",
       });
       expect(result.success).toBe(true);
@@ -385,8 +388,8 @@ describe('Zod Schemas', () => {
           name: 'John Doe',
           username,
           email: 'john@example.com',
-          password: 'password123',
-          confirm_password: 'password123',
+          password: VALID_PASSWORD,
+          confirm_password: VALID_PASSWORD,
         });
 
         if (!result.success) {
@@ -420,8 +423,8 @@ describe('Zod Schemas', () => {
           name: 'John Doe',
           username,
           email: 'john@example.com',
-          password: 'password123',
-          confirm_password: 'password123',
+          password: VALID_PASSWORD,
+          confirm_password: VALID_PASSWORD,
         });
 
         if (!result.success) {
@@ -445,8 +448,8 @@ describe('Zod Schemas', () => {
         name: 'Jo',
         username: 'john_doe',
         email: 'john@example.com',
-        password: 'password123',
-        confirm_password: 'password123',
+        password: VALID_PASSWORD,
+        confirm_password: VALID_PASSWORD,
       });
 
       const result = errorsToString(error.errors);
@@ -478,12 +481,14 @@ describe('Zod Schemas', () => {
     });
 
     it('should respect the configured minimum password length for registration', () => {
+      const validPassword = `Aa1!${'a'.repeat(Math.max(0, minLength - 4))}`;
+
       // Test password exactly at minimum length
       const resultValid = registerSchema.safeParse({
         name: 'John Doe',
         email: 'john@example.com',
-        password: 'a'.repeat(minLength),
-        confirm_password: 'a'.repeat(minLength),
+        password: validPassword,
+        confirm_password: validPassword,
       });
       expect(resultValid.success).toBe(true);
 

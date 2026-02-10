@@ -166,74 +166,80 @@ describe('Conversation Operations', () => {
       expect(result.expiredAt).toBeNull();
     });
 
-    it('should use custom retention period from config', async () => {
-      // Mock app config with 48 hour retention
-      mockReq.config.interfaceConfig.temporaryChatRetention = 48;
+	    it('should use custom retention period from config', async () => {
+	      // Mock app config with 48 hour retention
+	      mockReq.config.interfaceConfig.temporaryChatRetention = 48;
 
-      mockReq.body = { isTemporary: true };
+	      mockReq.body = { isTemporary: true };
 
-      const beforeSave = new Date();
-      const result = await saveConvo(mockReq, mockConversationData);
+	      const beforeSave = new Date();
+	      const result = await saveConvo(mockReq, mockConversationData);
+	      const afterSave = new Date();
 
-      expect(result.expiredAt).toBeDefined();
+	      expect(result.expiredAt).toBeDefined();
 
-      // Verify expiredAt is approximately 48 hours in the future
-      const expectedExpirationTime = new Date(beforeSave.getTime() + 48 * 60 * 60 * 1000);
-      const actualExpirationTime = new Date(result.expiredAt);
+	      // Verify expiredAt is approximately 48 hours in the future
+	      const expectedMin = beforeSave.getTime() + 48 * 60 * 60 * 1000;
+	      const expectedMax = afterSave.getTime() + 48 * 60 * 60 * 1000;
+	      const actualExpirationTime = new Date(result.expiredAt);
 
-      expect(actualExpirationTime.getTime()).toBeGreaterThanOrEqual(
-        expectedExpirationTime.getTime() - 1000,
-      );
-      expect(actualExpirationTime.getTime()).toBeLessThanOrEqual(
-        expectedExpirationTime.getTime() + 1000,
-      );
-    });
+	      expect(actualExpirationTime.getTime()).toBeGreaterThanOrEqual(
+	        expectedMin - 1000,
+	      );
+	      expect(actualExpirationTime.getTime()).toBeLessThanOrEqual(
+	        expectedMax + 1000,
+	      );
+	    });
 
-    it('should handle minimum retention period (1 hour)', async () => {
-      // Mock app config with less than minimum retention
-      mockReq.config.interfaceConfig.temporaryChatRetention = 0.5; // Half hour - should be clamped to 1 hour
+	    it('should handle minimum retention period (1 hour)', async () => {
+	      // Mock app config with less than minimum retention
+	      mockReq.config.interfaceConfig.temporaryChatRetention = 0.5; // Half hour - should be clamped to 1 hour
 
-      mockReq.body = { isTemporary: true };
+	      mockReq.body = { isTemporary: true };
 
-      const beforeSave = new Date();
-      const result = await saveConvo(mockReq, mockConversationData);
+	      const beforeSave = new Date();
+	      const result = await saveConvo(mockReq, mockConversationData);
+	      const afterSave = new Date();
 
-      expect(result.expiredAt).toBeDefined();
+	      expect(result.expiredAt).toBeDefined();
 
-      // Verify expiredAt is approximately 1 hour in the future (minimum)
-      const expectedExpirationTime = new Date(beforeSave.getTime() + 1 * 60 * 60 * 1000);
-      const actualExpirationTime = new Date(result.expiredAt);
+	      // Verify expiredAt is approximately 1 hour in the future (minimum)
+	      const expectedMin = beforeSave.getTime() + 1 * 60 * 60 * 1000;
+	      const expectedMax = afterSave.getTime() + 1 * 60 * 60 * 1000;
+	      const actualExpirationTime = new Date(result.expiredAt);
 
-      expect(actualExpirationTime.getTime()).toBeGreaterThanOrEqual(
-        expectedExpirationTime.getTime() - 1000,
-      );
-      expect(actualExpirationTime.getTime()).toBeLessThanOrEqual(
-        expectedExpirationTime.getTime() + 1000,
-      );
-    });
+	      expect(actualExpirationTime.getTime()).toBeGreaterThanOrEqual(
+	        expectedMin - 1000,
+	      );
+	      expect(actualExpirationTime.getTime()).toBeLessThanOrEqual(
+	        expectedMax + 1000,
+	      );
+	    });
 
-    it('should handle maximum retention period (8760 hours)', async () => {
-      // Mock app config with more than maximum retention
-      mockReq.config.interfaceConfig.temporaryChatRetention = 10000; // Should be clamped to 8760 hours
+	    it('should handle maximum retention period (8760 hours)', async () => {
+	      // Mock app config with more than maximum retention
+	      mockReq.config.interfaceConfig.temporaryChatRetention = 10000; // Should be clamped to 8760 hours
 
-      mockReq.body = { isTemporary: true };
+	      mockReq.body = { isTemporary: true };
 
-      const beforeSave = new Date();
-      const result = await saveConvo(mockReq, mockConversationData);
+	      const beforeSave = new Date();
+	      const result = await saveConvo(mockReq, mockConversationData);
+	      const afterSave = new Date();
 
-      expect(result.expiredAt).toBeDefined();
+	      expect(result.expiredAt).toBeDefined();
 
-      // Verify expiredAt is approximately 8760 hours (1 year) in the future
-      const expectedExpirationTime = new Date(beforeSave.getTime() + 8760 * 60 * 60 * 1000);
-      const actualExpirationTime = new Date(result.expiredAt);
+	      // Verify expiredAt is approximately 8760 hours (1 year) in the future
+	      const expectedMin = beforeSave.getTime() + 8760 * 60 * 60 * 1000;
+	      const expectedMax = afterSave.getTime() + 8760 * 60 * 60 * 1000;
+	      const actualExpirationTime = new Date(result.expiredAt);
 
-      expect(actualExpirationTime.getTime()).toBeGreaterThanOrEqual(
-        expectedExpirationTime.getTime() - 1000,
-      );
-      expect(actualExpirationTime.getTime()).toBeLessThanOrEqual(
-        expectedExpirationTime.getTime() + 1000,
-      );
-    });
+	      expect(actualExpirationTime.getTime()).toBeGreaterThanOrEqual(
+	        expectedMin - 1000,
+	      );
+	      expect(actualExpirationTime.getTime()).toBeLessThanOrEqual(
+	        expectedMax + 1000,
+	      );
+	    });
 
     it('should handle missing config gracefully', async () => {
       // Simulate missing config - should use default retention period
