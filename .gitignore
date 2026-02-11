@@ -179,3 +179,4 @@ hive-mind-prompt-*.txt
 server-Cloudflare-sert.md
 .worktrees
 .deploy/
+.git-rewrite/
