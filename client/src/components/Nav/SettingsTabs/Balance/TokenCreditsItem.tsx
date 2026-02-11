@@ -8,6 +8,8 @@ interface TokenCreditsItemProps {
 
 const TokenCreditsItem: React.FC<TokenCreditsItemProps> = ({ tokenCredits }) => {
   const localize = useLocalize();
+  const credits = tokenCredits ?? 0;
+  const approxUsd = credits / 1000000;
 
   return (
     <div className="flex items-center justify-between">
@@ -18,9 +20,10 @@ const TokenCreditsItem: React.FC<TokenCreditsItemProps> = ({ tokenCredits }) => 
       </div>
 
       {/* Right Section: tokenCredits Value */}
-      <span className="text-sm font-medium text-gray-800 dark:text-gray-200" role="note">
-        {tokenCredits !== undefined ? tokenCredits.toFixed(2) : '0.00'}
-      </span>
+      <div className="text-right" role="note">
+        <div className="text-sm font-medium text-gray-800 dark:text-gray-200">{credits.toFixed(2)}</div>
+        <div className="text-xs text-gray-500 dark:text-gray-400">≈ ${approxUsd.toFixed(2)}</div>
+      </div>
     </div>
   );
 };

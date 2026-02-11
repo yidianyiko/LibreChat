@@ -150,10 +150,10 @@ export const RechargePage: React.FC = () => {
             className="text-4xl md:text-6xl font-black mb-6 text-gray-900 dark:text-white"
             style={{ letterSpacing: '-0.04em' }}
           >
-            Recharge Your Credits
+            Recharge Your Token Credits
           </h1>
           <p className="text-gray-500 dark:text-gray-400 text-lg font-medium">
-            Choose a package to add credits to your account
+            Choose a package to add token credits to your account
           </p>
         </div>
 
@@ -171,7 +171,7 @@ export const RechargePage: React.FC = () => {
 
         <div className="mt-12 text-center text-sm text-gray-500 dark:text-gray-400">
           <p>Payments are securely processed by Stripe</p>
-          <p className="mt-2">1,000,000 credits = $1.00 USD • Credits never expire</p>
+          <p className="mt-2">1,000,000 token credits = $1.00 USD • Token credits never expire</p>
         </div>
       </div>
     </div>

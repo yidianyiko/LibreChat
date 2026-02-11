@@ -23,6 +23,8 @@ function AccountSettings() {
   const [showSettings, setShowSettings] = useState(false);
   const [showImportDialog, setShowImportDialog] = useState(false);
   const accountSettingsButtonRef = useRef<HTMLButtonElement>(null);
+  const tokenCredits = balanceQuery.data?.tokenCredits ?? 0;
+  const approxUsd = tokenCredits / 1000000;
 
   // Use the import conversations hook
   const {
@@ -91,9 +93,9 @@ function AccountSettings() {
               role="note"
             >
               <span>
-                {localize('com_nav_balance')}:{' '}
-                {new Intl.NumberFormat().format(Math.round(balanceQuery.data.tokenCredits))}
+                {localize('com_nav_balance')}: {new Intl.NumberFormat().format(Math.round(tokenCredits))}
               </span>
+              <span className="text-xs">≈ ${approxUsd.toFixed(2)}</span>
             </div>
           )}
           <div className="mt-3 flex items-center justify-center">

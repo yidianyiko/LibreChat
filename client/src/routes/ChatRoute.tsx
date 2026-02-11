@@ -9,6 +9,7 @@ import { useGetConvoIdQuery, useGetStartupConfig, useGetEndpointsQuery } from '~
 import { useNewConvo, useAppStartup, useAssistantListMap, useIdChangeEffect } from '~/hooks';
 import { getDefaultModelSpec, getModelSpecPreset, logger } from '~/utils';
 import { ToolCallsMapProvider } from '~/Providers';
+import { shouldBlockChatViewRender } from './chatRouteUtils';
 import ChatView from '~/components/Chat/ChatView';
 import useAuthRedirect from './useAuthRedirect';
 import temporaryStore from '~/store/temporary';
@@ -145,7 +146,7 @@ export default function ChatRoute() {
   }
 
   // if conversationId not match (but only if conversation exists)
-  if (conversation && conversation.conversationId !== conversationId) {
+  if (shouldBlockChatViewRender(conversation, conversationId)) {
     return null;
   }
 

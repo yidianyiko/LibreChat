@@ -36,6 +36,19 @@ jest.mock('~/components/Chat/Input/Files/MyFilesModal', () => ({
 }));
 
 jest.mock('../Settings', () => () => null);
+jest.mock('../SettingsTabs/Data/ImportConversationDialog', () => () => null);
+jest.mock('../SettingsTabs/Data/ImportProgressModal', () => () => null);
+jest.mock('~/hooks/Conversations/useImportConversations', () => ({
+  useImportConversations: () => ({
+    isUploading: false,
+    startImport: jest.fn(),
+    showProgressModal: false,
+    fileName: '',
+    isComplete: false,
+    isError: false,
+    resetProgressState: jest.fn(),
+  }),
+}));
 
 jest.mock('~/hooks', () => ({
   useLocalize: jest.fn(),
@@ -63,7 +76,12 @@ describe('AccountSettings', () => {
       isAuthenticated: true,
       logout: jest.fn(),
     });
-    mockUseLocalize.mockReturnValue((key: string) => key);
+    mockUseLocalize.mockReturnValue((key: string) => {
+      if (key === 'com_nav_balance') {
+        return 'Token Credits';
+      }
+      return key;
+    });
     mockUseGetStartupConfig.mockReturnValue({
       data: {
         balance: { enabled: false },
@@ -77,5 +95,23 @@ describe('AccountSettings', () => {
     render(<AccountSettings />);
 
     expect(screen.getByRole('button', { name: /add credits/i })).toBeInTheDocument();
+  });
+
+  it('shows token credits with approximate USD hint when balance is enabled', () => {
+    mockUseGetStartupConfig.mockReturnValue({
+      data: {
+        balance: { enabled: true },
+      },
+    });
+    mockUseGetUserBalance.mockReturnValue({
+      data: {
+        tokenCredits: 2500000,
+      },
+    });
+
+    render(<AccountSettings />);
+
+    expect(screen.getByText(/Token Credits:\s*2,500,000/)).toBeInTheDocument();
+    expect(screen.getByText(/≈ \$2\.50/)).toBeInTheDocument();
   });
 });
