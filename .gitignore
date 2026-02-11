@@ -178,3 +178,4 @@ hive-mind-prompt-*.txt
 .deploy/last_image.txt
 server-Cloudflare-sert.md
 .worktrees
+.deploy/
