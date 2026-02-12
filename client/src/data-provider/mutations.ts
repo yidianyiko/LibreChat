@@ -619,7 +619,14 @@ export const useUploadConversationsMutation = (
   const { onSuccess, onError, onMutate } = _options || {};
 
   return useMutation<t.TImportResponse, unknown, FormData>({
-    mutationFn: (formData: FormData) => dataService.importConversationsFile(formData),
+    mutationFn: async (formData: FormData) => {
+      const response = await dataService.importConversationsFile(formData, { timeout: 300000 });
+      // Attach status code to response for downstream handling
+      if (response && typeof response === 'object') {
+        (response as any).__httpStatus = 201; // Default to 201 if not available
+      }
+      return response;
+    },
     onSuccess: (data, variables, context) => {
       /* TODO: optimize to return imported conversations and add manually */
       queryClient.invalidateQueries([QueryKeys.allConversations]);
