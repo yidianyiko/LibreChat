@@ -22,6 +22,7 @@ async function _post(url: string, data?: any) {
 
 async function _postMultiPart(url: string, formData: FormData, options?: AxiosRequestConfig) {
   const response = await axios.post(url, formData, {
+    timeout: 300000, // 5 minutes default
     ...options,
     headers: { 'Content-Type': 'multipart/form-data' },
   });
