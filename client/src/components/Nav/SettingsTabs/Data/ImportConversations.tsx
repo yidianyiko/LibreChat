@@ -8,8 +8,7 @@ import ImportProgressModal from './ImportProgressModal';
 import { NotificationSeverity } from '~/common';
 import { useLocalize } from '~/hooks';
 import { cn, logger } from '~/utils';
-
-const CHUNK_THRESHOLD = 90 * 1024 * 1024; // 90MB
+import { DEFAULT_CHUNK_THRESHOLD } from '~/utils/importChunker';
 
 function ImportConversations() {
   const localize = useLocalize();
@@ -95,7 +94,7 @@ function ImportConversations() {
     async (file: File) => {
       try {
         // For files under the chunk threshold, use the existing simple upload
-        if (file.size < CHUNK_THRESHOLD) {
+        if (file.size < DEFAULT_CHUNK_THRESHOLD) {
           const startupConfig = queryClient.getQueryData<TStartupConfig>([QueryKeys.startupConfig]);
           const maxFileSize = startupConfig?.conversationImportMaxFileSize;
           if (maxFileSize && file.size > maxFileSize) {
@@ -137,7 +136,7 @@ function ImportConversations() {
 
         // Dynamic import of the chunker utility
         const { splitJsonArrayIntoChunks } = await import('~/utils/importChunker');
-        const chunks = splitJsonArrayIntoChunks(parsed, CHUNK_THRESHOLD);
+        const chunks = splitJsonArrayIntoChunks(parsed, DEFAULT_CHUNK_THRESHOLD);
 
         if (chunks.length <= 1) {
           // Only one chunk needed - upload normally

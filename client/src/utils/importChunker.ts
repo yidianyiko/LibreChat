@@ -1,8 +1,8 @@
 /**
- * Default chunk size threshold in bytes (90MB).
- * Below Cloudflare's 100MB limit with buffer for HTTP overhead.
+ * Default chunk size threshold in bytes (30MB).
+ * Conservative limit to ensure reliable uploads with buffer for HTTP overhead.
  */
-export const DEFAULT_CHUNK_THRESHOLD = 90 * 1024 * 1024;
+export const DEFAULT_CHUNK_THRESHOLD = 30 * 1024 * 1024;
 
 /**
  * Splits a JSON array of conversations into chunks where each chunk's
