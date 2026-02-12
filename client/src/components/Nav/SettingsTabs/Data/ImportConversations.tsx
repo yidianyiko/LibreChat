@@ -43,6 +43,12 @@ function ImportConversations() {
 
   const startPollingForCompletion = useCallback(
     (maxAttempts = 24) => {
+      // Clear any existing interval first to prevent orphaned intervals
+      if (pollingIntervalRef.current) {
+        clearInterval(pollingIntervalRef.current);
+        pollingIntervalRef.current = null;
+      }
+
       let attempt = 0;
       setIsPolling(true);
       setPollingAttempt(0);
