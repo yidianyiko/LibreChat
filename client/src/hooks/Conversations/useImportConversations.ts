@@ -108,21 +108,43 @@ export function useImportConversations() {
   const handleError = useCallback(
     (error: unknown) => {
       logger.error('Import error:', error);
-      setIsError(true);
       setIsUploading(false);
 
-      const isUnsupportedType = error?.toString().includes('Unsupported import type');
+      const errorString = error?.toString() ?? '';
+      const isUnsupportedType = errorString.includes('Unsupported import type');
 
-      showToast({
-        message: localize(
-          isUnsupportedType
-            ? 'com_ui_import_conversation_file_type_error'
-            : 'com_ui_import_conversation_error',
-        ),
-        status: NotificationSeverity.ERROR,
-      });
+      // Check for network errors that might indicate Cloudflare/proxy timeout
+      // These errors often occur when the upload succeeds but server processing takes too long
+      const isNetworkError =
+        errorString.includes('Network Error') ||
+        errorString.includes('ERR_SSL') ||
+        errorString.includes('timeout') ||
+        errorString.includes('ECONNRESET') ||
+        (error instanceof Error && error.message === 'Network Error');
+
+      if (isNetworkError) {
+        // Don't mark as error - the import may have succeeded in the background
+        setIsError(false);
+        showToast({
+          message: localize('com_ui_import_conversation_network_error'),
+          status: NotificationSeverity.WARNING,
+          duration: 8000,
+        });
+        // Start polling to check if import succeeded
+        startPollingForCompletion();
+      } else {
+        setIsError(true);
+        showToast({
+          message: localize(
+            isUnsupportedType
+              ? 'com_ui_import_conversation_file_type_error'
+              : 'com_ui_import_conversation_error',
+          ),
+          status: NotificationSeverity.ERROR,
+        });
+      }
     },
-    [localize, showToast],
+    [localize, showToast, startPollingForCompletion],
   );
 
   const uploadFile = useUploadConversationsMutation({
