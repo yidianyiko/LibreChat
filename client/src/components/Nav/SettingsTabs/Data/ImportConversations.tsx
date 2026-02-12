@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from 'react';
+import { useState, useRef, useCallback, useEffect } from 'react';
 import { Import } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
 import { QueryKeys, TStartupConfig } from 'librechat-data-provider';
@@ -22,6 +22,9 @@ function ImportConversations() {
   const [isError, setIsError] = useState(false);
   const [currentChunk, setCurrentChunk] = useState<number | undefined>(undefined);
   const [totalChunks, setTotalChunks] = useState<number | undefined>(undefined);
+  const [isPolling, setIsPolling] = useState(false);
+  const [pollingAttempt, setPollingAttempt] = useState(0);
+  const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
   const resetProgressState = useCallback(() => {
     setShowProgressModal(false);
@@ -30,7 +33,42 @@ function ImportConversations() {
     setIsError(false);
     setCurrentChunk(undefined);
     setTotalChunks(undefined);
+    setIsPolling(false);
+    setPollingAttempt(0);
+    if (pollingIntervalRef.current) {
+      clearInterval(pollingIntervalRef.current);
+      pollingIntervalRef.current = null;
+    }
   }, []);
+
+  const startPollingForCompletion = useCallback(
+    (maxAttempts = 24) => {
+      let attempt = 0;
+      setIsPolling(true);
+      setPollingAttempt(0);
+
+      pollingIntervalRef.current = setInterval(() => {
+        attempt++;
+        setPollingAttempt(attempt);
+
+        queryClient.invalidateQueries([QueryKeys.allConversations]);
+
+        if (attempt >= maxAttempts) {
+          if (pollingIntervalRef.current) {
+            clearInterval(pollingIntervalRef.current);
+            pollingIntervalRef.current = null;
+          }
+          setIsPolling(false);
+          showToast({
+            message: localize('com_ui_import_conversation_timeout_warning'),
+            status: NotificationSeverity.WARNING,
+            duration: 8000,
+          });
+        }
+      }, 5000);
+    },
+    [queryClient, showToast, localize],
+  );
 
   const handleSuccess = useCallback(
     (data?: { message?: string }) => {
@@ -77,12 +115,16 @@ function ImportConversations() {
   });
 
   const uploadSingleFile = useCallback(
-    (blob: Blob, name: string): Promise<void> => {
+    (blob: Blob, name: string): Promise<{ isBackground: boolean }> => {
       return new Promise((resolve, reject) => {
         const formData = new FormData();
         formData.append('file', blob, encodeURIComponent(name));
         uploadFile.mutate(formData, {
-          onSuccess: () => resolve(),
+          onSuccess: (data) => {
+            const serverMessage = data?.message?.trim();
+            const isProcessing = serverMessage?.toLowerCase().includes('processing');
+            resolve({ isBackground: isProcessing });
+          },
           onError: (err) => reject(err),
         });
       });
@@ -150,13 +192,18 @@ function ImportConversations() {
         setTotalChunks(chunks.length);
         setIsUploading(true);
 
+        let hasBackgroundProcessing = false;
+
         for (let i = 0; i < chunks.length; i++) {
           setCurrentChunk(i + 1);
           const chunkJson = JSON.stringify(chunks[i]);
           const blob = new Blob([chunkJson], { type: 'application/json' });
           const chunkName = `${file.name || 'File'}_part${i + 1}of${chunks.length}.json`;
 
-          await uploadSingleFile(blob, chunkName);
+          const result = await uploadSingleFile(blob, chunkName);
+          if (result.isBackground) {
+            hasBackgroundProcessing = true;
+          }
         }
 
         // All chunks uploaded successfully
@@ -164,10 +211,19 @@ function ImportConversations() {
         setIsComplete(true);
         setIsUploading(false);
 
-        showToast({
-          message: localize('com_ui_import_conversation_success'),
-          status: NotificationSeverity.SUCCESS,
-        });
+        if (hasBackgroundProcessing) {
+          showToast({
+            message: localize('com_ui_import_conversation_background'),
+            status: NotificationSeverity.INFO,
+            duration: 6000,
+          });
+          startPollingForCompletion();
+        } else {
+          showToast({
+            message: localize('com_ui_import_conversation_success'),
+            status: NotificationSeverity.SUCCESS,
+          });
+        }
       } catch (error) {
         logger.error('File processing error:', error);
         setIsUploading(false);
@@ -178,7 +234,15 @@ function ImportConversations() {
         });
       }
     },
-    [uploadFile, uploadSingleFile, showToast, localize, queryClient, resetProgressState],
+    [
+      uploadFile,
+      uploadSingleFile,
+      showToast,
+      localize,
+      queryClient,
+      resetProgressState,
+      startPollingForCompletion,
+    ],
   );
 
   const handleFileChange = useCallback(
@@ -212,6 +276,14 @@ function ImportConversations() {
   );
 
   const isImportDisabled = isUploading;
+
+  useEffect(() => {
+    return () => {
+      if (pollingIntervalRef.current) {
+        clearInterval(pollingIntervalRef.current);
+      }
+    };
+  }, []);
 
   return (
     <div className="flex items-center justify-between">
@@ -252,6 +324,8 @@ function ImportConversations() {
         onClose={resetProgressState}
         currentChunk={currentChunk}
         totalChunks={totalChunks}
+        isPolling={isPolling}
+        pollingAttempt={pollingAttempt}
       />
     </div>
   );
