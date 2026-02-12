@@ -2,9 +2,9 @@
 
 > **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.
 
-**Goal:** Allow users to import large ChatGPT export files (>100MB) by automatically splitting them into chunks on the frontend, bypassing Cloudflare's 100MB upload limit.
+**Goal:** Allow users to import large ChatGPT export files by automatically splitting them into chunks on the frontend, ensuring reliable uploads.
 
-**Architecture:** When a user selects a JSON file larger than a configurable threshold (default 90MB), the frontend reads the file, parses the top-level JSON array, splits it into chunks that each serialize to <90MB, and uploads each chunk sequentially via the existing `/api/convos/import` endpoint. The progress modal shows real chunk-level progress (e.g., "Uploading chunk 2/5"). No backend changes needed — each chunk is a valid ChatGPT export array.
+**Architecture:** When a user selects a JSON file larger than a configurable threshold (default 30MB), the frontend reads the file, parses the top-level JSON array, splits it into chunks that each serialize to <30MB, and uploads each chunk sequentially via the existing `/api/convos/import` endpoint. The progress modal shows real chunk-level progress (e.g., "Uploading chunk 2/5"). No backend changes needed — each chunk is a valid ChatGPT export array.
 
 **Tech Stack:** React, TypeScript, FileReader API, existing TanStack Query mutation
 
@@ -12,8 +12,8 @@
 
 ## Design Notes
 
-### Why 90MB threshold (not 100MB)?
-Cloudflare's limit is 100MB. We use 90MB to leave buffer for HTTP headers, multipart boundaries, and FormData overhead.
+### Why 30MB threshold?
+Conservative limit chosen to ensure reliable uploads across various network conditions and server configurations, with buffer for HTTP headers, multipart boundaries, and FormData overhead.
 
 ### Why not stream-parse?
 213MB JSON is manageable in browser memory (~400-600MB peak). Stream parsing adds complexity (extra deps, Web Workers) for marginal benefit. If users hit memory issues on low-end devices, we can add stream parsing later.
@@ -110,10 +110,10 @@ Create `client/src/utils/importChunker.ts`:
 
 ```typescript
 /**
- * Default chunk size threshold in bytes (90MB).
- * Below Cloudflare's 100MB limit with buffer for HTTP overhead.
+ * Default chunk size threshold in bytes (30MB).
+ * Conservative limit to ensure reliable uploads with buffer for HTTP overhead.
  */
-export const DEFAULT_CHUNK_THRESHOLD = 90 * 1024 * 1024;
+export const DEFAULT_CHUNK_THRESHOLD = 30 * 1024 * 1024;
 
 /**
  * Splits a JSON array of conversations into chunks where each chunk's
@@ -305,7 +305,7 @@ const resetProgressState = useCallback(() => {
 Replace `handleFileUpload` (lines 74-104) with:
 
 ```typescript
-const CHUNK_THRESHOLD = 90 * 1024 * 1024; // 90MB
+const CHUNK_THRESHOLD = 30 * 1024 * 1024; // 30MB
 
 const uploadSingleFile = useCallback(
   (file: File | Blob, fileName: string): Promise<void> => {
