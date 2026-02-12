@@ -1,0 +1,154 @@
+name: Deploy to Server
+
+on:
+  workflow_dispatch:
+    inputs:
+      image_tag:
+        description: 'Image tag to deploy (default: latest)'
+        required: false
+        default: 'latest'
+        type: string
+      skip_health_check:
+        description: 'Skip health check after deployment'
+        required: false
+        default: false
+        type: boolean
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository_owner }}/librechat
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.SERVER_SSH_KEY }}" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          ssh-keyscan -H ${{ secrets.SERVER_HOST }} >> ~/.ssh/known_hosts
+
+      - name: Test SSH connection
+        run: |
+          ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no \
+            ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} \
+            "echo 'SSH connection successful'"
+
+      - name: Login to GitHub Container Registry on server
+        run: |
+          ssh -i ~/.ssh/deploy_key \
+            ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} \
+            "echo '${{ secrets.GITHUB_TOKEN }}' | sudo docker login ${{ env.REGISTRY }} -u ${{ github.actor }} --password-stdin"
+
+      - name: Pull Docker image on server
+        run: |
+          ssh -i ~/.ssh/deploy_key \
+            ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} \
+            "sudo docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ inputs.image_tag }}"
+
+      - name: Transfer configuration files
+        run: |
+          if [ -f "librechat.yaml" ]; then
+            scp -i ~/.ssh/deploy_key librechat.yaml \
+              ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }}:${{ secrets.SERVER_PROJECT_DIR }}/librechat.yaml
+          fi
+
+          if [ -f "client/nginx.conf" ]; then
+            ssh -i ~/.ssh/deploy_key \
+              ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} \
+              "mkdir -p ${{ secrets.SERVER_PROJECT_DIR }}/client"
+            scp -i ~/.ssh/deploy_key client/nginx.conf \
+              ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }}:${{ secrets.SERVER_PROJECT_DIR }}/client/nginx.conf
+          fi
+
+      - name: Create docker-compose override
+        run: |
+          ssh -i ~/.ssh/deploy_key \
+            ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} << 'EOF'
+          cd ${{ secrets.SERVER_PROJECT_DIR }}
+          mkdir -p .deploy
+
+          # Backup current override
+          if [ -f .deploy/override.yml ]; then
+            CURRENT_IMAGE=$(grep "image:" .deploy/override.yml | awk '{print $2}')
+            if [ -n "${CURRENT_IMAGE}" ]; then
+              echo "${CURRENT_IMAGE}" > .deploy/rollback_image.txt
+              echo "Saved rollback image: ${CURRENT_IMAGE}"
+            fi
+          fi
+
+          # Create new override
+          cat > .deploy/override.yml << YAML
+          services:
+            api:
+              image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ inputs.image_tag }}
+          YAML
+
+          echo "Override file created"
+          EOF
+
+      - name: Deploy service
+        run: |
+          ssh -i ~/.ssh/deploy_key \
+            ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} << 'EOF'
+          cd ${{ secrets.SERVER_PROJECT_DIR }}
+
+          echo "Restarting API service..."
+          sudo docker-compose -f docker-compose.yml -f .deploy/override.yml up -d api
+
+          echo "Waiting for service to start..."
+          sleep 5
+
+          echo "Checking service status..."
+          sudo docker-compose ps
+
+          echo ""
+          echo "=== Recent logs ==="
+          sudo docker-compose logs --tail=20 api
+          EOF
+
+      - name: Health check
+        if: ${{ !inputs.skip_health_check }}
+        run: |
+          ssh -i ~/.ssh/deploy_key \
+            ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} << 'EOF'
+          echo "Performing health check..."
+
+          max_attempts=30
+          attempt=0
+
+          while [ $attempt -lt $max_attempts ]; do
+            if curl -sf http://localhost:3080/api/health > /dev/null 2>&1; then
+              echo "✅ Health check passed!"
+              exit 0
+            fi
+
+            echo "Waiting for service... ($attempt/$max_attempts)"
+            sleep 2
+            ((attempt++))
+          done
+
+          echo "❌ Health check failed"
+          cd ${{ secrets.SERVER_PROJECT_DIR }}
+          sudo docker-compose logs --tail=50 api
+          exit 1
+          EOF
+
+      - name: Cleanup SSH key
+        if: always()
+        run: |
+          rm -f ~/.ssh/deploy_key
+
+      - name: Deployment summary
+        run: |
+          echo "## Deployment Complete 🚀" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Image deployed:** \`${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ inputs.image_tag }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "**Server:** \`${{ secrets.SERVER_HOST }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Access:** http://${{ secrets.SERVER_HOST }}:3080" >> $GITHUB_STEP_SUMMARY
