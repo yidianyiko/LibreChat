@@ -134,6 +134,46 @@ npm run stop:deployed          # Stop production deployment
 npm run update:deployed        # Update deployed instance
 ```
 
+### Automated Deployment Workflows
+
+LibreChat supports automated server deployment using GitHub Container Registry (ghcr.io). Two deployment methods are available:
+
+**Method A: Trigger GitHub Actions Deployment (Recommended for Production)**
+
+```bash
+./trigger-deploy.sh                    # Deploy latest image
+./trigger-deploy.sh 20260212143000     # Deploy specific tag
+./trigger-deploy.sh --no-health-check  # Skip health check
+gh run watch                           # Watch deployment logs
+```
+
+Flow: Local trigger → GitHub Actions → SSH to server → Pull image → Deploy → Health check
+
+**Method C: Direct Deployment (Fast Path)**
+
+```bash
+./deploy-registry.sh                   # Deploy latest image
+./deploy-registry.sh 20260212143000    # Deploy specific tag
+./deploy-registry.sh --rollback        # Rollback to previous version
+./deploy-registry.sh --server IP       # Deploy to custom server
+```
+
+Flow: Local machine → SSH to server → Pull image → Deploy → Health check
+
+**Key Differences:**
+
+| Feature | Method A | Method C |
+|---------|----------|----------|
+| Speed | 2-3 min | 1-2 min |
+| Audit trail | GitHub Actions logs | Terminal only |
+| Best for | Production | Quick fixes |
+
+**Image Registry:** `ghcr.io/yidianyiko/librechat`
+
+**Setup Guide:** See `docs/automated-deployment-setup.md` for GitHub Secrets configuration, SSH key setup, and GitHub CLI authentication.
+
+**Deployment Guide:** See `docs/deployment-registry-guide.md` for detailed usage instructions, troubleshooting, and best practices.
+
 ### Maintenance
 
 ```bash
