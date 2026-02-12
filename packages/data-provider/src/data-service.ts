@@ -618,8 +618,11 @@ export const deleteMCPServer = async (serverName: string): Promise<{ success: bo
  * @param data - The FormData containing the file to import.
  * @returns A Promise that resolves to the import start response.
  */
-export const importConversationsFile = (data: FormData): Promise<t.TImportResponse> => {
-  return request.postMultiPart(endpoints.importConversation(), data);
+export const importConversationsFile = (
+  data: FormData,
+  options?: { timeout?: number },
+): Promise<t.TImportResponse> => {
+  return request.postMultiPart(endpoints.importConversation(), data, options);
 };
 
 export const uploadAvatar = (data: FormData): Promise<f.AvatarUploadResponse> => {

@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from 'react';
+import { useState, useRef, useCallback, useEffect } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { QueryKeys, TStartupConfig } from 'librechat-data-provider';
 import { useToastContext } from '@librechat/client';
@@ -20,6 +20,9 @@ export function useImportConversations() {
   const [isError, setIsError] = useState(false);
   const [currentChunk, setCurrentChunk] = useState<number | undefined>(undefined);
   const [totalChunks, setTotalChunks] = useState<number | undefined>(undefined);
+  const [isPolling, setIsPolling] = useState(false);
+  const [pollingAttempt, setPollingAttempt] = useState(0);
+  const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
   const resetProgressState = useCallback(() => {
     setShowProgressModal(false);
@@ -28,7 +31,51 @@ export function useImportConversations() {
     setIsError(false);
     setCurrentChunk(undefined);
     setTotalChunks(undefined);
+    setIsPolling(false);
+    setPollingAttempt(0);
+    if (pollingIntervalRef.current) {
+      clearInterval(pollingIntervalRef.current);
+      pollingIntervalRef.current = null;
+    }
   }, []);
+
+  const startPollingForCompletion = useCallback(
+    (maxAttempts = 24) => {
+      // Clear any existing interval first to prevent orphaned intervals
+      if (pollingIntervalRef.current) {
+        clearInterval(pollingIntervalRef.current);
+        pollingIntervalRef.current = null;
+      }
+
+      // Poll every 5 seconds for up to 2 minutes (24 attempts)
+      let attempt = 0;
+      setIsPolling(true);
+      setPollingAttempt(0);
+
+      pollingIntervalRef.current = setInterval(() => {
+        attempt++;
+        setPollingAttempt(attempt);
+
+        // Invalidate queries to trigger refetch
+        queryClient.invalidateQueries([QueryKeys.allConversations]);
+
+        if (attempt >= maxAttempts) {
+          // Stop polling after max attempts
+          if (pollingIntervalRef.current) {
+            clearInterval(pollingIntervalRef.current);
+            pollingIntervalRef.current = null;
+          }
+          setIsPolling(false);
+          showToast({
+            message: localize('com_ui_import_conversation_timeout_warning'),
+            status: NotificationSeverity.WARNING,
+            duration: 8000,
+          });
+        }
+      }, 5000);
+    },
+    [queryClient, showToast, localize],
+  );
 
   const handleSuccess = useCallback(
     (data?: { message?: string }) => {
@@ -38,14 +85,24 @@ export function useImportConversations() {
       setIsComplete(true);
       setIsUploading(false);
 
-      showToast({
-        message: isProcessing
-          ? localize('com_ui_import_conversation_processing')
-          : localize('com_ui_import_conversation_success'),
-        status: isProcessing ? NotificationSeverity.INFO : NotificationSeverity.SUCCESS,
-      });
+      if (isProcessing) {
+        // Backend returned 202 - processing in background
+        showToast({
+          message: localize('com_ui_import_conversation_background'),
+          status: NotificationSeverity.INFO,
+          duration: 6000,
+        });
+        // Start polling for completion
+        startPollingForCompletion();
+      } else {
+        // Immediate success (201)
+        showToast({
+          message: localize('com_ui_import_conversation_success'),
+          status: NotificationSeverity.SUCCESS,
+        });
+      }
     },
-    [localize, showToast],
+    [localize, showToast, startPollingForCompletion],
   );
 
   const handleError = useCallback(
@@ -221,6 +278,15 @@ export function useImportConversations() {
     [handleFileUpload, localize, showToast],
   );
 
+  useEffect(() => {
+    return () => {
+      // Cleanup polling on unmount
+      if (pollingIntervalRef.current) {
+        clearInterval(pollingIntervalRef.current);
+      }
+    };
+  }, []);
+
   return {
     fileInputRef,
     isUploading,
@@ -236,5 +302,8 @@ export function useImportConversations() {
     // Chunk state
     currentChunk,
     totalChunks,
+    // Polling state
+    isPolling,
+    pollingAttempt,
   };
 }

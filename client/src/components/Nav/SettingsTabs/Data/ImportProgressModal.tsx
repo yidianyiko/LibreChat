@@ -10,8 +10,14 @@ interface ImportProgressModalProps {
   isComplete: boolean;
   isError: boolean;
   onClose: () => void;
+  /** Current chunk being uploaded (1-indexed). Undefined means single upload. */
   currentChunk?: number;
+  /** Total number of chunks. */
   totalChunks?: number;
+  /** Whether polling for completion is active. */
+  isPolling?: boolean;
+  /** Current polling attempt number. */
+  pollingAttempt?: number;
 }
 
 export default function ImportProgressModal({
@@ -22,6 +28,8 @@ export default function ImportProgressModal({
   onClose,
   currentChunk,
   totalChunks,
+  isPolling = false,
+  pollingAttempt = 0,
 }: ImportProgressModalProps) {
   const localize = useLocalize();
   const [progress, setProgress] = useState(0);
@@ -36,7 +44,7 @@ export default function ImportProgressModal({
 
   // Simulate progress (disabled during chunked upload — chunk-based useEffect handles it)
   useEffect(() => {
-    if (!open || isComplete || isError || (currentChunk != null && totalChunks != null)) {
+    if (!open || isComplete || isError || (currentChunk != null && totalChunks != null) || isPolling) {
       return;
     }
 
@@ -69,27 +77,35 @@ export default function ImportProgressModal({
       clearInterval(progressInterval);
       clearInterval(messageInterval);
     };
-  }, [open, isComplete, isError, currentChunk, totalChunks, progressMessages.length]);
+  }, [open, isComplete, isError, currentChunk, totalChunks, isPolling, progressMessages.length]);
 
   // Override simulated progress with chunk-based progress when chunked upload is active
   useEffect(() => {
-    if (currentChunk != null && totalChunks != null && totalChunks > 0) {
+    if (currentChunk != null && totalChunks != null && totalChunks > 0 && !isPolling) {
       const chunkWeight = 100 / totalChunks;
       const completedChunksProgress = (currentChunk - 1) * chunkWeight;
       const intraChunkTarget = chunkWeight * 0.9;
       setProgress(completedChunksProgress + intraChunkTarget);
     }
-  }, [currentChunk, totalChunks]);
+  }, [currentChunk, totalChunks, isPolling]);
+
+  // Handle polling state progress
+  useEffect(() => {
+    if (isPolling) {
+      // During polling, show 90-95% progress
+      setProgress(90 + (pollingAttempt / 24) * 5);
+    }
+  }, [isPolling, pollingAttempt]);
 
   // Complete the progress when done
   useEffect(() => {
-    if (isComplete && !isError) {
+    if (isComplete && !isError && !isPolling) {
       setProgress(100);
       // Auto close after showing 100%
       const timer = setTimeout(onClose, 800);
       return () => clearTimeout(timer);
     }
-  }, [isComplete, isError, onClose]);
+  }, [isComplete, isError, isPolling, onClose]);
 
   // Close on error after a short delay
   useEffect(() => {
@@ -123,6 +139,15 @@ export default function ImportProgressModal({
               {localize('com_ui_import_chunk_progress', {
                 current: String(currentChunk),
                 total: String(totalChunks),
+              })}
+            </span>
+          )}
+
+          {isPolling && (
+            <span className="text-xs text-blue-600 dark:text-blue-400">
+              {localize('com_ui_import_conversation_polling', {
+                attempt: String(pollingAttempt),
+                max: '24',
               })}
             </span>
           )}
