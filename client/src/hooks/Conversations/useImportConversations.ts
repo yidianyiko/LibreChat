@@ -41,6 +41,12 @@ export function useImportConversations() {
 
   const startPollingForCompletion = useCallback(
     (maxAttempts = 24) => {
+      // Clear any existing interval first to prevent orphaned intervals
+      if (pollingIntervalRef.current) {
+        clearInterval(pollingIntervalRef.current);
+        pollingIntervalRef.current = null;
+      }
+
       // Poll every 5 seconds for up to 2 minutes (24 attempts)
       let attempt = 0;
       setIsPolling(true);
