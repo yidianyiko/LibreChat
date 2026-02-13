@@ -4,6 +4,7 @@ const { EModelEndpoint, Constants, openAISettings, CacheKeys } = require('librec
 const { createImportBatchBuilder } = require('./importBatchBuilder');
 const { cloneMessagesWithTimestamps } = require('./fork');
 const getLogStores = require('~/cache/getLogStores');
+const { getExistingImportSourceIds } = require('~/models/Conversation');
 
 /**
  * Returns the appropriate importer function based on the provided JSON data.
@@ -117,10 +118,29 @@ async function importClaudeConvo(
   builderFactory = createImportBatchBuilder,
 ) {
   try {
+    // Build source IDs for dedup lookup
+    const sourceIds = jsonData
+      .filter((conv) => conv.uuid)
+      .map((conv) => `claude:${conv.uuid}`);
+    let existingIds;
+    try {
+      existingIds = await getExistingImportSourceIds(requestUserId, sourceIds);
+    } catch (err) {
+      logger.warn(`user: ${requestUserId} | Failed to check for duplicates, proceeding with import`, err);
+      existingIds = new Set();
+    }
+
     const importBatchBuilder = builderFactory(requestUserId);
+    let skipped = 0;
 
     for (const conv of jsonData) {
-      importBatchBuilder.startConversation(EModelEndpoint.anthropic);
+      const sourceId = conv.uuid ? `claude:${conv.uuid}` : null;
+      if (sourceId && existingIds.has(sourceId)) {
+        skipped++;
+        continue;
+      }
+
+      importBatchBuilder.startConversation(EModelEndpoint.anthropic, sourceId);
 
       let lastMessageId = Constants.NO_PARENT;
       let lastTimestamp = null;
@@ -131,18 +151,13 @@ async function importClaudeConvo(
 
         const { textContent, thinkingContent } = extractClaudeContent(msg);
 
-        // Skip empty messages
         if (!textContent && !thinkingContent) {
           continue;
         }
 
-        // Parse timestamp, fallback to conversation create_time or current time
         const messageTime = msg.created_at || conv.created_at;
         let createdAt = messageTime ? new Date(messageTime) : new Date();
 
-        // Ensure timestamp is after the previous message.
-        // Messages are sorted by createdAt and buildTree expects parents to appear before children.
-        // This guards against any potential ordering issues in exports.
         if (lastTimestamp && createdAt <= lastTimestamp) {
           createdAt = new Date(lastTimestamp.getTime() + 1);
         }
@@ -159,7 +174,6 @@ async function importClaudeConvo(
           createdAt,
         };
 
-        // Add content array with thinking if present
         if (thinkingContent && !isCreatedByUser) {
           message.content = [
             { type: 'think', think: thinkingContent },
@@ -176,7 +190,11 @@ async function importClaudeConvo(
     }
 
     await importBatchBuilder.saveBatch();
-    logger.info(`user: ${requestUserId} | Claude conversation imported`);
+    if (skipped > 0) {
+      logger.info(
+        `user: ${requestUserId} | Claude import: skipped ${skipped} duplicate conversation(s)`,
+      );
+    }
   } catch (error) {
     logger.error(`user: ${requestUserId} | Error creating conversation from Claude file`, error);
   }
@@ -292,11 +310,34 @@ async function importChatGptConvo(
   builderFactory = createImportBatchBuilder,
 ) {
   try {
+    // Build source IDs for dedup lookup
+    const sourceIds = jsonData
+      .filter((conv) => conv.id)
+      .map((conv) => `chatgpt:${conv.id}`);
+    let existingIds;
+    try {
+      existingIds = await getExistingImportSourceIds(requestUserId, sourceIds);
+    } catch (err) {
+      logger.warn(`user: ${requestUserId} | Failed to check for duplicates, proceeding with import`, err);
+      existingIds = new Set();
+    }
+
     const importBatchBuilder = builderFactory(requestUserId);
+    let skipped = 0;
     for (const conv of jsonData) {
-      processConversation(conv, importBatchBuilder, requestUserId);
+      const sourceId = conv.id ? `chatgpt:${conv.id}` : null;
+      if (sourceId && existingIds.has(sourceId)) {
+        skipped++;
+        continue;
+      }
+      processConversation(conv, importBatchBuilder, requestUserId, sourceId);
     }
     await importBatchBuilder.saveBatch();
+    if (skipped > 0) {
+      logger.info(
+        `user: ${requestUserId} | ChatGPT import: skipped ${skipped} duplicate conversation(s)`,
+      );
+    }
   } catch (error) {
     logger.error(`user: ${requestUserId} | Error creating conversation from imported file`, error);
   }
@@ -309,10 +350,11 @@ async function importChatGptConvo(
  * @param {ChatGPTConvo} conv - A single conversation object that contains multiple messages and other details.
  * @param {ImportBatchBuilder} importBatchBuilder - The batch builder instance used to manage and batch conversation data.
  * @param {string} requestUserId - The ID of the user who initiated the import process.
+ * @param {string|null} importSourceId - Original source ID for deduplication (e.g., "chatgpt:abc123").
  * @returns {void}
  */
-function processConversation(conv, importBatchBuilder, requestUserId) {
-  importBatchBuilder.startConversation(EModelEndpoint.openAI);
+function processConversation(conv, importBatchBuilder, requestUserId, importSourceId) {
+  importBatchBuilder.startConversation(EModelEndpoint.openAI, importSourceId);
 
   // Map all message IDs to new UUIDs
   const messageMap = new Map();
