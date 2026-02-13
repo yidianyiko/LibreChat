@@ -1,6 +1,6 @@
 import debounce from 'lodash/debounce';
 import React, { createContext, useContext, useState, useMemo, useCallback } from 'react';
-import { EModelEndpoint, isAgentsEndpoint, isAssistantsEndpoint } from 'librechat-data-provider';
+import { EModelEndpoint, isAgentsEndpoint, isAssistantsEndpoint, PermissionTypes, Permissions } from 'librechat-data-provider';
 import type * as t from 'librechat-data-provider';
 import type { Endpoint, SelectedValues } from '~/common';
 import {
@@ -9,6 +9,7 @@ import {
   useKeyDialog,
   useEndpoints,
   useLocalize,
+  useHasAccess,
 } from '~/hooks';
 import { useAgentsMapContext, useAssistantsMapContext, useLiveAnnouncer } from '~/Providers';
 import { useGetEndpointsQuery, useListAgentsQuery } from '~/data-provider';
@@ -82,10 +83,15 @@ export function ModelSelectorProvider({ children, startupConfig }: ModelSelector
   }, [startupConfig, agentsMap]);
 
   const permissionLevel = useAgentDefaultPermissionLevel();
+  const hasAgentAccess = useHasAccess({
+    permissionType: PermissionTypes.AGENTS,
+    permission: Permissions.USE,
+  });
   const { data: agents = null } = useListAgentsQuery(
     { requiredPermission: permissionLevel },
     {
       select: (data) => data?.data,
+      enabled: hasAgentAccess,
     },
   );
 
