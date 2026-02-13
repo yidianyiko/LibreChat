@@ -37,6 +37,9 @@ const convoSchema: Schema<IConversation> = new Schema(
     expiredAt: {
       type: Date,
     },
+    importSourceId: {
+      type: String,
+    },
   },
   { timestamps: true },
 );
@@ -47,5 +50,7 @@ convoSchema.index({ conversationId: 1, user: 1 }, { unique: true });
 
 // index for MeiliSearch sync operations
 convoSchema.index({ _meiliIndex: 1, expiredAt: 1 });
+
+convoSchema.index({ user: 1, importSourceId: 1 }, { unique: true, sparse: true });
 
 export default convoSchema;
