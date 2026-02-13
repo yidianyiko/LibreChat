@@ -1,7 +1,7 @@
 const fs = require('fs');
 const path = require('path');
 const { EModelEndpoint, Constants, openAISettings } = require('librechat-data-provider');
-const { bulkSaveConvos: _bulkSaveConvos } = require('~/models/Conversation');
+const { bulkSaveConvos: _bulkSaveConvos, getExistingImportSourceIds } = require('~/models/Conversation');
 const { getImporter, processAssistantMessage } = require('./importers');
 const { ImportBatchBuilder } = require('./importBatchBuilder');
 const { bulkSaveMessages } = require('~/models/Message');
@@ -16,6 +16,7 @@ getLogStores.mockImplementation(() => ({
 // Mock the database methods
 jest.mock('~/models/Conversation', () => ({
   bulkSaveConvos: jest.fn(),
+  getExistingImportSourceIds: jest.fn().mockResolvedValue(new Set()),
 }));
 jest.mock('~/models/Message', () => ({
   bulkSaveMessages: jest.fn(),
@@ -43,7 +44,10 @@ describe('importChatGptConvo', () => {
     const importer = getImporter(jsonData);
     await importer(jsonData, requestUserId, () => importBatchBuilder);
 
-    expect(importBatchBuilder.startConversation).toHaveBeenCalledWith(EModelEndpoint.openAI);
+    expect(importBatchBuilder.startConversation).toHaveBeenCalledWith(
+      EModelEndpoint.openAI,
+      expect.stringContaining('chatgpt:'),
+    );
     expect(importBatchBuilder.saveMessage).toHaveBeenCalledTimes(expectedNumberOfMessages);
     expect(importBatchBuilder.finishConversation).toHaveBeenCalledTimes(jsonData.length);
     expect(importBatchBuilder.saveBatch).toHaveBeenCalled();
@@ -755,6 +759,91 @@ describe('importChatGptConvo', () => {
   });
 });
 
+describe('importChatGptConvo deduplication', () => {
+  it('should skip conversations that already exist by importSourceId', async () => {
+    const jsonData = JSON.parse(
+      fs.readFileSync(path.join(__dirname, '__data__', 'chatgpt-export.json'), 'utf8'),
+    );
+    const requestUserId = 'user-dedup-test';
+
+    // Simulate that the first conversation already exists
+    const firstConvId = jsonData[0].id;
+    getExistingImportSourceIds.mockResolvedValueOnce(
+      new Set([`chatgpt:${firstConvId}`]),
+    );
+
+    const importBatchBuilder = new ImportBatchBuilder(requestUserId);
+    jest.spyOn(importBatchBuilder, 'startConversation');
+    jest.spyOn(importBatchBuilder, 'saveBatch').mockResolvedValue();
+
+    const importer = getImporter(jsonData);
+    await importer(jsonData, requestUserId, () => importBatchBuilder);
+
+    // Should have started fewer conversations than total in the file
+    const totalConvos = jsonData.length;
+    expect(importBatchBuilder.startConversation).toHaveBeenCalledTimes(totalConvos - 1);
+  });
+
+  it('should skip all conversations when all already exist', async () => {
+    const jsonData = JSON.parse(
+      fs.readFileSync(path.join(__dirname, '__data__', 'chatgpt-export.json'), 'utf8'),
+    );
+    const requestUserId = 'user-dedup-test';
+
+    // Simulate all conversations already exist
+    const allSourceIds = new Set(jsonData.map((conv) => `chatgpt:${conv.id}`));
+    getExistingImportSourceIds.mockResolvedValueOnce(allSourceIds);
+
+    const importBatchBuilder = new ImportBatchBuilder(requestUserId);
+    jest.spyOn(importBatchBuilder, 'startConversation');
+    jest.spyOn(importBatchBuilder, 'saveBatch').mockResolvedValue();
+
+    const importer = getImporter(jsonData);
+    await importer(jsonData, requestUserId, () => importBatchBuilder);
+
+    expect(importBatchBuilder.startConversation).not.toHaveBeenCalled();
+  });
+
+  it('should import all conversations when none exist yet', async () => {
+    const jsonData = JSON.parse(
+      fs.readFileSync(path.join(__dirname, '__data__', 'chatgpt-export.json'), 'utf8'),
+    );
+    const requestUserId = 'user-dedup-test';
+
+    // No existing imports
+    getExistingImportSourceIds.mockResolvedValueOnce(new Set());
+
+    const importBatchBuilder = new ImportBatchBuilder(requestUserId);
+    jest.spyOn(importBatchBuilder, 'startConversation');
+    jest.spyOn(importBatchBuilder, 'saveBatch').mockResolvedValue();
+
+    const importer = getImporter(jsonData);
+    await importer(jsonData, requestUserId, () => importBatchBuilder);
+
+    expect(importBatchBuilder.startConversation).toHaveBeenCalledTimes(jsonData.length);
+  });
+
+  it('should store importSourceId in conversation via startConversation', async () => {
+    const jsonData = JSON.parse(
+      fs.readFileSync(path.join(__dirname, '__data__', 'chatgpt-export.json'), 'utf8'),
+    );
+    const requestUserId = 'user-dedup-test';
+    getExistingImportSourceIds.mockResolvedValueOnce(new Set());
+
+    const importBatchBuilder = new ImportBatchBuilder(requestUserId);
+    jest.spyOn(importBatchBuilder, 'startConversation');
+    jest.spyOn(importBatchBuilder, 'saveBatch').mockResolvedValue();
+
+    const importer = getImporter(jsonData);
+    await importer(jsonData, requestUserId, () => importBatchBuilder);
+
+    // Verify importSourceId was passed for the first conversation
+    const firstCall = importBatchBuilder.startConversation.mock.calls[0];
+    expect(firstCall[0]).toBe(EModelEndpoint.openAI);
+    expect(firstCall[1]).toBe(`chatgpt:${jsonData[0].id}`);
+  });
+});
+
 describe('importLibreChatConvo', () => {
   const jsonDataNonRecursiveBranches = JSON.parse(
     fs.readFileSync(path.join(__dirname, '__data__', 'librechat-opts-nonr-branches.json'), 'utf8'),
@@ -1347,7 +1436,10 @@ describe('importClaudeConvo', () => {
     const importer = getImporter(jsonData);
     await importer(jsonData, requestUserId, () => importBatchBuilder);
 
-    expect(importBatchBuilder.startConversation).toHaveBeenCalledWith(EModelEndpoint.anthropic);
+    expect(importBatchBuilder.startConversation).toHaveBeenCalledWith(
+      EModelEndpoint.anthropic,
+      'claude:conv-123',
+    );
     expect(importBatchBuilder.saveMessage).toHaveBeenCalledTimes(2);
     expect(importBatchBuilder.finishConversation).toHaveBeenCalledWith(
       'Test Conversation',
@@ -1609,5 +1701,113 @@ describe('importClaudeConvo', () => {
       'Imported Claude Chat',
       expect.any(Date),
     );
+  });
+});
+
+describe('importClaudeConvo deduplication', () => {
+  it('should skip conversations that already exist by importSourceId', async () => {
+    const jsonData = [
+      {
+        uuid: 'conv-existing',
+        name: 'Already Imported',
+        created_at: '2025-01-15T10:00:00.000Z',
+        chat_messages: [
+          {
+            uuid: 'msg-1',
+            sender: 'human',
+            created_at: '2025-01-15T10:00:01.000Z',
+            content: [{ type: 'text', text: 'Hello' }],
+          },
+        ],
+      },
+      {
+        uuid: 'conv-new',
+        name: 'New Conversation',
+        created_at: '2025-01-15T11:00:00.000Z',
+        chat_messages: [
+          {
+            uuid: 'msg-2',
+            sender: 'human',
+            created_at: '2025-01-15T11:00:01.000Z',
+            content: [{ type: 'text', text: 'Hi there' }],
+          },
+        ],
+      },
+    ];
+
+    const requestUserId = 'user-claude-dedup';
+
+    // First conversation already exists
+    getExistingImportSourceIds.mockResolvedValueOnce(
+      new Set(['claude:conv-existing']),
+    );
+
+    const importBatchBuilder = new ImportBatchBuilder(requestUserId);
+    jest.spyOn(importBatchBuilder, 'startConversation');
+    jest.spyOn(importBatchBuilder, 'saveMessage');
+    jest.spyOn(importBatchBuilder, 'saveBatch').mockResolvedValue();
+
+    const importer = getImporter(jsonData);
+    await importer(jsonData, requestUserId, () => importBatchBuilder);
+
+    // Only the new conversation should be imported
+    expect(importBatchBuilder.startConversation).toHaveBeenCalledTimes(1);
+    expect(importBatchBuilder.saveMessage).toHaveBeenCalledTimes(1);
+
+    const savedMsg = importBatchBuilder.saveMessage.mock.calls[0][0];
+    expect(savedMsg.text).toBe('Hi there');
+  });
+
+  it('should store importSourceId in conversation via startConversation', async () => {
+    const jsonData = [
+      {
+        uuid: 'conv-456',
+        name: 'Test',
+        created_at: '2025-01-15T10:00:00.000Z',
+        chat_messages: [
+          {
+            uuid: 'msg-1',
+            sender: 'human',
+            created_at: '2025-01-15T10:00:01.000Z',
+            content: [{ type: 'text', text: 'Hello' }],
+          },
+        ],
+      },
+    ];
+
+    const requestUserId = 'user-claude-dedup';
+    getExistingImportSourceIds.mockResolvedValueOnce(new Set());
+
+    const importBatchBuilder = new ImportBatchBuilder(requestUserId);
+    jest.spyOn(importBatchBuilder, 'startConversation');
+    jest.spyOn(importBatchBuilder, 'saveBatch').mockResolvedValue();
+
+    const importer = getImporter(jsonData);
+    await importer(jsonData, requestUserId, () => importBatchBuilder);
+
+    expect(importBatchBuilder.startConversation).toHaveBeenCalledWith(
+      EModelEndpoint.anthropic,
+      'claude:conv-456',
+    );
+  });
+});
+
+describe('ImportBatchBuilder importSourceId', () => {
+  it('should include importSourceId in finished conversation when provided', () => {
+    const builder = new ImportBatchBuilder('user-123');
+    builder.startConversation(EModelEndpoint.openAI, 'chatgpt:abc-123');
+    builder.addUserMessage('Hello');
+    const { conversation } = builder.finishConversation('Test', new Date());
+
+    expect(conversation.importSourceId).toBe('chatgpt:abc-123');
+  });
+
+  it('should not include importSourceId when not provided', () => {
+    const builder = new ImportBatchBuilder('user-123');
+    builder.startConversation(EModelEndpoint.openAI);
+    builder.addUserMessage('Hello');
+    const { conversation } = builder.finishConversation('Test', new Date());
+
+    expect(conversation.importSourceId).toBeUndefined();
   });
 });
