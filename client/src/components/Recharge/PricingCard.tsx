@@ -61,13 +61,13 @@ export const PricingCard: React.FC<PricingCardProps> = ({
   return (
     <div
       data-testid="pricing-card"
-      className={`p-8 md:p-10 rounded-[3rem] border transition-all duration-500 flex flex-col shadow-sm ${
+      className={`p-5 sm:p-6 md:p-8 lg:p-10 rounded-[2rem] sm:rounded-[3rem] border transition-all duration-500 flex flex-col shadow-sm ${
         recommended
-          ? 'bg-black text-white border-black shadow-2xl scale-105 z-10'
+          ? 'bg-black text-white border-black shadow-2xl lg:scale-105 z-10'
           : 'bg-white border-gray-100 text-gray-900 dark:bg-gray-800 dark:border-gray-700 dark:text-white'
       }`}
     >
-      <div className="mb-8 md:mb-10 text-left">
+      <div className="mb-6 sm:mb-8 md:mb-10 text-left">
         <div className="flex items-center space-x-2 mb-4">
           <span
             className={`text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-full ${
@@ -83,7 +83,7 @@ export const PricingCard: React.FC<PricingCardProps> = ({
           )}
         </div>
         <div className="mt-6 flex items-baseline">
-          <span className="text-5xl font-black tracking-tight">${formattedPrice}</span>
+          <span className="text-3xl sm:text-4xl md:text-5xl font-black tracking-tight">${formattedPrice}</span>
           <span className="text-sm ml-2 font-medium opacity-50">one-time</span>
         </div>
         <p className="text-xs mt-4 font-bold text-gray-400">{sub}</p>
@@ -92,7 +92,7 @@ export const PricingCard: React.FC<PricingCardProps> = ({
         type="button"
         onClick={() => onSelect(tier.id)}
         disabled={isLoading}
-        className={`w-full py-4 mb-8 md:mb-10 rounded-2xl font-bold text-sm uppercase tracking-widest transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed ${
+        className={`w-full py-3 sm:py-4 mb-6 sm:mb-8 md:mb-10 rounded-2xl font-bold text-sm uppercase tracking-widest transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed ${
           recommended
             ? 'bg-[#10a37f] text-white hover:bg-[#0d8a6a]'
             : 'bg-black text-white hover:bg-gray-800 dark:bg-white dark:text-black dark:hover:bg-gray-200'
