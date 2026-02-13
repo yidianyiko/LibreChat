@@ -75,7 +75,31 @@ const getConvoFiles = async (conversationId) => {
   }
 };
 
+/**
+ * Given a user ID and an array of importSourceId values, returns the subset
+ * that already exist in the database. Used for deduplication during import.
+ * @param {string} user - The user's ID.
+ * @param {string[]} importSourceIds - Array of importSourceId values to check.
+ * @returns {Promise<Set<string>>} Set of importSourceIds that already exist.
+ */
+const getExistingImportSourceIds = async (user, importSourceIds) => {
+  if (!importSourceIds.length) {
+    return new Set();
+  }
+  try {
+    const existing = await Conversation.find(
+      { user, importSourceId: { $in: importSourceIds } },
+      'importSourceId',
+    ).lean();
+    return new Set(existing.map((c) => c.importSourceId));
+  } catch (error) {
+    logger.error('[getExistingImportSourceIds] Error checking existing imports', error);
+    throw new Error('Error checking existing imports');
+  }
+};
+
 module.exports = {
+  getExistingImportSourceIds,
   getConvoFiles,
   searchConversation,
   deleteNullOrEmptyConversations,
