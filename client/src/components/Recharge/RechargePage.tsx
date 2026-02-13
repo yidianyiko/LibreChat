@@ -82,7 +82,7 @@ export const RechargePage: React.FC = () => {
 
   if (isLoading) {
     return (
-      <div className="flex h-screen items-center justify-center">
+      <div className="flex h-full items-center justify-center">
         <div className="text-lg text-gray-600 dark:text-gray-300">Loading pricing...</div>
       </div>
     );
@@ -92,7 +92,7 @@ export const RechargePage: React.FC = () => {
     if (!useMockForDisplay) {
       const disabled = isRechargeDisabled(error, data);
       return (
-        <div className="flex h-screen flex-col items-center justify-center gap-2 px-4">
+        <div className="flex h-full flex-col items-center justify-center gap-2 px-4">
           <div
             className={
               disabled
@@ -124,40 +124,42 @@ export const RechargePage: React.FC = () => {
   const displayData = data?.enabled ? data : MOCK_PRICING_RESPONSE;
 
   return (
-    <div className="bg-[#fcfcf9] px-4 py-12 dark:bg-gray-900 sm:px-6 sm:py-16 md:px-10 md:py-24 lg:py-32">
-      <div className="mx-auto max-w-6xl">
-        {useMockForDisplay && (
-          <div className="mb-4 rounded-md border border-amber-200 bg-amber-50 px-4 py-2 text-center text-sm text-amber-800 dark:border-amber-700 dark:bg-amber-900/30 dark:text-amber-200">
-            UI Preview — payment is disabled.
+    <div className="h-full overflow-y-auto">
+      <div className="bg-[#fcfcf9] px-4 py-12 dark:bg-gray-900 sm:px-6 sm:py-16 md:px-10 md:py-24 lg:py-32">
+        <div className="mx-auto max-w-6xl">
+          {useMockForDisplay && (
+            <div className="mb-4 rounded-md border border-amber-200 bg-amber-50 px-4 py-2 text-center text-sm text-amber-800 dark:border-amber-700 dark:bg-amber-900/30 dark:text-amber-200">
+              UI Preview — payment is disabled.
+            </div>
+          )}
+          <div className="mb-8 text-center sm:mb-12 md:mb-16 lg:mb-24">
+            <h1
+              className="mb-4 text-2xl font-black text-gray-900 dark:text-white sm:mb-6 sm:text-3xl md:text-4xl lg:text-6xl"
+              style={{ letterSpacing: '-0.04em' }}
+            >
+              Recharge Your Token Credits
+            </h1>
+            <p className="text-base font-medium text-gray-500 dark:text-gray-400 sm:text-lg">
+              Choose a package to add token credits to your account
+            </p>
           </div>
-        )}
-        <div className="mb-8 text-center sm:mb-12 md:mb-16 lg:mb-24">
-          <h1
-            className="mb-4 text-2xl font-black text-gray-900 dark:text-white sm:mb-6 sm:text-3xl md:text-4xl lg:text-6xl"
-            style={{ letterSpacing: '-0.04em' }}
-          >
-            Recharge Your Token Credits
-          </h1>
-          <p className="text-base font-medium text-gray-500 dark:text-gray-400 sm:text-lg">
-            Choose a package to add token credits to your account
-          </p>
-        </div>
 
-        <div className="grid grid-cols-1 items-stretch gap-6 text-left sm:gap-8 lg:grid-cols-3">
-          {displayData.tiers.map((tier) => (
-            <PricingCard
-              key={tier.id}
-              tier={tier}
-              onSelect={handleSelectTier}
-              isLoading={useMockForDisplay ? false : createCheckoutMutation.isLoading}
-              recommended={tier.id === 'artisan'}
-            />
-          ))}
-        </div>
+          <div className="grid grid-cols-1 items-stretch gap-6 text-left sm:gap-8 lg:grid-cols-3">
+            {displayData.tiers.map((tier) => (
+              <PricingCard
+                key={tier.id}
+                tier={tier}
+                onSelect={handleSelectTier}
+                isLoading={useMockForDisplay ? false : createCheckoutMutation.isLoading}
+                recommended={tier.id === 'artisan'}
+              />
+            ))}
+          </div>
 
-        <div className="mt-12 text-center text-sm text-gray-500 dark:text-gray-400">
-          <p>Payments are securely processed by Stripe</p>
-          <p className="mt-2">1,000,000 token credits = $1.00 USD • Token credits never expire</p>
+          <div className="mt-12 text-center text-sm text-gray-500 dark:text-gray-400">
+            <p>Payments are securely processed by Stripe</p>
+            <p className="mt-2">1,000,000 token credits = $1.00 USD • Token credits never expire</p>
+          </div>
         </div>
       </div>
     </div>
