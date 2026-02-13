@@ -5,7 +5,7 @@ export const PaymentCancelPage: React.FC = () => {
   const navigate = useNavigate();
 
   return (
-    <div className="flex h-screen items-center justify-center">
+    <div className="flex h-full items-center justify-center">
       <div className="max-w-md px-4 text-center sm:px-6">
         <div className="mb-4 text-5xl sm:mb-6 sm:text-6xl">❌</div>
         <h1 className="text-2xl font-bold text-gray-900 dark:text-white sm:text-3xl">
