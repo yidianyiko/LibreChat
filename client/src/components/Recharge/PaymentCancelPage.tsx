@@ -6,9 +6,9 @@ export const PaymentCancelPage: React.FC = () => {
 
   return (
     <div className="flex h-screen items-center justify-center">
-      <div className="max-w-md text-center">
-        <div className="mb-6 text-6xl">❌</div>
-        <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
+      <div className="max-w-md px-4 sm:px-6 text-center">
+        <div className="mb-4 sm:mb-6 text-5xl sm:text-6xl">❌</div>
+        <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white">
           Payment Cancelled
         </h1>
         <p className="mt-4 text-lg text-gray-600 dark:text-gray-300">
@@ -17,7 +17,7 @@ export const PaymentCancelPage: React.FC = () => {
 
         <button
           onClick={() => navigate('/recharge')}
-          className="mt-8 w-full rounded-lg bg-blue-600 px-6 py-3 text-white hover:bg-blue-700"
+          className="mt-6 sm:mt-8 w-full rounded-lg bg-blue-600 px-6 py-3 text-white hover:bg-blue-700"
         >
           Try Again
         </button>
