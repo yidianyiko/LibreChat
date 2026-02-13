@@ -31,13 +31,15 @@ class ImportBatchBuilder {
   /**
    * Starts a new conversation in the batch.
    * @param {string} [endpoint=EModelEndpoint.openAI] - The endpoint for the conversation. Defaults to EModelEndpoint.openAI.
+   * @param {string} [importSourceId] - Original source ID for deduplication (e.g., "chatgpt:abc123").
    * @returns {void}
    */
-  startConversation(endpoint) {
+  startConversation(endpoint, importSourceId) {
     // we are simplifying by using a single model for the entire conversation
     this.endpoint = endpoint || EModelEndpoint.openAI;
     this.conversationId = uuidv4();
     this.lastMessageId = Constants.NO_PARENT;
+    this.importSourceId = importSourceId || undefined;
   }
 
   /**
@@ -86,6 +88,9 @@ class ImportBatchBuilder {
       endpoint: this.endpoint,
       model: originalConvo.model ?? openAISettings.model.default,
     };
+    if (this.importSourceId) {
+      convo.importSourceId = this.importSourceId;
+    }
     convo._id && delete convo._id;
     this.conversations.push(convo);
 
