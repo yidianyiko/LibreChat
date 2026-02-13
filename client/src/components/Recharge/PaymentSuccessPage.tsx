@@ -20,7 +20,7 @@ export const PaymentSuccessPage: React.FC = () => {
 
   if (isLoading) {
     return (
-      <div className="flex h-screen items-center justify-center">
+      <div className="flex h-full items-center justify-center">
         <div className="text-center">
           <div className="mb-4 text-4xl">⏳</div>
           <div className="text-lg text-gray-600 dark:text-gray-300">Verifying your payment...</div>
@@ -31,7 +31,7 @@ export const PaymentSuccessPage: React.FC = () => {
 
   if (error || !data?.isPaid) {
     return (
-      <div className="flex h-screen items-center justify-center">
+      <div className="flex h-full items-center justify-center">
         <div className="text-center">
           <div className="mb-4 text-5xl sm:text-6xl">❌</div>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
@@ -55,7 +55,7 @@ export const PaymentSuccessPage: React.FC = () => {
   const formattedAmount = (data.amountTotal / 100).toFixed(2);
 
   return (
-    <div className="flex h-screen items-center justify-center">
+    <div className="flex h-full items-center justify-center">
       <div className="max-w-md px-4 text-center sm:px-6">
         <div className="mb-4 text-5xl sm:mb-6 sm:text-6xl">✅</div>
         <h1 className="text-2xl font-bold text-green-600 dark:text-green-400 sm:text-3xl">
