@@ -138,26 +138,26 @@ export const RechargePage: React.FC = () => {
   const displayData = data?.enabled ? data : MOCK_PRICING_RESPONSE;
 
   return (
-    <div className="bg-[#fcfcf9] dark:bg-gray-900 py-24 md:py-32 px-6 md:px-10">
+    <div className="bg-[#fcfcf9] dark:bg-gray-900 py-12 sm:py-16 md:py-24 lg:py-32 px-4 sm:px-6 md:px-10">
       <div className="max-w-6xl mx-auto">
         {useMockForDisplay && (
           <div className="mb-4 rounded-md border border-amber-200 bg-amber-50 px-4 py-2 text-center text-sm text-amber-800 dark:border-amber-700 dark:bg-amber-900/30 dark:text-amber-200">
             UI Preview — payment is disabled.
           </div>
         )}
-        <div className="mb-16 md:mb-24 text-center">
+        <div className="mb-8 sm:mb-12 md:mb-16 lg:mb-24 text-center">
           <h1
-            className="text-4xl md:text-6xl font-black mb-6 text-gray-900 dark:text-white"
+            className="text-2xl sm:text-3xl md:text-4xl lg:text-6xl font-black mb-4 sm:mb-6 text-gray-900 dark:text-white"
             style={{ letterSpacing: '-0.04em' }}
           >
             Recharge Your Token Credits
           </h1>
-          <p className="text-gray-500 dark:text-gray-400 text-lg font-medium">
+          <p className="text-gray-500 dark:text-gray-400 text-base sm:text-lg font-medium">
             Choose a package to add token credits to your account
           </p>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 text-left items-stretch">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 sm:gap-8 text-left items-stretch">
           {displayData.tiers.map((tier) => (
             <PricingCard
               key={tier.id}
