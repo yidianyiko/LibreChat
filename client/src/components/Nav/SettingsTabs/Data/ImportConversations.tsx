@@ -90,8 +90,12 @@ function ImportConversations() {
           : localize('com_ui_import_conversation_success'),
         status: isProcessing ? NotificationSeverity.INFO : NotificationSeverity.SUCCESS,
       });
+
+      if (isProcessing) {
+        startPollingForCompletion();
+      }
     },
-    [localize, showToast],
+    [localize, showToast, startPollingForCompletion],
   );
 
   const handleError = useCallback(
@@ -281,7 +285,7 @@ function ImportConversations() {
     [handleImportClick],
   );
 
-  const isImportDisabled = isUploading;
+  const isImportDisabled = isUploading || isPolling;
 
   useEffect(() => {
     return () => {
