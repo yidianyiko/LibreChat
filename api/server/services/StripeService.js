@@ -93,7 +93,7 @@ class StripeService {
 
     try {
       const session = await this.stripe.checkout.sessions.create({
-        automatic_payment_methods: { enabled: true },
+        payment_method_types: ['card', 'alipay', 'wechat_pay'],
         line_items: [
           {
             price_data: {
