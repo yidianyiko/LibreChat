@@ -23,9 +23,7 @@ export const PaymentSuccessPage: React.FC = () => {
       <div className="flex h-screen items-center justify-center">
         <div className="text-center">
           <div className="mb-4 text-4xl">⏳</div>
-          <div className="text-lg text-gray-600 dark:text-gray-300">
-            Verifying your payment...
-          </div>
+          <div className="text-lg text-gray-600 dark:text-gray-300">Verifying your payment...</div>
         </div>
       </div>
     );
@@ -58,20 +56,18 @@ export const PaymentSuccessPage: React.FC = () => {
 
   return (
     <div className="flex h-screen items-center justify-center">
-      <div className="max-w-md px-4 sm:px-6 text-center">
-        <div className="mb-4 sm:mb-6 text-5xl sm:text-6xl">✅</div>
-        <h1 className="text-2xl sm:text-3xl font-bold text-green-600 dark:text-green-400">
+      <div className="max-w-md px-4 text-center sm:px-6">
+        <div className="mb-4 text-5xl sm:mb-6 sm:text-6xl">✅</div>
+        <h1 className="text-2xl font-bold text-green-600 dark:text-green-400 sm:text-3xl">
           Payment Successful!
         </h1>
         <p className="mt-4 text-lg text-gray-600 dark:text-gray-300">
           Your credits have been added to your account
         </p>
 
-        <div className="mt-6 sm:mt-8 rounded-lg bg-gray-100 p-4 sm:p-6 dark:bg-gray-800">
-          <div className="text-sm text-gray-500 dark:text-gray-400">
-            Credits Added
-          </div>
-          <div className="mt-2 text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white">
+        <div className="mt-6 rounded-lg bg-gray-100 p-4 dark:bg-gray-800 sm:mt-8 sm:p-6">
+          <div className="text-sm text-gray-500 dark:text-gray-400">Credits Added</div>
+          <div className="mt-2 text-2xl font-bold text-gray-900 dark:text-white sm:text-3xl">
             {formattedCredits}M Credits
           </div>
           <div className="mt-2 text-sm text-gray-500 dark:text-gray-400">
@@ -81,7 +77,7 @@ export const PaymentSuccessPage: React.FC = () => {
 
         <button
           onClick={() => navigate('/')}
-          className="mt-6 sm:mt-8 w-full rounded-lg bg-green-600 px-6 py-3 text-white hover:bg-green-700"
+          className="mt-6 w-full rounded-lg bg-green-600 px-6 py-3 text-white hover:bg-green-700 sm:mt-8"
         >
           Start Chatting
         </button>

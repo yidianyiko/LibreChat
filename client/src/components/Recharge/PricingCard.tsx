@@ -3,10 +3,7 @@ import { CheckCircle2 } from 'lucide-react';
 import type { PricingTier } from '~/types/recharge';
 
 /** Subtitle and feature list per tier, matching LandingPage pricing copy. */
-const TIER_DISPLAY: Record<
-  string,
-  { sub: string; features: string[] }
-> = {
+const TIER_DISPLAY: Record<string, { sub: string; features: string[] }> = {
   explorer: {
     sub: 'The Minimalist Alternative',
     features: [
@@ -61,17 +58,19 @@ export const PricingCard: React.FC<PricingCardProps> = ({
   return (
     <div
       data-testid="pricing-card"
-      className={`p-5 sm:p-6 md:p-8 lg:p-10 rounded-[2rem] sm:rounded-[3rem] border transition-all duration-500 flex flex-col shadow-sm ${
+      className={`flex flex-col rounded-[2rem] border p-5 shadow-sm transition-all duration-500 sm:rounded-[3rem] sm:p-6 md:p-8 lg:p-10 ${
         recommended
-          ? 'bg-black text-white border-black shadow-2xl lg:scale-105 z-10'
-          : 'bg-white border-gray-100 text-gray-900 dark:bg-gray-800 dark:border-gray-700 dark:text-white'
+          ? 'z-10 border-black bg-black text-white shadow-2xl lg:scale-105'
+          : 'border-gray-100 bg-white text-gray-900 dark:border-gray-700 dark:bg-gray-800 dark:text-white'
       }`}
     >
-      <div className="mb-6 sm:mb-8 md:mb-10 text-left">
-        <div className="flex items-center space-x-2 mb-4">
+      <div className="mb-6 text-left sm:mb-8 md:mb-10">
+        <div className="mb-4 flex items-center space-x-2">
           <span
-            className={`text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-full ${
-              recommended ? 'bg-[#10a37f] text-white' : 'bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-300'
+            className={`rounded-full px-3 py-1 text-[10px] font-black uppercase tracking-widest ${
+              recommended
+                ? 'bg-[#10a37f] text-white'
+                : 'bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-300'
             }`}
           >
             {planName}
@@ -83,16 +82,18 @@ export const PricingCard: React.FC<PricingCardProps> = ({
           )}
         </div>
         <div className="mt-6 flex items-baseline">
-          <span className="text-3xl sm:text-4xl md:text-5xl font-black tracking-tight">${formattedPrice}</span>
-          <span className="text-sm ml-2 font-medium opacity-50">one-time</span>
+          <span className="text-3xl font-black tracking-tight sm:text-4xl md:text-5xl">
+            ${formattedPrice}
+          </span>
+          <span className="ml-2 text-sm font-medium opacity-50">one-time</span>
         </div>
-        <p className="text-xs mt-4 font-bold text-gray-400">{sub}</p>
+        <p className="mt-4 text-xs font-bold text-gray-400">{sub}</p>
       </div>
       <button
         type="button"
         onClick={() => onSelect(tier.id)}
         disabled={isLoading}
-        className={`w-full py-3 sm:py-4 mb-6 sm:mb-8 md:mb-10 rounded-2xl font-bold text-sm uppercase tracking-widest transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed ${
+        className={`mb-6 w-full rounded-2xl py-3 text-sm font-bold uppercase tracking-widest transition-all active:scale-95 disabled:cursor-not-allowed disabled:opacity-50 sm:mb-8 sm:py-4 md:mb-10 ${
           recommended
             ? 'bg-[#10a37f] text-white hover:bg-[#0d8a6a]'
             : 'bg-black text-white hover:bg-gray-800 dark:bg-white dark:text-black dark:hover:bg-gray-200'
@@ -100,10 +101,10 @@ export const PricingCard: React.FC<PricingCardProps> = ({
       >
         {isLoading ? 'Processing...' : ctaText}
       </button>
-      <ul className="space-y-5 flex-grow text-left">
+      <ul className="flex-grow space-y-5 text-left">
         {features.map((f, i) => (
           <li key={i} className="flex items-start space-x-3 text-sm font-medium">
-            <CheckCircle2 size={18} className="text-[#10a37f] flex-shrink-0" />
+            <CheckCircle2 size={18} className="flex-shrink-0 text-[#10a37f]" />
             <span className={recommended ? 'text-gray-300' : 'text-gray-700 dark:text-gray-300'}>
               {f}
             </span>
