@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
+import SEOHelmet from '~/components/SEO/SEOHelmet';
 import {
   Globe,
   Database,
@@ -822,7 +823,14 @@ const LandingPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#fcfcf9] text-[#111827] font-sans selection:bg-[#10a37f]/10 antialiased overflow-x-hidden flex flex-col">
+    <>
+      <SEOHelmet
+        title="keep4orever - Free GPT-4o AI Chat | Access Advanced AI Today"
+        description="Get free access to GPT-4o, the most advanced AI model. We stand for the 0.1% who believe that some voices shouldn't be erased. Built for continuity, absolute privacy, and a living legacy."
+        canonicalUrl="https://keep4forever.com/"
+        keywords="GPT-4o, free GPT-4o, AI chat, ChatGPT alternative, OpenAI GPT-4o, AI assistant, free AI access, permanent AI access"
+      />
+      <div className="min-h-screen bg-[#fcfcf9] text-[#111827] font-sans selection:bg-[#10a37f]/10 antialiased overflow-x-hidden flex flex-col">
       <CookieSettingsModal isOpen={showCookies} onClose={() => setShowCookies(false)} t={t} />
 
       <div className="fixed top-[-10%] left-[-5%] w-[50%] aspect-square bg-[#10a37f]/5 rounded-full blur-[140px] -z-10" aria-hidden />
@@ -1046,6 +1054,7 @@ const LandingPage: React.FC = () => {
         </div>
       </footer>
     </div>
+    </>
   );
 };
 
