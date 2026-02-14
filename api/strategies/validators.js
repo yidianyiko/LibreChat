@@ -1,9 +1,9 @@
 const { z } = require('zod');
 
-const MIN_PASSWORD_LENGTH = parseInt(process.env.MIN_PASSWORD_LENGTH, 10) || 8;
+const MIN_PASSWORD_LENGTH = parseInt(process.env.MIN_PASSWORD_LENGTH, 10) || 6;
 
-// Password complexity requirements (can be disabled via env var for LDAP users)
-const REQUIRE_PASSWORD_COMPLEXITY = process.env.REQUIRE_PASSWORD_COMPLEXITY !== 'false';
+// Password complexity requirements (disabled by default for better user experience)
+const REQUIRE_PASSWORD_COMPLEXITY = process.env.REQUIRE_PASSWORD_COMPLEXITY === 'true';
 
 const allowedCharactersRegex = new RegExp(
   '^[' +
