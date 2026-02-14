@@ -2,6 +2,7 @@ const express = require('express');
 const { requireAdmin } = require('@librechat/api');
 const { logger } = require('@librechat/data-schemas');
 const { User, Message } = require('~/db/models');
+const { requireJwtAuth } = require('~/server/middleware');
 
 const router = express.Router();
 
@@ -11,7 +12,7 @@ const router = express.Router();
  * Query params:
  *   - days: number of days to query (default: 30)
  */
-router.get('/', requireAdmin, async (req, res) => {
+router.get('/', requireJwtAuth, requireAdmin, async (req, res) => {
   try {
     const days = Math.min(Math.max(parseInt(req.query.days) || 30, 1), 365);
     const startDate = new Date();
