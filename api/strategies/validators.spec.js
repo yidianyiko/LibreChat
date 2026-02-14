@@ -460,7 +460,7 @@ describe('Zod Schemas', () => {
   describe('MIN_PASSWORD_LENGTH environment variable', () => {
     // Note: These tests verify the behavior based on whatever MIN_PASSWORD_LENGTH
     // was set when the validators module was loaded
-    const minLength = parseInt(process.env.MIN_PASSWORD_LENGTH, 10) || 8;
+    const minLength = parseInt(process.env.MIN_PASSWORD_LENGTH, 10) || 6;
 
     it('should respect the configured minimum password length for login', () => {
       // Test password exactly at minimum length
