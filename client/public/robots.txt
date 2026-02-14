@@ -1,3 +1,13 @@
 User-agent: *
-Disallow: /api/
 Allow: /
+
+# Disallow private/protected areas
+Disallow: /api/
+Disallow: /c/
+Disallow: /search
+
+# Crawl delay (optional, helps prevent server overload)
+Crawl-delay: 1
+
+# Sitemap location
+Sitemap: https://keep4oforever.com/sitemap.xml
