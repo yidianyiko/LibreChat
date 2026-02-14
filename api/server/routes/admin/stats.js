@@ -1,5 +1,6 @@
 const express = require('express');
 const { requireAdmin } = require('@librechat/api');
+const { logger } = require('@librechat/data-schemas');
 const { User, Message } = require('~/db/models');
 
 const router = express.Router();
@@ -12,7 +13,7 @@ const router = express.Router();
  */
 router.get('/', requireAdmin, async (req, res) => {
   try {
-    const days = parseInt(req.query.days) || 30;
+    const days = Math.min(Math.max(parseInt(req.query.days) || 30, 1), 365);
     const startDate = new Date();
     startDate.setDate(startDate.getDate() - days);
     startDate.setHours(0, 0, 0, 0);
@@ -122,7 +123,7 @@ router.get('/', requireAdmin, async (req, res) => {
       },
     });
   } catch (error) {
-    console.error('Error fetching admin stats:', error);
+    logger.error('[/api/admin/stats] Error fetching admin stats:', error);
     res.status(500).json({
       error: 'Failed to fetch statistics',
       message: error.message,
