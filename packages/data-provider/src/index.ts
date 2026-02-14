@@ -47,3 +47,5 @@ export { default as createPayload } from './createPayload';
 /* feedback */
 export * from './feedback';
 export * from './parameterSettings';
+/* admin stats */
+export * from './admin-stats';

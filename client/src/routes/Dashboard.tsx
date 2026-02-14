@@ -6,6 +6,7 @@ import {
   EmptyPromptPreview,
 } from '~/components/Prompts';
 import DashboardRoute from './Layouts/Dashboard';
+import StatsPage from './Stats';
 
 const dashboardRoutes = {
   path: 'd/*',
@@ -71,6 +72,10 @@ const dashboardRoutes = {
           element: <PromptForm />,
         },
       ],
+    },
+    {
+      path: 'stats',
+      element: <StatsPage />,
     },
     {
       path: '*',
