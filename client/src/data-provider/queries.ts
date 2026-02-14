@@ -535,3 +535,18 @@ export const useUserTermsQuery = (
     ...config,
   });
 };
+
+export const useGetAdminStats = (
+  config?: UseQueryOptions<t.TAdminStatsResponse>,
+): QueryObserverResult<t.TAdminStatsResponse> => {
+  return useQuery<t.TAdminStatsResponse>(
+    [QueryKeys.adminStats],
+    () => dataService.getAdminStats(),
+    {
+      refetchOnWindowFocus: false,
+      refetchOnReconnect: false,
+      refetchOnMount: false,
+      ...config,
+    },
+  );
+};

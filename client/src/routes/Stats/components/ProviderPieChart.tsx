@@ -1,10 +1,12 @@
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recharts';
+import { useLocalize } from '~/hooks';
 
 interface ProviderPieChartProps {
   data: Record<string, number>;
 }
 
 export default function ProviderPieChart({ data }: ProviderPieChartProps) {
+  const localize = useLocalize();
   const chartData = Object.entries(data).map(([provider, count]) => ({
     name: provider.charAt(0).toUpperCase() + provider.slice(1),
     value: count,
@@ -15,7 +17,7 @@ export default function ProviderPieChart({ data }: ProviderPieChartProps) {
   return (
     <div className="rounded-xl border border-border-light bg-surface-primary p-6 shadow-sm">
       <h3 className="mb-4 text-lg font-semibold text-text-primary">
-        Registration by Provider
+        {localize('com_ui_registration_by_provider')}
       </h3>
       <ResponsiveContainer width="100%" height={300}>
         <PieChart>

@@ -8,6 +8,7 @@ import {
   marketplacePermissionsSchema,
   peoplePickerPermissionsSchema,
   remoteAgentsPermissionsSchema,
+  SystemRoles,
 } from 'librechat-data-provider';
 import type {
   QueryObserverResult,
@@ -15,6 +16,8 @@ import type {
   UseQueryOptions,
 } from '@tanstack/react-query';
 import type * as t from 'librechat-data-provider';
+
+export { SystemRoles };
 
 export const useGetRole = (
   roleName: string,

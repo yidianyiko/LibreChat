@@ -9,6 +9,7 @@ import {
   Legend,
   ResponsiveContainer,
 } from 'recharts';
+import { useLocalize } from '~/hooks';
 
 interface DailyRegistration {
   date: string;
@@ -23,6 +24,7 @@ interface DailyRegistrationChartProps {
 }
 
 export default function DailyRegistrationChart({ data }: DailyRegistrationChartProps) {
+  const localize = useLocalize();
   const providers = useMemo(() => {
     const providerSet = new Set<string>();
     data.forEach((day) => {
@@ -40,7 +42,9 @@ export default function DailyRegistrationChart({ data }: DailyRegistrationChartP
 
   return (
     <div className="rounded-xl border border-border-light bg-surface-primary p-6 shadow-sm">
-      <h3 className="mb-4 text-lg font-semibold text-text-primary">Daily Registrations</h3>
+      <h3 className="mb-4 text-lg font-semibold text-text-primary">
+        {localize('com_ui_daily_registrations')}
+      </h3>
       <ResponsiveContainer width="100%" height={300}>
         <BarChart data={data}>
           <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
