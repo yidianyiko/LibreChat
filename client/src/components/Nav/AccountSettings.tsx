@@ -1,9 +1,9 @@
 import { useState, memo, useRef } from 'react';
 import * as Select from '@ariakit/react/select';
 import { useNavigate } from 'react-router-dom';
-import { LogOut, Import } from 'lucide-react';
+import { LogOut, Import, BarChart3 } from 'lucide-react';
 import { GearIcon, Avatar } from '@librechat/client';
-import { useGetStartupConfig, useGetUserBalance } from '~/data-provider';
+import { useGetStartupConfig, useGetUserBalance, SystemRoles } from '~/data-provider';
 import ImportProgressModal from './SettingsTabs/Data/ImportProgressModal';
 import ImportConversationDialog from './SettingsTabs/Data/ImportConversationDialog';
 import { useAuthContext } from '~/hooks/AuthContext';
@@ -52,6 +52,18 @@ function AccountSettings() {
           {isUploading ? localize('com_ui_importing') : localize('com_ui_import_conversation_info')}
         </span>
       </button>
+      {/* Admin Stats Link - only visible to admins */}
+      {user?.role === SystemRoles.ADMIN && (
+        <button
+          type="button"
+          onClick={() => navigate('/d/stats')}
+          aria-label="Admin Statistics"
+          className="account-settings-stats flex w-full items-center gap-2 rounded-xl p-2 text-sm text-text-primary transition-all duration-200 ease-in-out hover:bg-surface-active-alt"
+        >
+          <BarChart3 className="icon-md flex-shrink-0" aria-hidden="true" />
+          <span className="truncate">Statistics</span>
+        </button>
+      )}
       <Select.SelectProvider>
         <Select.Select
           ref={accountSettingsButtonRef}
