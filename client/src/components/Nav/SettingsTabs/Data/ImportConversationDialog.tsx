@@ -9,22 +9,8 @@ import {
   DialogClose,
   Button,
 } from '@librechat/client';
+import { useLocalize } from '~/hooks';
 import { cn } from '~/utils';
-
-const TITLE = 'Retrieve our conversations';
-const SUBTITLE = 'Import your chat history from a JSON file.';
-const UPLOAD_HINT = 'Click or drag file here';
-const FORMAT_HINT = 'Supports JSON format only';
-const SELECT_FILE = 'Select file';
-const CANCEL = 'Cancel';
-const START_IMPORT = 'Start import';
-const EXPORT_SECTION_TITLE = 'How to export chat history?';
-const EXPORT_SECTION_SUBTITLE = 'View export steps for your platform.';
-const CHATGPT_STEPS = [
-  'Step 1: Go to Settings → Data controls → Export data.',
-  'Step 2: After download, unzip the ZIP file.',
-  'Step 3: Extract the conversations.json file.',
-];
 
 interface ImportConversationDialogProps {
   open: boolean;
@@ -39,6 +25,7 @@ export default function ImportConversationDialog({
   onStartImport,
   isUploading,
 }: ImportConversationDialogProps) {
+  const localize = useLocalize();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isDragging, setIsDragging] = useState(false);
@@ -112,7 +99,12 @@ export default function ImportConversationDialog({
   }, [selectedFile, onStartImport, handleClose]);
 
   const fileCount = selectedFile ? 1 : 0;
-  const startLabel = `${START_IMPORT} (${fileCount})`;
+  const startLabel = `${localize('com_ui_import')} (${fileCount})`;
+  const chatGptSteps = [
+    localize('com_ui_import_conversation_dialog_step_1'),
+    localize('com_ui_import_conversation_dialog_step_2'),
+    localize('com_ui_import_conversation_dialog_step_3'),
+  ];
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
@@ -124,10 +116,12 @@ export default function ImportConversationDialog({
           <div className="flex items-center gap-2">
             <Upload className="h-5 w-5 text-gray-600 dark:text-gray-400" aria-hidden="true" />
             <DialogTitle className="text-lg font-semibold text-gray-900 dark:text-gray-50">
-              {TITLE}
+              {localize('com_ui_import_conversation_dialog_title')}
             </DialogTitle>
           </div>
-          <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">{SUBTITLE}</p>
+          <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+            {localize('com_ui_import_conversation_dialog_subtitle')}
+          </p>
         </DialogHeader>
 
         <div className="px-6 py-4">
@@ -153,8 +147,12 @@ export default function ImportConversationDialog({
             )}
           >
             <FileText className="mb-2 h-12 w-12 text-blue-500 dark:text-blue-400" aria-hidden="true" />
-            <p className="text-sm font-medium text-gray-700 dark:text-gray-300">{UPLOAD_HINT}</p>
-            <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">{FORMAT_HINT}</p>
+            <p className="text-sm font-medium text-gray-700 dark:text-gray-300">
+              {localize('com_ui_import_conversation_dialog_upload_hint')}
+            </p>
+            <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+              {localize('com_ui_import_conversation_dialog_format_hint')}
+            </p>
             <Button
               type="button"
               variant="outline"
@@ -164,7 +162,7 @@ export default function ImportConversationDialog({
                 fileInputRef.current?.click();
               }}
             >
-              {SELECT_FILE}
+              {localize('com_ui_import_conversation_dialog_select_file')}
             </Button>
             {selectedFile && (
               <p className="mt-2 max-w-full truncate px-2 text-xs text-gray-600 dark:text-gray-300">
@@ -189,16 +187,16 @@ export default function ImportConversationDialog({
                 <div className="flex items-center gap-2">
                   <Lightbulb className="h-4 w-4 text-amber-500 dark:text-amber-400" />
                   <span className="font-medium text-gray-900 dark:text-gray-100">
-                    {EXPORT_SECTION_TITLE}
+                    {localize('com_ui_import_conversation_dialog_how_to_export')}
                   </span>
                 </div>
                 <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
-                  {EXPORT_SECTION_SUBTITLE}
+                  {localize('com_ui_import_conversation_dialog_export_subtitle')}
                 </p>
                 <div className="mt-3 space-y-2 text-sm text-gray-700 dark:text-gray-300">
                   <p className="font-medium">ChatGPT</p>
                   <ol className="list-decimal space-y-1 pl-4">
-                    {CHATGPT_STEPS.map((step, i) => (
+                    {chatGptSteps.map((step, i) => (
                       <li key={i}>{step}</li>
                     ))}
                   </ol>
@@ -209,7 +207,7 @@ export default function ImportConversationDialog({
         </div>
 
         <DialogFooter className="border-t border-black/10 px-6 py-4 dark:border-white/10">
-          <DialogClose>{CANCEL}</DialogClose>
+          <DialogClose>{localize('com_ui_cancel')}</DialogClose>
           <Button
             onClick={handleStartImport}
             disabled={!selectedFile || isUploading}
