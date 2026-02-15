@@ -180,3 +180,4 @@ server-Cloudflare-sert.md
 .worktrees
 .deploy/
 .git-rewrite/
+.cache_ggshield
