@@ -33,7 +33,7 @@
 
   <!-- Password Recovery -->
   <url>
-    <loc>https://keep4forever.com/forgot-password</loc>
+    <loc>https://keep4oforever.com/forgot-password</loc>
     <lastmod>2025-02-14</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.5</priority>
@@ -41,7 +41,7 @@
 
   <!-- Reset Password -->
   <url>
-    <loc>https://keep4forever.com/reset-password</loc>
+    <loc>https://keep4oforever.com/reset-password</loc>
     <lastmod>2025-02-14</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.4</priority>
@@ -49,7 +49,7 @@
 
   <!-- OAuth Success -->
   <url>
-    <loc>https://keep4forever.com/oauth/success</loc>
+    <loc>https://keep4oforever.com/oauth/success</loc>
     <lastmod>2025-02-14</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.3</priority>
@@ -57,7 +57,7 @@
 
   <!-- OAuth Error -->
   <url>
-    <loc>https://keep4forever.com/oauth/error</loc>
+    <loc>https://keep4oforever.com/oauth/error</loc>
     <lastmod>2025-02-14</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.3</priority>
