@@ -39,10 +39,13 @@ IMAGE_TAG="${IMAGE_NAME}:${TIMESTAMP}"
 TARBALL="${DEPLOY_DIR}/${IMAGE_NAME}-${TIMESTAMP}.tar.gz"
 LAST_IMAGE_FILE="${DEPLOY_DIR}/last_image.txt"
 ROLLBACK_IMAGE_FILE="${DEPLOY_DIR}/rollback_image.txt"
+LAST_DEPLOYED_COMMIT_FILE="${DEPLOY_DIR}/last_deployed_commit.txt"
 
 # 标志变量
 INIT_ONLY=false
 NO_CACHE=true  # 默认强制重新构建，避免 Docker 缓存问题
+DEPLOY_MODE="full-build"  # full-build | config-only | no-change
+CHANGED_FILES=""
 
 # 日志函数
 log_info() {
@@ -104,7 +107,83 @@ check_local_env() {
         exit 1
     fi
 
+    if ! check_command git; then
+        log_error "Git 未安装"
+        exit 1
+    fi
+
     log_success "本地环境检查通过"
+}
+
+print_changed_files() {
+    if [ -z "${CHANGED_FILES}" ]; then
+        log_info "未检测到代码或配置变更"
+        return
+    fi
+
+    echo "变更文件列表:"
+    printf '%s\n' "${CHANGED_FILES}" | sed 's/^/  - /'
+}
+
+is_config_only_change() {
+    local file
+    while IFS= read -r file; do
+        [ -z "${file}" ] && continue
+        case "${file}" in
+            librechat.yaml|client/nginx.conf|docker-compose.yml|docker-compose.override.yml)
+                ;;
+            *)
+                return 1
+                ;;
+        esac
+    done <<< "${CHANGED_FILES}"
+    return 0
+}
+
+detect_deploy_mode() {
+    log_info "检测变更范围，选择部署模式..."
+
+    if ! git rev-parse --is-inside-work-tree &> /dev/null; then
+        log_warning "当前目录不是 Git 仓库，回退到全量构建模式"
+        DEPLOY_MODE="full-build"
+        return
+    fi
+
+    local base_commit=""
+    if [ -f "${LAST_DEPLOYED_COMMIT_FILE}" ]; then
+        base_commit=$(cat "${LAST_DEPLOYED_COMMIT_FILE}")
+    fi
+
+    if [ -n "${base_commit}" ] && git cat-file -e "${base_commit}^{commit}" 2>/dev/null; then
+        CHANGED_FILES=$(
+            {
+                git diff --name-only "${base_commit}..HEAD"
+                git diff --name-only --cached
+                git diff --name-only
+            } | sort -u | sed '/^$/d'
+        )
+        log_info "对比基线提交: ${base_commit}"
+    else
+        log_warning "未找到可用的上次部署提交记录，使用全量构建模式"
+        DEPLOY_MODE="full-build"
+        return
+    fi
+
+    if [ -z "${CHANGED_FILES}" ]; then
+        DEPLOY_MODE="no-change"
+        log_info "与上次部署相比无变更"
+        return
+    fi
+
+    print_changed_files
+
+    if is_config_only_change; then
+        DEPLOY_MODE="config-only"
+        log_info "仅检测到配置文件变更，跳过镜像重建"
+    else
+        DEPLOY_MODE="full-build"
+        log_info "检测到代码/依赖变更，执行镜像构建部署"
+    fi
 }
 
 # 检查远程环境
@@ -423,7 +502,13 @@ EOF
 
 # 部署服务
 deploy_service() {
-    log_info "部署 LibreChat API 服务..."
+    local mode="${1:-normal}"
+
+    if [ "${mode}" = "restart-only" ]; then
+        log_info "仅重启 LibreChat API 服务（跳过镜像构建）..."
+    else
+        log_info "部署 LibreChat API 服务..."
+    fi
 
     ssh "${SERVER_HOST}" bash -s -- "${PROJECT_DIR}" << 'EOF'
         set -e
@@ -431,7 +516,12 @@ deploy_service() {
         cd "${PROJECT_DIR}"
 
         echo "使用 docker-compose 重启 api 服务..."
-        sudo docker-compose -f docker-compose.yml -f .deploy/override.yml up -d api
+        if [ -f ".deploy/override.yml" ]; then
+            sudo docker-compose -f docker-compose.yml -f .deploy/override.yml up -d api
+        else
+            echo "未找到 .deploy/override.yml，使用默认 docker-compose.yml"
+            sudo docker-compose -f docker-compose.yml up -d api
+        fi
 
         echo "等待服务启动..."
         sleep 5
@@ -461,6 +551,19 @@ save_image_info() {
     echo "${TIMESTAMP}" >> "${LAST_IMAGE_FILE}"
 
     log_success "镜像信息已保存到 ${LAST_IMAGE_FILE}"
+}
+
+save_deployed_commit() {
+    if ! git rev-parse --is-inside-work-tree &> /dev/null; then
+        return
+    fi
+
+    mkdir -p "${DEPLOY_DIR}"
+
+    local current_commit
+    current_commit=$(git rev-parse HEAD)
+    echo "${current_commit}" > "${LAST_DEPLOYED_COMMIT_FILE}"
+    log_success "已记录部署提交: ${current_commit}"
 }
 
 # 回滚功能
@@ -540,14 +643,27 @@ main() {
         exit 0
     fi
 
+    detect_deploy_mode
     transfer_config_files
-    build_image
-    export_image
-    transfer_image
-    load_image_on_server
-    create_override
-    deploy_service
-    save_image_info
+    case "${DEPLOY_MODE}" in
+        config-only)
+            deploy_service "restart-only"
+            save_deployed_commit
+            ;;
+        no-change)
+            log_warning "无变更需要部署，跳过服务重启"
+            ;;
+        *)
+            build_image
+            export_image
+            transfer_image
+            load_image_on_server
+            create_override
+            deploy_service
+            save_image_info
+            save_deployed_commit
+            ;;
+    esac
 
     echo ""
     log_success "======================================"
@@ -601,6 +717,7 @@ while [[ $# -gt 0 ]]; do
             echo "  --user, -u <USER>    SSH 用户名 (默认: ubuntu)"
             echo "  --init-only          仅初始化远程目录，不构建镜像"
             echo "  --no-cache           强制重新构建所有 Docker 层（忽略缓存）"
+            echo "  --use-cache          允许复用 Docker 缓存层（推荐日常部署）"
             echo "  --rollback, -r       回滚到上一版本"
             echo "  --help, -h           显示此帮助"
             echo ""

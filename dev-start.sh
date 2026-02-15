@@ -97,7 +97,7 @@ check_dependencies() {
     echo -e "${BLUE}📥 检查依赖...${NC}"
 
     if [ ! -d "node_modules" ]; then
-        echo "安装 npm 依赖..."
+        echo "未发现 node_modules，安装 npm 依赖..."
         npm install
         if [ $? -eq 0 ]; then
             echo -e "${GREEN}✓ 依赖安装完成${NC}"
@@ -106,7 +106,26 @@ check_dependencies() {
             return 1
         fi
     else
-        echo -e "${GREEN}✓ 依赖已安装${NC}"
+        echo "检测已安装依赖完整性..."
+        if npm ls --workspaces --all --json >/tmp/librechat-npm-ls.json 2>/dev/null; then
+            echo -e "${GREEN}✓ 依赖已安装且完整${NC}"
+        else
+            # npm ls 可能因 invalid/extraneous 返回非零，仅在 missing 依赖时才自动修复
+            local has_missing=$(node -e "const fs=require('fs');try{const d=JSON.parse(fs.readFileSync('/tmp/librechat-npm-ls.json','utf8'));const p=d.problems||[];process.stdout.write(p.some(x=>String(x).startsWith('missing:'))?'yes':'no');}catch{process.stdout.write('yes');}")
+
+            if [ "$has_missing" = "yes" ]; then
+                echo -e "${YELLOW}⚠️  检测到缺失依赖，执行 npm install 修复...${NC}"
+                npm install
+                if [ $? -eq 0 ]; then
+                    echo -e "${GREEN}✓ 依赖修复完成${NC}"
+                else
+                    echo -e "${RED}✗ 依赖修复失败${NC}"
+                    return 1
+                fi
+            else
+                echo -e "${YELLOW}⚠️  检测到非缺失类依赖告警（invalid/extraneous），继续启动${NC}"
+            fi
+        fi
     fi
 
     return 0
