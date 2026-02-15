@@ -4,6 +4,7 @@ export type ObjectId = Types.ObjectId;
 export * from './app';
 export * from './user';
 export * from './token';
+export * from './tokenPricing';
 export * from './convo';
 export * from './session';
 export * from './balance';

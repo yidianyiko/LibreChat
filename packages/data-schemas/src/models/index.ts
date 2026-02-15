@@ -1,5 +1,6 @@
 import { createUserModel } from './user';
 import { createTokenModel } from './token';
+import { createTokenPricingModel } from './tokenPricing';
 import { createSessionModel } from './session';
 import { createBalanceModel } from './balance';
 import { createConversationModel } from './convo';
@@ -35,6 +36,7 @@ export function createModels(mongoose: typeof import('mongoose')) {
   return {
     User: createUserModel(mongoose),
     Token: createTokenModel(mongoose),
+    TokenPricing: createTokenPricingModel(mongoose),
     Session: createSessionModel(mongoose),
     Balance: createBalanceModel(mongoose),
     Conversation: createConversationModel(mongoose),
