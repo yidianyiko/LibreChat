@@ -94,6 +94,11 @@ class StripeService {
     try {
       const session = await this.stripe.checkout.sessions.create({
         payment_method_types: ['card', 'alipay', 'wechat_pay'],
+        payment_method_options: {
+          wechat_pay: {
+            client: 'web',
+          },
+        },
         line_items: [
           {
             price_data: {
