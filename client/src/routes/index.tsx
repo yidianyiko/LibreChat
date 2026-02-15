@@ -1,5 +1,5 @@
 import { createBrowserRouter, Navigate, Outlet } from 'react-router-dom';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, lazy, Suspense } from 'react';
 import { Spinner } from '@librechat/client';
 import {
   Login,
@@ -12,23 +12,49 @@ import {
   ProtectedRoute,
 } from '~/components/Auth';
 import { MarketplaceProvider } from '~/components/Agents/MarketplaceContext';
-import AgentMarketplace from '~/components/Agents/Marketplace';
-import { OAuthSuccess, OAuthError } from '~/components/OAuth';
-import { RechargePage } from '~/components/Recharge/RechargePage';
-import { PaymentSuccessPage } from '~/components/Recharge/PaymentSuccessPage';
-import { PaymentCancelPage } from '~/components/Recharge/PaymentCancelPage';
-import { RechargeHistoryPage } from '~/components/Recharge/RechargeHistoryPage';
-import LandingPage from '~/components/LandingPage/LandingPage';
-import MissionPage from '~/components/LandingPage/MissionPage';
 import { AuthContextProvider, useAuthContext } from '~/hooks/AuthContext';
 import RouteErrorBoundary from './RouteErrorBoundary';
 import StartupLayout from './Layouts/Startup';
 import LoginLayout from './Layouts/Login';
 import dashboardRoutes from './Dashboard';
-import ShareRoute from './ShareRoute';
-import ChatRoute from './ChatRoute';
-import Search from './Search';
 import Root from './Root';
+
+const OAuthSuccess = lazy(() =>
+  import('~/components/OAuth').then((m) => ({ default: m.OAuthSuccess }))
+);
+const OAuthError = lazy(() =>
+  import('~/components/OAuth').then((m) => ({ default: m.OAuthError }))
+);
+const RechargePage = lazy(() =>
+  import('~/components/Recharge/RechargePage').then((m) => ({ default: m.RechargePage }))
+);
+const PaymentSuccessPage = lazy(() =>
+  import('~/components/Recharge/PaymentSuccessPage').then((m) => ({ default: m.PaymentSuccessPage }))
+);
+const PaymentCancelPage = lazy(() =>
+  import('~/components/Recharge/PaymentCancelPage').then((m) => ({ default: m.PaymentCancelPage }))
+);
+const RechargeHistoryPage = lazy(() =>
+  import('~/components/Recharge/RechargeHistoryPage').then((m) => ({ default: m.RechargeHistoryPage }))
+);
+const LandingPage = lazy(() =>
+  import('~/components/LandingPage/LandingPage').then((m) => ({ default: m.default }))
+);
+const MissionPage = lazy(() =>
+  import('~/components/LandingPage/MissionPage').then((m) => ({ default: m.default }))
+);
+const AgentMarketplace = lazy(() =>
+  import('~/components/Agents/Marketplace').then((m) => ({ default: m.default }))
+);
+const ShareRoute = lazy(() => import('./ShareRoute').then((m) => ({ default: m.default })));
+const ChatRoute = lazy(() => import('./ChatRoute').then((m) => ({ default: m.default })));
+const Search = lazy(() => import('./Search').then((m) => ({ default: m.default })));
+
+const LoadingFallback = () => (
+  <div className="flex h-screen items-center justify-center" aria-live="polite" role="status">
+    <Spinner className="text-text-primary" />
+  </div>
+);
 
 const AuthLayout = () => (
   <AuthContextProvider>
@@ -53,9 +79,11 @@ const LandingPageGuard = () => {
   // Show loading while checking auth state
   if (!isReady) {
     return (
-      <div className="flex h-screen items-center justify-center" aria-live="polite" role="status">
-        <Spinner className="text-text-primary" />
-      </div>
+      <Suspense fallback={<LoadingFallback />}>
+        <div className="flex h-screen items-center justify-center" aria-live="polite" role="status">
+          <Spinner className="text-text-primary" />
+        </div>
+      </Suspense>
     );
   }
 
@@ -63,7 +91,11 @@ const LandingPageGuard = () => {
     return <Navigate to="/c/new" replace />;
   }
 
-  return <LandingPage />;
+  return (
+    <Suspense fallback={<LoadingFallback />}>
+      <LandingPage />
+    </Suspense>
+  );
 };
 
 const baseEl = document.querySelector('base');
@@ -75,20 +107,30 @@ export const router = createBrowserRouter(
       path: '/',
       index: true,
       element: (
-        <AuthContextProvider>
-          <LandingPageGuard />
-        </AuthContextProvider>
+        <Suspense fallback={<LoadingFallback />}>
+          <AuthContextProvider>
+            <LandingPageGuard />
+          </AuthContextProvider>
+        </Suspense>
       ),
       errorElement: <RouteErrorBoundary />,
     },
     {
       path: 'mission',
-      element: <MissionPage />,
+      element: (
+        <Suspense fallback={<LoadingFallback />}>
+          <MissionPage />
+        </Suspense>
+      ),
       errorElement: <RouteErrorBoundary />,
     },
     {
       path: 'share/:shareId',
-      element: <ShareRoute />,
+      element: (
+        <Suspense fallback={<LoadingFallback />}>
+          <ShareRoute />
+        </Suspense>
+      ),
       errorElement: <RouteErrorBoundary />,
     },
     {
@@ -97,11 +139,19 @@ export const router = createBrowserRouter(
       children: [
         {
           path: 'success',
-          element: <OAuthSuccess />,
+          element: (
+            <Suspense fallback={<LoadingFallback />}>
+              <OAuthSuccess />
+            </Suspense>
+          ),
         },
         {
           path: 'error',
-          element: <OAuthError />,
+          element: (
+            <Suspense fallback={<LoadingFallback />}>
+              <OAuthError />
+            </Suspense>
+          ),
         },
       ],
     },
@@ -157,42 +207,70 @@ export const router = createBrowserRouter(
               children: [
                 {
                   path: 'c/:conversationId?',
-                  element: <ChatRoute />,
+                  element: (
+                    <Suspense fallback={<LoadingFallback />}>
+                      <ChatRoute />
+                    </Suspense>
+                  ),
                 },
                 {
                   path: 'search',
-                  element: <Search />,
+                  element: (
+                    <Suspense fallback={<LoadingFallback />}>
+                      <Search />
+                    </Suspense>
+                  ),
                 },
                 {
                   path: 'recharge',
-                  element: <RechargePage />,
+                  element: (
+                    <Suspense fallback={<LoadingFallback />}>
+                      <RechargePage />
+                    </Suspense>
+                  ),
                 },
                 {
                   path: 'recharge/success',
-                  element: <PaymentSuccessPage />,
+                  element: (
+                    <Suspense fallback={<LoadingFallback />}>
+                      <PaymentSuccessPage />
+                    </Suspense>
+                  ),
                 },
                 {
                   path: 'recharge/cancel',
-                  element: <PaymentCancelPage />,
+                  element: (
+                    <Suspense fallback={<LoadingFallback />}>
+                      <PaymentCancelPage />
+                    </Suspense>
+                  ),
                 },
                 {
                   path: 'recharge/history',
-                  element: <RechargeHistoryPage />,
+                  element: (
+                    <Suspense fallback={<LoadingFallback />}>
+                      <RechargeHistoryPage />
+                    </Suspense>
+                  ),
                 },
                 {
                   path: 'agents',
                   element: (
-                    <MarketplaceProvider>
-                      <AgentMarketplace />
-                    </MarketplaceProvider>
+                    <Suspense fallback={<LoadingFallback />}>
+                      <MarketplaceProvider>
+                        <AgentMarketplace />
+                      </MarketplaceProvider>
+                    </Suspense>
                   ),
                 },
                 {
                   path: 'agents/:category',
                   element: (
-                    <MarketplaceProvider>
-                      <AgentMarketplace />
-                    </MarketplaceProvider>
+                    <Suspense fallback={<LoadingFallback />}>
+                      <MarketplaceProvider>
+                        <AgentMarketplace />
+                      </MarketplaceProvider>
+                    </Suspense>
                   ),
                 },
               ],

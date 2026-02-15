@@ -23,9 +23,19 @@ const App = () => {
         // Always attempt network requests, even when navigator.onLine is false
         // This is needed because localhost is reachable without WiFi
         networkMode: 'always',
+        // Cache strategy optimizations
+        staleTime: 5 * 60 * 1000, // 5 minutes - data considered fresh
+        gcTime: 10 * 60 * 1000, // 10 minutes - cache retention
+        refetchOnWindowFocus: false, // Prevent unnecessary refetches
+        refetchOnMount: false, // Prevent unnecessary refetches
+        refetchOnReconnect: true, // Refetch on reconnect
+        retry: 1, // Single retry on failure
+        retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
       },
       mutations: {
         networkMode: 'always',
+        retry: 1,
+        retryDelay: 1000,
       },
     },
     queryCache: new QueryCache({

@@ -6,6 +6,8 @@ import { defineConfig } from 'vite';
 import { compression } from 'vite-plugin-compression2';
 import { nodePolyfills } from 'vite-plugin-node-polyfills';
 import { VitePWA } from 'vite-plugin-pwa';
+import { visualizer } from 'rollup-plugin-visualizer';
+import viteImagemin from 'vite-plugin-imagemin';
 
 // https://vitejs.dev/config/
 const backendPort = process.env.BACKEND_PORT && Number(process.env.BACKEND_PORT) || 3080;
@@ -52,9 +54,45 @@ export default defineConfig(({ command }) => ({
           'assets/maskable-icon.png',
           'manifest.webmanifest',
         ],
-        globIgnores: ['images/**/*', '**/*.map'],
-        maximumFileSizeToCacheInBytes: 4 * 1024 * 1024,
+        globIgnores: ['images/**/*', '**/*.map', 'stats.html'],
+        maximumFileSizeToCacheInBytes: 10 * 1024 * 1024, // 10 MB to accommodate stats.html
         navigateFallbackDenylist: [/^\/oauth/, /^\/api/],
+        runtimeCaching: [
+          {
+            urlPattern: /^https:\/\/api\./,
+            handler: 'NetworkFirst',
+            options: {
+              cacheName: 'api-cache',
+              expiration: {
+                maxEntries: 100,
+                maxAgeSeconds: 60 * 60 * 24, // 24 hours
+              },
+              networkTimeoutSeconds: 10,
+            },
+          },
+          {
+            urlPattern: /\.(?:png|jpg|jpeg|svg|gif|webp|avif)$/,
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'image-cache',
+              expiration: {
+                maxEntries: 200,
+                maxAgeSeconds: 60 * 60 * 24 * 30, // 30 days
+              },
+            },
+          },
+          {
+            urlPattern: /\.(?:woff|woff2|eot|ttf|otf)$/,
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'font-cache',
+              expiration: {
+                maxEntries: 50,
+                maxAgeSeconds: 60 * 60 * 24 * 365, // 1 year
+              },
+            },
+          },
+        ],
       },
       includeAssets: [],
       manifest: {
@@ -97,12 +135,44 @@ export default defineConfig(({ command }) => ({
     compression({
       threshold: 10240,
     }),
+    visualizer({
+      filename: './dist/stats.html',
+      gzipSize: true,
+      brotliSize: true,
+      open: false,
+      template: 'treemap',
+    }),
+    viteImagemin({
+      gifsicle: { optimizationLevel: 7 },
+      optipng: { optimizationLevel: 7 },
+      mozjpeg: { quality: 80 },
+      pngquant: { quality: [0.8, 0.9] },
+      svgo: {
+        plugins: [
+          { name: 'removeViewBox', active: false },
+          { name: 'removeEmptyAttrs', active: true },
+          { name: 'removeEmptyContainers', active: true },
+          { name: 'cleanupIDs', active: true },
+        ],
+      },
+    }),
   ],
   publicDir: './public',
   build: {
     sourcemap: process.env.NODE_ENV === 'development',
     outDir: './dist',
     minify: 'terser',
+    terserOptions: {
+      compress: {
+        drop_console: process.env.NODE_ENV === 'production',
+        drop_debugger: true,
+        pure_funcs: process.env.NODE_ENV === 'production' ? ['console.log', 'console.info'] : [],
+        passes: 2,
+      },
+      format: {
+        comments: false,
+      },
+    },
     rollupOptions: {
       preserveEntrySignatures: 'strict',
       output: {
@@ -265,7 +335,7 @@ export default defineConfig(({ command }) => ({
         warn(warning);
       },
     },
-    chunkSizeWarningLimit: 1500,
+    chunkSizeWarningLimit: 1000,
   },
   resolve: {
     alias: {

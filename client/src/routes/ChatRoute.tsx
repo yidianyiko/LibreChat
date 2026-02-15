@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useTransition, useCallback } from 'react';
 import { Spinner } from '@librechat/client';
 import { useParams } from 'react-router-dom';
 import { useRecoilCallback, useRecoilValue, useSetRecoilState } from 'recoil';
@@ -16,6 +16,7 @@ import temporaryStore from '~/store/temporary';
 import store from '~/store';
 
 export default function ChatRoute() {
+  const [isPending, startTransition] = useTransition();
   const { data: startupConfig } = useGetStartupConfig();
   const { isAuthenticated, user, roles } = useAuthRedirect();
 
@@ -50,11 +51,17 @@ export default function ChatRoute() {
 
   useEffect(() => {
     if (conversationId === Constants.NEW_CONVO) {
-      setIsTemporary(defaultTemporaryChat);
+      startTransition(() => {
+        setIsTemporary(defaultTemporaryChat);
+      });
     } else if (isTemporaryChat) {
-      setIsTemporary(isTemporaryChat);
+      startTransition(() => {
+        setIsTemporary(isTemporaryChat);
+      });
     } else {
-      setIsTemporary(false);
+      startTransition(() => {
+        setIsTemporary(false);
+      });
     }
   }, [conversationId, isTemporaryChat, setIsTemporary, defaultTemporaryChat]);
 
