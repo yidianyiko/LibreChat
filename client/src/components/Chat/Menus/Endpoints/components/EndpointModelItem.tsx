@@ -42,14 +42,12 @@ export function EndpointModelItem({ modelId, endpoint, isSelected }: EndpointMod
   let isGlobal = false;
   let modelName = modelId;
   const avatarUrl = endpoint?.modelIcons?.[modelId ?? ''] || null;
-  const modelInfo = endpoint?.models?.find((m) => m.name === modelId);
-  const promptRate = modelInfo?.promptRate;
-  const completionRate = modelInfo?.completionRate;
 
   // Use custom names if available
   if (endpoint && modelId && isAgentsEndpoint(endpoint.value) && endpoint.agentNames?.[modelId]) {
     modelName = endpoint.agentNames[modelId];
 
+    const modelInfo = endpoint?.models?.find((m) => m.name === modelId);
     isGlobal = modelInfo?.isGlobal ?? false;
   } else if (
     endpoint &&
@@ -109,11 +107,6 @@ export function EndpointModelItem({ modelId, endpoint, isSelected }: EndpointMod
     );
   };
 
-  const rateText =
-    typeof promptRate === 'number' && typeof completionRate === 'number'
-      ? `Input $${promptRate.toFixed(2)}/M | Output $${completionRate.toFixed(2)}/M`
-      : null;
-
   return (
     <MenuItem
       ref={itemRef}
@@ -123,10 +116,7 @@ export function EndpointModelItem({ modelId, endpoint, isSelected }: EndpointMod
     >
       <div className="flex w-full min-w-0 items-center gap-2 px-1 py-1">
         {renderAvatar()}
-        <div className="flex min-w-0 flex-col">
-          <span className="truncate">{modelName}</span>
-          {rateText && <span className="truncate text-[11px] text-text-secondary">{rateText}</span>}
-        </div>
+        <span className="truncate">{modelName}</span>
         {isGlobal && <EarthIcon className="ml-1 size-4 text-surface-submit" />}
       </div>
       <button
@@ -156,7 +146,7 @@ export function EndpointModelItem({ modelId, endpoint, isSelected }: EndpointMod
 
 export function renderEndpointModels(
   endpoint: Endpoint | null,
-  models: Array<{ name: string; isGlobal?: boolean; promptRate?: number; completionRate?: number }>,
+  models: Array<{ name: string; isGlobal?: boolean }>,
   selectedModel: string | null,
   filteredModels?: string[],
   endpointIndex?: number,

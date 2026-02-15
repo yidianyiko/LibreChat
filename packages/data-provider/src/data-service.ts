@@ -214,10 +214,6 @@ export const getModels = async (): Promise<t.TModelsConfig> => {
   return request.get(endpoints.models());
 };
 
-export const getModelRates = async (): Promise<t.TModelRatesConfig> => {
-  return request.get(endpoints.modelRates());
-};
-
 /* Assistants */
 
 export const createAssistant = ({

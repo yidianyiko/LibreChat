@@ -198,23 +198,6 @@ export const useGetModelsQuery = (
   );
 };
 
-export const useGetModelRatesQuery = (
-  config?: UseQueryOptions<t.TModelRatesConfig>,
-): QueryObserverResult<t.TModelRatesConfig> => {
-  return useQuery<t.TModelRatesConfig>(
-    [QueryKeys.modelRates],
-    () => (isDemoMode() ? Promise.resolve({}) : dataService.getModelRates()),
-    {
-      initialData: {},
-      refetchOnWindowFocus: false,
-      refetchOnReconnect: false,
-      refetchOnMount: false,
-      staleTime: Infinity,
-      ...config,
-    },
-  );
-};
-
 export const useCreatePresetMutation = (): UseMutationResult<
   s.TPreset,
   unknown,
