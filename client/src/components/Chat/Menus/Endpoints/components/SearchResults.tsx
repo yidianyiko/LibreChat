@@ -143,6 +143,8 @@ export function SearchResults({ results, localize, searchValue }: SearchResultsP
 
                   let isGlobal = false;
                   let modelName = modelId;
+                  const promptRate = model.promptRate;
+                  const completionRate = model.completionRate;
                   if (
                     isAgentsEndpoint(endpoint.value) &&
                     endpoint.agentNames &&
@@ -161,6 +163,10 @@ export function SearchResults({ results, localize, searchValue }: SearchResultsP
 
                   const isModelSelected =
                     selectedEndpoint === endpoint.value && selectedModel === modelId;
+                  const rateText =
+                    typeof promptRate === 'number' && typeof completionRate === 'number'
+                      ? `Input $${promptRate.toFixed(2)}/M | Output $${completionRate.toFixed(2)}/M`
+                      : null;
                   return (
                     <MenuItem
                       key={`${endpoint.value}-${modelId}-search-${i}`}
@@ -168,7 +174,7 @@ export function SearchResults({ results, localize, searchValue }: SearchResultsP
                       aria-selected={isModelSelected || undefined}
                       className="flex w-full cursor-pointer items-center justify-start rounded-lg px-3 py-2 pl-6 text-sm"
                     >
-                      <div className="flex items-center gap-2">
+                      <div className="flex min-w-0 items-center gap-2">
                         {endpoint.modelIcons?.[modelId] && (
                           <div className="flex h-5 w-5 items-center justify-center overflow-hidden rounded-full">
                             <img
@@ -178,7 +184,14 @@ export function SearchResults({ results, localize, searchValue }: SearchResultsP
                             />
                           </div>
                         )}
-                        <span>{modelName}</span>
+                        <div className="flex min-w-0 flex-col">
+                          <span className="truncate">{modelName}</span>
+                          {rateText && (
+                            <span className="truncate text-[11px] text-text-secondary">
+                              {rateText}
+                            </span>
+                          )}
+                        </div>
                       </div>
                       {isGlobal && (
                         <EarthIcon className="ml-auto size-4 text-green-400" aria-hidden="true" />

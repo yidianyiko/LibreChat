@@ -1,5 +1,5 @@
 import React, { useMemo, useCallback } from 'react';
-import { useGetModelsQuery } from 'librechat-data-provider/react-query';
+import { useGetModelRatesQuery, useGetModelsQuery } from 'librechat-data-provider/react-query';
 import {
   Permissions,
   alternateName,
@@ -32,6 +32,7 @@ export const useEndpoints = ({
   startupConfig: TStartupConfig | undefined;
 }) => {
   const modelsQuery = useGetModelsQuery();
+  const modelRatesQuery = useGetModelRatesQuery();
   const { data: endpoints = [] } = useGetEndpointsQuery({ select: mapEndpoints });
   const interfaceConfig = startupConfig?.interface ?? {};
   const includedEndpoints = useMemo(
@@ -170,15 +171,28 @@ export const useEndpoints = ({
         ep !== EModelEndpoint.assistants &&
         (modelsQuery.data?.[ep]?.length ?? 0) > 0
       ) {
-        result.models = modelsQuery.data?.[ep]?.map((model) => ({
-          name: model,
-          isGlobal: false,
-        }));
+        result.models = modelsQuery.data?.[ep]?.map((model) => {
+          const rate = modelRatesQuery.data?.[ep]?.[model];
+          return {
+            name: model,
+            isGlobal: false,
+            promptRate: rate?.prompt,
+            completionRate: rate?.completion,
+          };
+        });
       }
 
       return result;
     });
-  }, [filteredEndpoints, endpointsConfig, modelsQuery.data, agents, assistants, azureAssistants]);
+  }, [
+    filteredEndpoints,
+    endpointsConfig,
+    modelsQuery.data,
+    modelRatesQuery.data,
+    agents,
+    assistants,
+    azureAssistants,
+  ]);
 
   return {
     mappedEndpoints,

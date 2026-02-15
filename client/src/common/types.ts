@@ -297,7 +297,7 @@ export type TSettingsProps = TBaseSettingsProps & {
 };
 
 export type TModels = {
-  models: string[];
+  models: Array<string | Option>;
   showAbove?: boolean;
   popover?: boolean;
 };
