@@ -1,41 +1,15 @@
 import React from 'react';
 import { CheckCircle2 } from 'lucide-react';
+import { useLocalize } from '~/hooks';
 import type { PricingTier } from '~/types/recharge';
 
-/** Subtitle and feature list per tier, matching LandingPage pricing copy. */
-const TIER_DISPLAY: Record<string, { sub: string; features: string[] }> = {
-  explorer: {
-    sub: 'The Minimalist Alternative',
-    features: [
-      '150 Premium GPT-4o msgs',
-      '2,000 Base 4o-mini msgs',
-      'Locked Model Guarantee',
-      '8,192 Token Context',
-    ],
-  },
-  artisan: {
-    sub: "The Creator's Safe Haven",
-    features: [
-      '700 Premium GPT-4o msgs',
-      '15,000 Base 4o-mini msgs',
-      'Snapshot Selection',
-      '32,768 Token Context',
-      '10 Project Folders',
-    ],
-  },
-  elite: {
-    sub: 'The Power Productivity Hub',
-    features: [
-      '2,000 Premium GPT-4o msgs',
-      'Unlimited Base 4o-mini msgs',
-      'Full 128,000 Context Access',
-      'Tier-5 Priority Lane',
-      'Unlimited Project Folders',
-    ],
-  },
+/** Tier-specific feature key prefixes. */
+const getTierFeatureKeys = (tierId: string): string[] => {
+  const keyBase = `com_recharge_tier_${tierId}_f`;
+  const counts = { explorer: 4, artisan: 5, elite: 5 };
+  const count = counts[tierId as keyof typeof counts] || 0;
+  return Array.from({ length: count }, (_, i) => `${keyBase}${i + 1}`);
 };
-
-const DEFAULT_DISPLAY = { sub: '', features: [] as string[] };
 
 interface PricingCardProps {
   tier: PricingTier;
@@ -50,10 +24,14 @@ export const PricingCard: React.FC<PricingCardProps> = ({
   isLoading = false,
   recommended = false,
 }) => {
+  const localize = useLocalize();
   const formattedPrice = (tier.price / 100).toFixed(2);
-  const { sub, features } = TIER_DISPLAY[tier.id] ?? DEFAULT_DISPLAY;
-  const planName = tier.name.toUpperCase() + ' PACK';
-  const ctaText = 'BUY ' + tier.name.toUpperCase();
+  const subKey = `com_recharge_tier_${tier.id}_sub` as const;
+  const subtitle = localize(subKey);
+  const featureKeys = getTierFeatureKeys(tier.id);
+  const features = featureKeys.map((key) => localize(key));
+  const planName = localize('com_recharge_pack', { 0: tier.name.toUpperCase() });
+  const ctaText = localize('com_recharge_buy_tier', { 0: tier.name.toUpperCase() });
 
   return (
     <div
@@ -77,7 +55,7 @@ export const PricingCard: React.FC<PricingCardProps> = ({
           </span>
           {recommended && (
             <span className="text-[9px] font-black uppercase tracking-widest text-[#10a37f]">
-              MOST POPULAR
+              {localize('com_recharge_most_popular')}
             </span>
           )}
         </div>
@@ -85,9 +63,9 @@ export const PricingCard: React.FC<PricingCardProps> = ({
           <span className="text-3xl font-black tracking-tight sm:text-4xl md:text-5xl">
             ${formattedPrice}
           </span>
-          <span className="ml-2 text-sm font-medium opacity-50">one-time</span>
+          <span className="ml-2 text-sm font-medium opacity-50">{localize('com_recharge_one_time')}</span>
         </div>
-        <p className="mt-4 text-xs font-bold text-gray-400">{sub}</p>
+        <p className="mt-4 text-xs font-bold text-gray-400">{subtitle}</p>
       </div>
       <button
         type="button"
@@ -99,7 +77,7 @@ export const PricingCard: React.FC<PricingCardProps> = ({
             : 'bg-black text-white hover:bg-gray-800 dark:bg-white dark:text-black dark:hover:bg-gray-200'
         }`}
       >
-        {isLoading ? 'Processing...' : ctaText}
+        {isLoading ? localize('com_recharge_processing') : ctaText}
       </button>
       <ul className="flex-grow space-y-5 text-left">
         {features.map((f, i) => (

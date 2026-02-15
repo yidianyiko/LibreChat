@@ -1,15 +1,17 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useLocalize } from '~/hooks';
 import { useRechargeHistoryQuery } from '~/hooks/Recharge/useRechargeQueries';
 
 export const RechargeHistoryPage: React.FC = () => {
   const navigate = useNavigate();
+  const localize = useLocalize();
   const { data, isLoading, error } = useRechargeHistoryQuery();
 
   if (isLoading) {
     return (
       <div className="flex h-full items-center justify-center">
-        <div className="text-lg text-gray-600 dark:text-gray-300">Loading history...</div>
+        <div className="text-lg text-gray-600 dark:text-gray-300">{localize('com_recharge_loading_history')}</div>
       </div>
     );
   }
@@ -17,12 +19,12 @@ export const RechargeHistoryPage: React.FC = () => {
   if (error) {
     return (
       <div className="flex h-full flex-col items-center justify-center">
-        <div className="text-lg font-semibold text-red-600">Failed to load recharge history</div>
+        <div className="text-lg font-semibold text-red-600">{localize('com_recharge_error_load_history')}</div>
         <button
           onClick={() => navigate('/recharge')}
           className="mt-4 text-blue-600 hover:underline"
         >
-          Back to Recharge
+          {localize('com_recharge_back')}
         </button>
       </div>
     );
@@ -35,20 +37,20 @@ export const RechargeHistoryPage: React.FC = () => {
       <div className="mx-auto max-w-4xl px-4 py-12 sm:px-6 lg:px-8">
         <div className="mb-8">
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white sm:text-3xl">
-            Recharge History
+            {localize('com_recharge_history_title')}
           </h1>
-          <p className="mt-2 text-gray-600 dark:text-gray-300">View your past credit purchases</p>
+          <p className="mt-2 text-gray-600 dark:text-gray-300">{localize('com_recharge_history_desc')}</p>
         </div>
 
         {history.length === 0 ? (
           <div className="py-12 text-center">
             <div className="mb-4 text-4xl sm:text-5xl">📭</div>
-            <p className="text-lg text-gray-600 dark:text-gray-300">No recharge history yet</p>
+            <p className="text-lg text-gray-600 dark:text-gray-300">{localize('com_recharge_history_empty')}</p>
             <button
               onClick={() => navigate('/recharge')}
               className="mt-6 rounded-lg bg-blue-600 px-6 py-2 text-white hover:bg-blue-700"
             >
-              Purchase Credits
+              {localize('com_recharge_purchase_credits')}
             </button>
           </div>
         ) : (
@@ -67,7 +69,7 @@ export const RechargeHistoryPage: React.FC = () => {
                   >
                     <div className="flex items-center justify-between">
                       <span className="text-sm font-medium text-gray-900 dark:text-gray-100">
-                        {formattedCredits}M Credits
+                        {localize('com_recharge_credits_amount', { 0: formattedCredits })}
                       </span>
                       <span className="text-sm font-medium text-gray-900 dark:text-gray-100">
                         ${formattedAmount}
@@ -90,16 +92,16 @@ export const RechargeHistoryPage: React.FC = () => {
                 <thead className="bg-gray-50 dark:bg-gray-800">
                   <tr>
                     <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-300">
-                      Date
+                      {localize('com_recharge_date')}
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-300">
-                      Credits
+                      {localize('com_recharge_credits')}
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-300">
-                      Amount
+                      {localize('com_recharge_amount')}
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-300">
-                      Session ID
+                      {localize('com_recharge_session_id')}
                     </th>
                   </tr>
                 </thead>
@@ -137,7 +139,7 @@ export const RechargeHistoryPage: React.FC = () => {
             onClick={() => navigate('/recharge')}
             className="w-full rounded-lg border border-gray-300 px-6 py-2 text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-800 sm:w-auto"
           >
-            Back to Recharge
+            {localize('com_recharge_back')}
           </button>
         </div>
       </div>
