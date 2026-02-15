@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
+import Cookies from 'js-cookie';
 import SEOHelmet from '~/components/SEO/SEOHelmet';
 import {
   Globe,
@@ -769,12 +770,9 @@ const LanguageSwitcher: React.FC<LanguageSwitcherProps> = ({ currentLang, onLang
 };
 
 /**
- * Detect browser language and map to supported language
+ * Map a language code to a supported landing page language
  */
-const detectBrowserLanguage = (): SupportedLanguage => {
-  const browserLang = navigator.language || navigator.languages?.[0] || 'en';
-  const langCode = browserLang.toLowerCase().split('-')[0];
-
+const mapToSupportedLang = (code: string): SupportedLanguage | undefined => {
   const langMap: Record<string, SupportedLanguage> = {
     en: 'en',
     zh: 'zh',
@@ -782,8 +780,28 @@ const detectBrowserLanguage = (): SupportedLanguage => {
     ja: 'ja',
     ko: 'ko',
   };
+  return langMap[code.toLowerCase().split('-')[0]];
+};
 
-  return langMap[langCode] || 'en';
+/**
+ * Detect language from persisted preference or browser setting
+ */
+export const detectBrowserLanguage = (): SupportedLanguage => {
+  const persisted = Cookies.get('lang') || localStorage.getItem('lang');
+  if (persisted) {
+    const mapped = mapToSupportedLang(persisted);
+    if (mapped) {return mapped;}
+  }
+  const browserLang = navigator.language || navigator.languages?.[0] || 'en';
+  return mapToSupportedLang(browserLang) || 'en';
+};
+
+/**
+ * Persist language choice to localStorage and cookie so authenticated app inherits it
+ */
+const persistLang = (lang: SupportedLanguage): void => {
+  localStorage.setItem('lang', lang);
+  Cookies.set('lang', lang, { expires: 365 });
 };
 
 /** Brand logo with ChatGPT icon (Gemini-style) */
@@ -804,7 +822,11 @@ const BrandLogo: React.FC<{ theme?: 'dark' | 'light'; className?: string; iconSi
  * Main LandingPage component (Gemini visual + Router/auth preserved)
  */
 const LandingPage: React.FC = () => {
-  const [lang, setLang] = useState<SupportedLanguage>(detectBrowserLanguage);
+  const [lang, setLangState] = useState<SupportedLanguage>(detectBrowserLanguage);
+  const setLang = useCallback((newLang: SupportedLanguage) => {
+    setLangState(newLang);
+    persistLang(newLang);
+  }, []);
   const t = translations[lang] || translations['en'];
   const [scrolled, setScrolled] = useState<boolean>(false);
   const [activeNav, setActiveNav] = useState<string>('home');

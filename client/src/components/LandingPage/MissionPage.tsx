@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import Cookies from 'js-cookie';
 import {
   Globe,
   Scale,
@@ -7,7 +8,7 @@ import {
   ShieldCheck,
   Sparkles,
 } from 'lucide-react';
-import { translations, type SupportedLanguage } from './LandingPage';
+import { translations, detectBrowserLanguage, type SupportedLanguage } from './LandingPage';
 import SEOHelmet from '~/components/SEO/SEOHelmet';
 
 /**
@@ -67,28 +68,22 @@ const LanguageSwitcher: React.FC<LanguageSwitcherProps> = ({ currentLang, onLang
 };
 
 /**
- * Detect browser language and map to supported language
+ * Persist language choice to localStorage and cookie so authenticated app inherits it
  */
-const detectBrowserLanguage = (): SupportedLanguage => {
-  const browserLang = navigator.language || navigator.languages?.[0] || 'en';
-  const langCode = browserLang.toLowerCase().split('-')[0];
-
-  const langMap: Record<string, SupportedLanguage> = {
-    en: 'en',
-    zh: 'zh',
-    es: 'es',
-    ja: 'ja',
-    ko: 'ko',
-  };
-
-  return langMap[langCode] || 'en';
+const persistLang = (lang: SupportedLanguage): void => {
+  localStorage.setItem('lang', lang);
+  Cookies.set('lang', lang, { expires: 365 });
 };
 
 /**
  * Mission Page component matching the screenshot design
  */
 const MissionPage: React.FC = () => {
-  const [lang, setLang] = useState<SupportedLanguage>(detectBrowserLanguage);
+  const [lang, setLangState] = useState<SupportedLanguage>(detectBrowserLanguage);
+  const setLang = useCallback((newLang: SupportedLanguage) => {
+    setLangState(newLang);
+    persistLang(newLang);
+  }, []);
   const t = translations[lang] || translations['en'];
   const [scrolled, setScrolled] = useState<boolean>(false);
   const navigate = useNavigate();
