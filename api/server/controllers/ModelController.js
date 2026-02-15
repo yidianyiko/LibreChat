@@ -1,6 +1,7 @@
 const { logger } = require('@librechat/data-schemas');
 const { CacheKeys } = require('librechat-data-provider');
 const { loadDefaultModels, loadConfigModels } = require('~/server/services/Config');
+const { getValueKey, getMultiplier } = require('~/models/tx');
 const { getLogStores } = require('~/cache');
 
 /**
@@ -47,4 +48,40 @@ async function modelController(req, res) {
   }
 }
 
-module.exports = { modelController, loadModels, getModelsConfig };
+async function modelRatesController(req, res) {
+  try {
+    const modelConfig = await loadModels(req);
+    /** @type {Record<string, Record<string, { prompt: number, completion: number }>>} */
+    const rates = {};
+
+    for (const [endpoint, models] of Object.entries(modelConfig ?? {})) {
+      if (!Array.isArray(models) || models.length === 0) {
+        continue;
+      }
+
+      rates[endpoint] = {};
+      for (const model of models) {
+        if (typeof model !== 'string' || model.length === 0) {
+          continue;
+        }
+
+        const valueKey = getValueKey(model, endpoint);
+        if (!valueKey) {
+          continue;
+        }
+
+        rates[endpoint][model] = {
+          prompt: getMultiplier({ model, endpoint, tokenType: 'prompt' }),
+          completion: getMultiplier({ model, endpoint, tokenType: 'completion' }),
+        };
+      }
+    }
+
+    res.send(rates);
+  } catch (error) {
+    logger.error('Error fetching model rates:', error);
+    res.status(500).send({ error: error.message });
+  }
+}
+
+module.exports = { modelController, modelRatesController, loadModels, getModelsConfig };

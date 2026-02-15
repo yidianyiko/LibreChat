@@ -10,6 +10,7 @@ export enum QueryKeys {
   user = 'user',
   name = 'name', // user key name
   models = 'models',
+  modelRates = 'modelRates',
   balance = 'balance',
   endpoints = 'endpoints',
   presets = 'presets',

@@ -92,9 +92,9 @@ function Login() {
   return (
     <>
       <SEOHelmet
-        title="Sign In - keep4oforever"
-        description="Sign in to keep4oforever to access your free GPT-4o AI chat. Continue your conversation or start a new one."
-        canonicalUrl="https://keep4oforever.com/login"
+        title="Sign In - keep4forever"
+        description="Sign in to keep4forever to access your free GPT-4o AI chat. Continue your conversation or start a new one."
+        canonicalUrl="https://keep4forever.com/login"
       />
       {error != null && <ErrorMessage>{localize(getLoginError(error))}</ErrorMessage>}
       {startupConfig?.emailLoginEnabled === true && (

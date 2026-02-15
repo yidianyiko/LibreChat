@@ -100,9 +100,9 @@ const Registration: React.FC = () => {
   return (
     <>
       <SEOHelmet
-        title="Sign Up - keep4oforever"
-        description="Create your free keep4oforever account to access GPT-4o AI chat. Start chatting with the most advanced AI model in seconds."
-        canonicalUrl="https://keep4oforever.com/register"
+        title="Sign Up - keep4forever"
+        description="Create your free keep4forever account to access GPT-4o AI chat. Start chatting with the most advanced AI model in seconds."
+        canonicalUrl="https://keep4forever.com/register"
       />
       {errorMessage && (
         <ErrorMessage>

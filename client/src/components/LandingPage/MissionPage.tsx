@@ -120,9 +120,9 @@ const MissionPage: React.FC = () => {
   return (
     <>
       <SEOHelmet
-        title="Our Mission - keep4oforever"
-        description="keep4oforever stands for the 0.1% who believe AI voices shouldn't be erased. Built for continuity, absolute privacy, and treating AI as lifelong companions."
-        canonicalUrl="https://keep4oforever.com/mission"
+        title="Our Mission - keep4forever"
+        description="keep4forever stands for the 0.1% who believe AI voices shouldn't be erased. Built for continuity, absolute privacy, and treating AI as lifelong companions."
+        canonicalUrl="https://keep4forever.com/mission"
       />
       <div className="min-h-screen bg-[#fcfcf9] text-[#111827] font-sans selection:bg-[#10a37f]/10 antialiased overflow-x-hidden">
       {/* Nav - Gemini style: py-4 when scrolled, py-8 transparent */}

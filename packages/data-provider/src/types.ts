@@ -385,6 +385,10 @@ export type TEndpointsConfig =
   | undefined;
 
 export type TModelsConfig = Record<string, string[]>;
+export type TModelRatesConfig = Record<
+  string,
+  Record<string, { prompt: number; completion: number }>
+>;
 
 export type TUpdateTokenCountResponse = {
   count: number;

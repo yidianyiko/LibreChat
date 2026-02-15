@@ -17,23 +17,23 @@ interface SEOMetaProps {
  * @example
  * ```tsx
  * <SEOHelmet
- *   title="keep4oforever - Free GPT-4o AI Chat"
+ *   title="keep4forever - Free GPT-4o AI Chat"
  *   description="Get free access to GPT-4o..."
- *   canonicalUrl="https://keep4oforever.com/register"
+ *   canonicalUrl="https://keep4forever.com/register"
  * />
  * ```
  */
 const SEOHelmet: React.FC<SEOMetaProps> = ({
   title,
   description,
-  ogImage = 'https://keep4oforever.com/assets/og-image.jpg',
+  ogImage = 'https://keep4forever.com/assets/og-image.jpg',
   ogType = 'website',
-  canonicalUrl = 'https://keep4oforever.com',
+  canonicalUrl = 'https://keep4forever.com',
   noIndex = false,
   keywords
 }) => {
-  const siteTitle = title ? `${title} | keep4oforever` : 'keep4oforever - Free GPT-4o AI Chat | Access Advanced AI Today';
-  const siteDescription = description || 'Get free access to GPT-4o, the most advanced AI model. Chat, create, and explore with keep4oforever - your reliable AI companion powered by OpenAI\'s latest technology.';
+  const siteTitle = title ? `${title} | keep4forever` : 'keep4forever - Free GPT-4o AI Chat | Access Advanced AI Today';
+  const siteDescription = description || 'Get free access to GPT-4o, the most advanced AI model. Chat, create, and explore with keep4forever - your reliable AI companion powered by OpenAI\'s latest technology.';
   const siteKeywords = keywords || 'GPT-4o, free GPT-4o, AI chat, ChatGPT alternative, OpenAI GPT-4o, AI assistant, free AI access';
 
   return (
@@ -42,7 +42,7 @@ const SEOHelmet: React.FC<SEOMetaProps> = ({
       <title>{siteTitle}</title>
       <meta name="description" content={siteDescription} />
       {keywords && <meta name="keywords" content={keywords} />}
-      <meta name="author" content="keep4oforever" />
+      <meta name="author" content="keep4forever" />
       
       {/* Robots Meta Tag */}
       {noIndex && <meta name="robots" content="noindex, nofollow" />}
@@ -56,7 +56,7 @@ const SEOHelmet: React.FC<SEOMetaProps> = ({
       <meta property="og:title" content={siteTitle} />
       <meta property="og:description" content={siteDescription} />
       <meta property="og:image" content={ogImage} />
-      <meta property="og:site_name" content="keep4oforever" />
+      <meta property="og:site_name" content="keep4forever" />
       
       {/* Twitter Card */}
       <meta name="twitter:card" content="summary_large_image" />
