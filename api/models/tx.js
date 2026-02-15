@@ -1,4 +1,5 @@
 const { matchModelName, findMatchingPattern } = require('@librechat/api');
+const { tokenPricingCache } = require('~/server/services/TokenPricingCache');
 const defaultRate = 6;
 
 /**
@@ -409,6 +410,19 @@ const getMultiplier = ({
   if (endpointTokenConfig) {
     return endpointTokenConfig?.[model]?.[tokenType] ?? defaultRate;
   }
+
+  // --- DB cache lookup (highest priority) ---
+  if (model && tokenType && tokenPricingCache.isLoaded()) {
+    const dbPremium = tokenPricingCache.getPremiumRate(model, tokenType, inputTokenCount);
+    if (dbPremium != null) {
+      return dbPremium;
+    }
+    const dbRate = tokenPricingCache.getRate(model);
+    if (dbRate) {
+      return dbRate[tokenType] ?? defaultRate;
+    }
+  }
+  // --- End DB cache lookup ---
 
   if (valueKey && tokenType) {
     const premiumRate = getPremiumRate(valueKey, tokenType, inputTokenCount);

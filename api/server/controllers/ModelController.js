@@ -50,6 +50,12 @@ async function modelController(req, res) {
 
 async function modelRatesController(req, res) {
   try {
+    // Ensure DB pricing cache is loaded
+    const { tokenPricingCache } = require('~/server/services/TokenPricingCache');
+    if (!tokenPricingCache.isLoaded()) {
+      await tokenPricingCache.load();
+    }
+
     const modelConfig = await loadModels(req);
     /** @type {Record<string, Record<string, { prompt: number, completion: number }>>} */
     const rates = {};

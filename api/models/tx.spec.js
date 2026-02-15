@@ -2192,3 +2192,65 @@ describe('tokens.ts and tx.js sync validation', () => {
     expect(missingContext).toEqual([]);
   });
 });
+
+// DB cache integration tests
+const { tokenPricingCache } = require('~/server/services/TokenPricingCache');
+
+describe('getMultiplier with DB cache', () => {
+  afterEach(() => {
+    tokenPricingCache.invalidate();
+  });
+
+  it('should use DB rate when cache has a match', async () => {
+    // Simulate cache loaded with custom rate
+    tokenPricingCache._records = [
+      { modelPattern: 'gpt-4o', inputRate: 99, outputRate: 199, isActive: true },
+    ];
+    tokenPricingCache._loaded = true;
+
+    const { getMultiplier } = require('./tx');
+    const rate = getMultiplier({ model: 'gpt-4o', tokenType: 'prompt' });
+    expect(rate).toBe(99);
+  });
+
+  it('should fall back to hardcoded when cache has no match', async () => {
+    tokenPricingCache._records = [];
+    tokenPricingCache._loaded = true;
+
+    const { getMultiplier } = require('./tx');
+    const rate = getMultiplier({ model: 'gpt-4o', tokenType: 'prompt' });
+    // Should fall back to hardcoded value: 2.5
+    expect(rate).toBe(2.5);
+  });
+
+  it('should fall back to hardcoded when cache not loaded', () => {
+    tokenPricingCache._loaded = false;
+
+    const { getMultiplier } = require('./tx');
+    const rate = getMultiplier({ model: 'gpt-4o', tokenType: 'prompt' });
+    expect(rate).toBe(2.5);
+  });
+
+  it('should use DB premium rate over hardcoded', () => {
+    tokenPricingCache._records = [
+      {
+        modelPattern: 'claude-opus-4-6',
+        inputRate: 5,
+        outputRate: 25,
+        longContextThreshold: 200000,
+        longContextInputRate: 99,
+        longContextOutputRate: 199,
+        isActive: true,
+      },
+    ];
+    tokenPricingCache._loaded = true;
+
+    const { getMultiplier } = require('./tx');
+    const rate = getMultiplier({
+      model: 'claude-opus-4-6',
+      tokenType: 'prompt',
+      inputTokenCount: 250000,
+    });
+    expect(rate).toBe(99);
+  });
+});
