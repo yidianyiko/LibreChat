@@ -7,8 +7,46 @@
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-    <meta name="description" content="keep4oforever - An open source chat application with support for multiple AI models" />
-    <title>keep4oforever</title>
+    <!-- Primary Meta Tags -->
+    <title>keep4oforever - Free GPT-4o AI Chat | Access Advanced AI Today</title>
+    <meta name="description" content="Get free access to GPT-4o, the most advanced AI model. Chat, create, and explore with keep4oforever - your reliable AI companion powered by OpenAI's latest technology." />
+    <meta name="keywords" content="GPT-4o, free GPT-4o, AI chat, ChatGPT alternative, OpenAI GPT-4o, AI assistant, free AI access" />
+    <meta name="author" content="keep4oforever" />
+    <link rel="canonical" href="https://keep4oforever.com/" />
+
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://keep4oforever.com/" />
+    <meta property="og:title" content="keep4oforever - Free GPT-4o AI Chat" />
+    <meta property="og:description" content="Access GPT-4o for free. Your reliable AI chat companion powered by OpenAI's most advanced model." />
+    <meta property="og:image" content="https://keep4oforever.com/assets/og-image.jpg" />
+    <meta property="og:site_name" content="keep4oforever" />
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:url" content="https://keep4oforever.com/" />
+    <meta name="twitter:title" content="keep4oforever - Free GPT-4o AI Chat" />
+    <meta name="twitter:description" content="Access GPT-4o for free. Your reliable AI chat companion." />
+    <meta name="twitter:image" content="https://keep4oforever.com/assets/twitter-card.jpg" />
+
+    <!-- Structured Data -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebApplication",
+      "name": "keep4oforever",
+      "url": "https://keep4oforever.com",
+      "description": "Free access to GPT-4o AI chat. Advanced AI assistant powered by OpenAI's latest model.",
+      "applicationCategory": "CommunicationsApplication",
+      "operatingSystem": "Web",
+      "offers": {
+        "@type": "Offer",
+        "price": "0",
+        "priceCurrency": "USD"
+      },
+      "featureList": "GPT-4o access, AI chat, image generation, code interpreter, web search"
+    }
+    </script>
     <link rel="icon" type="image/png" sizes="32x32" href="assets/favicon-32x32.png" />
     <link rel="icon" type="image/png" sizes="16x16" href="assets/favicon-16x16.png" />
     <link rel="apple-touch-icon" href="assets/apple-touch-icon-180x180.png" />
@@ -49,10 +87,21 @@
           background-color: ${backgroundColor};
         }
       `;
-      document.head.appendChild(loadingContainerStyle);
-    </script>
-    <script defer type="module" src="/src/main.jsx"></script>
-  </head>
+       document.head.appendChild(loadingContainerStyle);
+     </script>
+     <script defer type="module" src="/src/main.jsx"></script>
+     
+      <!-- Google Analytics 4 -->
+      <script async src="https://www.googletagmanager.com/gtag/js?id=G-5EWVZE1XVD"></script>
+      <script>
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', 'G-5EWVZE1XVD');
+      </script>
+      <!-- End Google Analytics 4 -->
+     
+   </head>
   <body>
     <div id="root">
       <div id="loading-container"></div>

@@ -9,6 +9,7 @@ import type { TRegisterUser, TError } from 'librechat-data-provider';
 import type { TLoginLayoutContext } from '~/common';
 import { useLocalize, TranslationKeys } from '~/hooks';
 import { ErrorMessage } from './ErrorMessage';
+import SEOHelmet from '~/components/SEO/SEOHelmet';
 
 const Registration: React.FC = () => {
   const navigate = useNavigate();
@@ -98,6 +99,11 @@ const Registration: React.FC = () => {
 
   return (
     <>
+      <SEOHelmet
+        title="Sign Up - keep4forever"
+        description="Create your free keep4forever account to access GPT-4o AI chat. Start chatting with the most advanced AI model in seconds."
+        canonicalUrl="https://keep4forever.com/register"
+      />
       {errorMessage && (
         <ErrorMessage>
           {localize('com_auth_error_create')} {errorMessage}
