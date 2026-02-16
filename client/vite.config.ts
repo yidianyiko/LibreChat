@@ -47,7 +47,7 @@ export default defineConfig(({ command }) => ({
       includeManifestIcons: false,
       workbox: {
         globPatterns: [
-          '**/*.{js,css,html}',
+          '**/*.{css,html}',
           'assets/favicon*.png',
           'assets/icon-*.png',
           'assets/apple-touch-icon*.png',
@@ -55,9 +55,21 @@ export default defineConfig(({ command }) => ({
           'manifest.webmanifest',
         ],
         globIgnores: ['images/**/*', '**/*.map', 'stats.html'],
-        maximumFileSizeToCacheInBytes: 10 * 1024 * 1024, // 10 MB to accommodate stats.html
+        maximumFileSizeToCacheInBytes: 4 * 1024 * 1024,
         navigateFallbackDenylist: [/^\/oauth/, /^\/api/],
         runtimeCaching: [
+          {
+            urlPattern: ({ request }) =>
+              request.destination === 'script' || request.destination === 'style',
+            handler: 'StaleWhileRevalidate',
+            options: {
+              cacheName: 'static-assets-cache',
+              expiration: {
+                maxEntries: 100,
+                maxAgeSeconds: 60 * 60 * 24 * 7, // 7 days
+              },
+            },
+          },
           {
             urlPattern: /^https:\/\/api\./,
             handler: 'NetworkFirst',
