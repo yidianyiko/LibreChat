@@ -629,6 +629,16 @@ export const importConversationsFile = (
   return request.postMultiPart(endpoints.importConversation(), data, options);
 };
 
+export const importSelectiveConversations = (
+  payload: { conversations: unknown[] },
+): Promise<{
+  message: string;
+  success: Array<{ index: number; conversationId: string; title: string }>;
+  failed: Array<{ index: number; conversationId: string; title: string; error: string }>;
+}> => {
+  return request.post(endpoints.importSelectiveConversations(), payload);
+};
+
 export const uploadAvatar = (data: FormData): Promise<f.AvatarUploadResponse> => {
   return request.postMultiPart(endpoints.avatar(), data);
 };

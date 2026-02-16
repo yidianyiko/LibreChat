@@ -286,6 +286,78 @@ router.post(
 );
 
 /**
+ * Imports selected conversations from JSON array.
+ * @route POST /import-selective
+ * @param {Array} req.body.conversations - Array of conversation objects to import.
+ * @returns {object} 200 - success response with results
+ */
+router.post(
+  '/import-selective',
+  importIpLimiter,
+  importUserLimiter,
+  async (req, res) => {
+    try {
+      const { conversations } = req.body;
+
+      if (!Array.isArray(conversations)) {
+        return res.status(400).json({ error: 'conversations must be an array' });
+      }
+
+      if (conversations.length === 0) {
+        return res.status(400).json({ error: 'conversations array is empty' });
+      }
+
+      if (conversations.length > 500) {
+        return res.status(400).json({ error: 'Maximum 500 conversations per request' });
+      }
+
+      const results = {
+        success: [],
+        failed: [],
+      };
+
+      // Import each conversation
+      for (let i = 0; i < conversations.length; i++) {
+        try {
+          const conv = conversations[i];
+          const { getImporter } = require('~/server/utils/import/importers');
+          const importer = getImporter(conv);
+
+          await importer(conv, req.user.id);
+
+          results.success.push({
+            index: i,
+            conversationId: conv.conversationId || conv.id || conv.uuid || `unknown-${i}`,
+            title: conv.title || conv.name || 'Untitled',
+          });
+        } catch (error) {
+          logger.error(`Failed to import conversation at index ${i}:`, error);
+          results.failed.push({
+            index: i,
+            conversationId: conversations[i].conversationId || conversations[i].id || conversations[i].uuid || `unknown-${i}`,
+            title: conversations[i].title || conversations[i].name || 'Untitled',
+            error: error.message,
+          });
+        }
+      }
+
+      logger.info(
+        `user: ${req.user.id} | Selective import completed: ${results.success.length} succeeded, ${results.failed.length} failed`,
+      );
+
+      res.status(200).json({
+        message: `成功导入 ${results.success.length} 条对话，失败 ${results.failed.length} 条`,
+        success: results.success,
+        failed: results.failed,
+      });
+    } catch (error) {
+      logger.error('Error in selective import:', error);
+      res.status(500).json({ error: 'Internal server error during selective import' });
+    }
+  },
+);
+
+/**
  * POST /fork
  * This route handles forking a conversation based on the TForkConvoRequest and responds with TForkConvoResponse.
  * @route POST /fork
