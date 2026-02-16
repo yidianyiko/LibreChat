@@ -1,5 +1,5 @@
 // client/src/components/Nav/SettingsTabs/Data/SelectiveImportDialog.tsx
-import { useState, useMemo, useRef } from 'react';
+import { useState, useMemo, useRef, useEffect } from 'react';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import {
   Dialog,
@@ -68,6 +68,19 @@ export default function SelectiveImportDialog({
     estimateSize: () => 100,
     overscan: 5,
   });
+  const virtualItems = virtualizer.getVirtualItems();
+
+  useEffect(() => {
+    if (!open) {
+      return;
+    }
+
+    const rafId = window.requestAnimationFrame(() => {
+      virtualizer.measure();
+    });
+
+    return () => window.cancelAnimationFrame(rafId);
+  }, [open, filteredConversations.length, virtualizer]);
 
   const toggleSelect = (id: string) => {
     setSelected((prev) => {
@@ -111,9 +124,9 @@ export default function SelectiveImportDialog({
 
   return (
     <Dialog open={open} onOpenChange={(isOpen) => !isOpen && onClose()}>
-      <DialogContent className="max-w-4xl h-[80vh] flex flex-col">
+      <DialogContent className="max-w-4xl h-[80vh] flex flex-col bg-surface-primary text-text-primary">
         <DialogHeader>
-          <DialogTitle>
+          <DialogTitle className="text-text-primary">
             精选导入 - 从 {conversations.length.toLocaleString()} 条对话中选择
           </DialogTitle>
         </DialogHeader>
@@ -131,7 +144,7 @@ export default function SelectiveImportDialog({
             <select
               value={dateFilter}
               onChange={(e) => setDateFilter(e.target.value as any)}
-              className="rounded-md border border-border-light bg-surface-primary px-3 py-2"
+              className="rounded-md border border-border-light bg-surface-primary px-3 py-2 text-text-primary"
             >
               <option value="all">📅 全部</option>
               <option value="7days">最近7天</option>
@@ -160,7 +173,7 @@ export default function SelectiveImportDialog({
         </div>
 
         {/* Virtual List */}
-        <div ref={parentRef} className="flex-1 overflow-auto">
+        <div ref={parentRef} className="flex-1 min-h-0 overflow-auto">
           <div
             style={{
               height: `${virtualizer.getTotalSize()}px`,
@@ -168,29 +181,41 @@ export default function SelectiveImportDialog({
               position: 'relative',
             }}
           >
-            {virtualizer.getVirtualItems().map((virtualItem) => {
-              const conversation = filteredConversations[virtualItem.index];
-              return (
-                <div
-                  key={virtualItem.key}
-                  style={{
-                    position: 'absolute',
-                    top: 0,
-                    left: 0,
-                    width: '100%',
-                    height: `${virtualItem.size}px`,
-                    transform: `translateY(${virtualItem.start}px)`,
-                  }}
-                >
-                  <ConversationListItem
-                    conversation={conversation}
-                    isSelected={selected.has(conversation.id)}
-                    onToggle={toggleSelect}
-                    disabled={selected.size >= 500 && !selected.has(conversation.id)}
-                  />
-                </div>
-              );
-            })}
+            {virtualItems.length > 0
+              ? virtualItems.map((virtualItem) => {
+                  const conversation = filteredConversations[virtualItem.index];
+                  return (
+                    <div
+                      key={virtualItem.key}
+                      style={{
+                        position: 'absolute',
+                        top: 0,
+                        left: 0,
+                        width: '100%',
+                        height: `${virtualItem.size}px`,
+                        transform: `translateY(${virtualItem.start}px)`,
+                      }}
+                    >
+                      <ConversationListItem
+                        conversation={conversation}
+                        isSelected={selected.has(conversation.id)}
+                        onToggle={toggleSelect}
+                        disabled={selected.size >= 500 && !selected.has(conversation.id)}
+                      />
+                    </div>
+                  );
+                })
+              : filteredConversations.slice(0, 100).map((conversation) => {
+                  return (
+                    <ConversationListItem
+                      key={conversation.id}
+                      conversation={conversation}
+                      isSelected={selected.has(conversation.id)}
+                      onToggle={toggleSelect}
+                      disabled={selected.size >= 500 && !selected.has(conversation.id)}
+                    />
+                  );
+                })}
           </div>
         </div>
 

@@ -3,6 +3,10 @@ import { render, screen, fireEvent } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import ImportModeDialog from '../ImportModeDialog';
 
+jest.mock('~/hooks', () => ({
+  useLocalize: () => (key: string) => key,
+}));
+
 describe('ImportModeDialog', () => {
   const mockOnClose = jest.fn();
   const mockOnSelectMode = jest.fn();
@@ -24,7 +28,15 @@ describe('ImportModeDialog', () => {
 
     expect(screen.getByText(/3,000/)).toBeInTheDocument();
     expect(screen.getByText(/150.*已存在/)).toBeInTheDocument();
-    expect(screen.getByText(/2,850.*可导入/)).toBeInTheDocument();
+    expect(screen.getByText(/可导入：2,850/)).toBeInTheDocument();
+  });
+
+  it('should use themed text colors instead of browser default black text', () => {
+    render(<ImportModeDialog {...defaultProps} />);
+    const dialog = screen.getByRole('dialog');
+    const content = dialog.querySelector('.space-y-4');
+
+    expect(content).toHaveClass('text-text-primary');
   });
 
   it('should show all three import modes', () => {
@@ -53,8 +65,8 @@ describe('ImportModeDialog', () => {
     const batchRadio = screen.getByLabelText(/批次导入/);
     fireEvent.click(batchRadio);
 
-    const startInput = screen.getByLabelText(/从第.*条/);
-    const endInput = screen.getByLabelText(/到第.*条/);
+    const startInput = screen.getByLabelText(/从第几条/);
+    const endInput = screen.getByLabelText(/到第几条/);
 
     fireEvent.change(startInput, { target: { value: '1' } });
     fireEvent.change(endInput, { target: { value: '600' } });
@@ -63,7 +75,7 @@ describe('ImportModeDialog', () => {
     fireEvent.click(nextButton);
 
     // Should show error for exceeding 500 limit
-    expect(screen.getByText(/最多选择 500 条/)).toBeInTheDocument();
+    expect(screen.getByText(/单次最多选择 500 条对话/)).toBeInTheDocument();
     expect(mockOnSelectMode).not.toHaveBeenCalled();
   });
 
@@ -73,8 +85,8 @@ describe('ImportModeDialog', () => {
     const batchRadio = screen.getByLabelText(/批次导入/);
     fireEvent.click(batchRadio);
 
-    const startInput = screen.getByLabelText(/从第.*条/);
-    const endInput = screen.getByLabelText(/到第.*条/);
+    const startInput = screen.getByLabelText(/从第几条/);
+    const endInput = screen.getByLabelText(/到第几条/);
 
     fireEvent.change(startInput, { target: { value: '1' } });
     fireEvent.change(endInput, { target: { value: '500' } });

@@ -26,6 +26,19 @@ function getImporter(jsonData) {
     return importChatGptConvo;
   }
 
+  // For single-conversation selective imports (ChatGPT or Claude)
+  if (jsonData?.chat_messages && Array.isArray(jsonData.chat_messages)) {
+    logger.info('Importing single Claude conversation');
+    return (singleConvo, requestUserId, builderFactory) =>
+      importClaudeConvo([singleConvo], requestUserId, builderFactory);
+  }
+
+  if (jsonData?.mapping && typeof jsonData.mapping === 'object') {
+    logger.info('Importing single ChatGPT conversation');
+    return (singleConvo, requestUserId, builderFactory) =>
+      importChatGptConvo([singleConvo], requestUserId, builderFactory);
+  }
+
   // For ChatbotUI
   if (jsonData.version && Array.isArray(jsonData.history)) {
     logger.info('Importing ChatbotUI conversation');

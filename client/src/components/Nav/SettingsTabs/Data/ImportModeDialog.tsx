@@ -85,17 +85,17 @@ export default function ImportModeDialog({
 
   return (
     <Dialog open={open} onOpenChange={(isOpen) => !isOpen && onClose()}>
-      <DialogContent className="max-w-md">
+      <DialogContent className="max-w-md bg-surface-primary text-text-primary">
         <DialogHeader>
-          <DialogTitle>选择导入方式</DialogTitle>
+          <DialogTitle className="text-text-primary">选择导入方式</DialogTitle>
         </DialogHeader>
 
-        <div className="space-y-4">
+        <div className="space-y-4 text-text-primary">
           {/* Statistics */}
           <div className="rounded-lg bg-surface-tertiary p-4 text-sm">
             <div className="mb-2 flex items-center gap-2">
               <span className="text-2xl">📊</span>
-              <span className="font-semibold">
+              <span className="font-semibold text-text-primary">
                 检测到 {totalConversations.toLocaleString()} 条对话
               </span>
             </div>
@@ -111,10 +111,10 @@ export default function ImportModeDialog({
 
           {/* Mode Selection */}
           <div className="space-y-3">
-            <Label className="text-base font-semibold">请选择导入方式：</Label>
+            <Label className="text-base font-semibold text-text-primary">请选择导入方式：</Label>
 
             {/* Full Import */}
-            <label className="flex cursor-pointer items-start gap-3 rounded-lg border border-border-light p-3 hover:bg-surface-hover">
+            <label className="flex cursor-pointer items-start gap-3 rounded-lg border border-border-light p-3 text-text-primary hover:bg-surface-hover">
               <input
                 type="radio"
                 name="import-mode"
@@ -133,7 +133,7 @@ export default function ImportModeDialog({
             </label>
 
             {/* Batch Import */}
-            <label className="flex cursor-pointer items-start gap-3 rounded-lg border border-border-light p-3 hover:bg-surface-hover">
+            <label className="flex cursor-pointer items-start gap-3 rounded-lg border border-border-light p-3 text-text-primary hover:bg-surface-hover">
               <input
                 type="radio"
                 name="import-mode"
@@ -178,7 +178,7 @@ export default function ImportModeDialog({
             </label>
 
             {/* Selective Import */}
-            <label className="flex cursor-pointer items-start gap-3 rounded-lg border border-border-light p-3 hover:bg-surface-hover">
+            <label className="flex cursor-pointer items-start gap-3 rounded-lg border border-border-light p-3 text-text-primary hover:bg-surface-hover">
               <input
                 type="radio"
                 name="import-mode"

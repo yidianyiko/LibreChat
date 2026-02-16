@@ -1170,6 +1170,26 @@ describe('getImporter', () => {
     const jsonData = { unsupported: 'data' };
     expect(() => getImporter(jsonData)).toThrow('Unsupported import type');
   });
+
+  it('should detect single ChatGPT conversation object (for selective import)', () => {
+    const jsonData = {
+      id: 'chatgpt-conv-1',
+      title: 'Single ChatGPT conversation',
+      mapping: {},
+    };
+
+    expect(() => getImporter(jsonData)).not.toThrow();
+  });
+
+  it('should detect single Claude conversation object (for selective import)', () => {
+    const jsonData = {
+      uuid: 'claude-conv-1',
+      name: 'Single Claude conversation',
+      chat_messages: [],
+    };
+
+    expect(() => getImporter(jsonData)).not.toThrow();
+  });
 });
 
 describe('processAssistantMessage', () => {

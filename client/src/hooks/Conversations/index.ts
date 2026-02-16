@@ -10,4 +10,3 @@ export { default as useSetIndexOptions } from './useSetIndexOptions';
 export { default as useParameterEffects } from './useParameterEffects';
 export { default as useUpdateTagsInConvo } from './useUpdateTagsInConvo';
 export { default as useExportConversation } from './useExportConversation';
-export { useImportConversations } from './useImportConversations';

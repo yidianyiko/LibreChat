@@ -4,12 +4,10 @@ import { useNavigate } from 'react-router-dom';
 import { LogOut, Import, BarChart3 } from 'lucide-react';
 import { GearIcon, Avatar } from '@librechat/client';
 import { useGetStartupConfig, useGetUserBalance, SystemRoles } from '~/data-provider';
-import ImportProgressModal from './SettingsTabs/Data/ImportProgressModal';
+import ImportConversations from './SettingsTabs/Data/ImportConversations';
 import ImportConversationDialog from './SettingsTabs/Data/ImportConversationDialog';
 import { useAuthContext } from '~/hooks/AuthContext';
 import { useLocalize } from '~/hooks';
-import { useImportConversations } from '~/hooks/Conversations/useImportConversations';
-import { cn } from '~/utils';
 import Settings from './Settings';
 
 function AccountSettings() {
@@ -22,36 +20,40 @@ function AccountSettings() {
   });
   const [showSettings, setShowSettings] = useState(false);
   const [showImportDialog, setShowImportDialog] = useState(false);
+  const [pendingImportFile, setPendingImportFile] = useState<File | null>(null);
+  const [isImportUploading, setIsImportUploading] = useState(false);
   const accountSettingsButtonRef = useRef<HTMLButtonElement>(null);
   const tokenCredits = balanceQuery.data?.tokenCredits ?? 0;
   const approxUsd = tokenCredits / 1000000;
 
-  // Use the import conversations hook
-  const {
-    isUploading,
-    startImport,
-    showProgressModal,
-    fileName,
-    isComplete,
-    isError,
-    resetProgressState,
-  } = useImportConversations();
-
   return (
     <div className="mt-1 flex flex-col gap-1">
       {/* Migrate History: above user avatar in sidebar — opens import dialog */}
-      <button
-        type="button"
-        onClick={() => setShowImportDialog(true)}
-        disabled={isUploading}
-        aria-label={localize('com_ui_import_conversation_info')}
-        className="account-settings-migrate flex w-full items-center gap-2 rounded-xl p-2 text-sm text-text-primary transition-all duration-200 ease-in-out hover:bg-surface-active-alt disabled:opacity-50"
-      >
-        <Import className="icon-md flex-shrink-0" aria-hidden="true" />
-        <span className="truncate text-left">
-          {isUploading ? localize('com_ui_importing') : localize('com_ui_import_conversation_info')}
-        </span>
-      </button>
+      <ImportConversations
+        importFile={pendingImportFile}
+        onImportFileHandled={() => setPendingImportFile(null)}
+        onUploadingChange={setIsImportUploading}
+        renderTrigger={({ isUploading, importingLabel }) => (
+          <button
+            type="button"
+            onClick={() => setShowImportDialog(true)}
+            disabled={isUploading}
+            aria-label={localize('com_ui_import_conversation_info')}
+            className="account-settings-migrate flex w-full items-center gap-2 rounded-xl p-2 text-sm text-text-primary transition-all duration-200 ease-in-out hover:bg-surface-active-alt disabled:opacity-50"
+          >
+            <Import className="icon-md flex-shrink-0" aria-hidden="true" />
+            <span className="truncate text-left">
+              {isUploading ? importingLabel : localize('com_ui_import_conversation_info')}
+            </span>
+          </button>
+        )}
+      />
+      <ImportConversationDialog
+        open={showImportDialog}
+        onOpenChange={setShowImportDialog}
+        onStartImport={(file) => setPendingImportFile(file)}
+        isUploading={isImportUploading}
+      />
       {/* Admin Stats Link - only visible to admins */}
       {user?.role === SystemRoles.ADMIN && (
         <button
@@ -144,19 +146,6 @@ function AccountSettings() {
         </div>
       </Select.SelectPopover>
         {showSettings && <Settings open={showSettings} onOpenChange={setShowSettings} />}
-        <ImportConversationDialog
-          open={showImportDialog}
-          onOpenChange={setShowImportDialog}
-          onStartImport={startImport}
-          isUploading={isUploading}
-        />
-        <ImportProgressModal
-          open={showProgressModal}
-          fileName={fileName}
-          isComplete={isComplete}
-          isError={isError}
-          onClose={resetProgressState}
-        />
       </Select.SelectProvider>
     </div>
   );

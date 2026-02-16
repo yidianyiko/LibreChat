@@ -125,7 +125,6 @@ export default function ImportConversationDialog({
         </DialogHeader>
 
         <div className="px-6 py-4">
-          {/* Upload zone */}
           <div
             role="button"
             tabIndex={0}
@@ -146,7 +145,10 @@ export default function ImportConversationDialog({
                 : 'border-gray-300 bg-gray-50 hover:border-gray-400 dark:border-gray-600 dark:bg-gray-700/50 dark:hover:border-gray-500',
             )}
           >
-            <FileText className="mb-2 h-12 w-12 text-blue-500 dark:text-blue-400" aria-hidden="true" />
+            <FileText
+              className="mb-2 h-12 w-12 text-blue-500 dark:text-blue-400"
+              aria-hidden="true"
+            />
             <p className="text-sm font-medium text-gray-700 dark:text-gray-300">
               {localize('com_ui_import_conversation_dialog_upload_hint')}
             </p>
@@ -179,7 +181,6 @@ export default function ImportConversationDialog({
             aria-hidden="true"
           />
 
-          {/* How to export - ChatGPT steps */}
           <div className="mt-4 rounded-lg bg-blue-50 px-4 py-3 dark:bg-blue-900/20">
             <div className="flex items-start gap-3">
               <FileText className="mt-0.5 h-5 w-5 flex-shrink-0 text-blue-600 dark:text-blue-400" />

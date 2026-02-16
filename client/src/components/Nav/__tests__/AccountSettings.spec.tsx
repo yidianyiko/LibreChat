@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import AccountSettings from '../AccountSettings';
 
@@ -36,19 +36,20 @@ jest.mock('~/components/Chat/Input/Files/MyFilesModal', () => ({
 }));
 
 jest.mock('../Settings', () => () => null);
-jest.mock('../SettingsTabs/Data/ImportConversationDialog', () => () => null);
-jest.mock('../SettingsTabs/Data/ImportProgressModal', () => () => null);
-jest.mock('~/hooks/Conversations/useImportConversations', () => ({
-  useImportConversations: () => ({
-    isUploading: false,
-    startImport: jest.fn(),
-    showProgressModal: false,
-    fileName: '',
-    isComplete: false,
-    isError: false,
-    resetProgressState: jest.fn(),
-  }),
-}));
+jest.mock('../SettingsTabs/Data/ImportConversations', () => (props) => (
+  <div data-testid="shared-import-conversations-flow">
+    {props.renderTrigger?.({
+      onClick: jest.fn(),
+      isUploading: false,
+      importLabel: 'com_ui_import',
+      importingLabel: 'com_ui_importing',
+    })}
+  </div>
+));
+jest.mock(
+  '../SettingsTabs/Data/ImportConversationDialog',
+  () => ({ open }) => <div data-testid="outer-import-dialog" data-open={String(open)} />,
+);
 
 jest.mock('~/hooks', () => ({
   useLocalize: jest.fn(),
@@ -61,6 +62,9 @@ jest.mock('~/hooks/AuthContext', () => ({
 jest.mock('~/data-provider', () => ({
   useGetStartupConfig: jest.fn(),
   useGetUserBalance: jest.fn(),
+  SystemRoles: {
+    ADMIN: 'ADMIN',
+  },
 }));
 
 const mockUseLocalize = jest.requireMock('~/hooks').useLocalize;
@@ -113,5 +117,19 @@ describe('AccountSettings', () => {
 
     expect(screen.getByText(/Token Credits:\s*2,500,000/)).toBeInTheDocument();
     expect(screen.getByText(/≈ \$2\.50/)).toBeInTheDocument();
+  });
+
+  it('uses the shared import flow for migrate history entry', () => {
+    render(<AccountSettings />);
+
+    expect(screen.getByTestId('shared-import-conversations-flow')).toBeInTheDocument();
+  });
+
+  it('opens outer import dialog before parsed import flow starts', () => {
+    render(<AccountSettings />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'com_ui_import_conversation_info' }));
+
+    expect(screen.getByTestId('outer-import-dialog')).toHaveAttribute('data-open', 'true');
   });
 });

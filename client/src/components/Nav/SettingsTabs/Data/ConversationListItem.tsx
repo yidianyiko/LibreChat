@@ -41,7 +41,7 @@ function ConversationListItem({
 
       <div className="flex-1 min-w-0">
         <div className="flex items-start justify-between gap-2">
-          <div className="font-medium text-sm truncate">{conversation.title}</div>
+          <div className="font-medium text-sm truncate text-text-primary">{conversation.title}</div>
           <div className="text-xs text-text-secondary whitespace-nowrap">
             #{conversation.id.split('-')[1]}
           </div>

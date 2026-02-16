@@ -1,4 +1,5 @@
-import { useState, useRef, useCallback } from 'react';
+import { useState, useRef, useCallback, useEffect } from 'react';
+import type { ReactNode } from 'react';
 import { Import } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
 import { QueryKeys } from 'librechat-data-provider';
@@ -16,7 +17,24 @@ import { cn, logger } from '~/utils';
 
 type ImportStep = 'idle' | 'mode-selection' | 'selective-import' | 'uploading';
 
-function ImportConversations() {
+interface ImportConversationsProps {
+  renderTrigger?: (props: {
+    onClick: () => void;
+    isUploading: boolean;
+    importLabel: string;
+    importingLabel: string;
+  }) => ReactNode;
+  importFile?: File | null;
+  onImportFileHandled?: () => void;
+  onUploadingChange?: (isUploading: boolean) => void;
+}
+
+function ImportConversations({
+  renderTrigger,
+  importFile,
+  onImportFileHandled,
+  onUploadingChange,
+}: ImportConversationsProps = {}) {
   const localize = useLocalize();
   const queryClient = useQueryClient();
   const { showToast } = useToastContext();
@@ -87,13 +105,8 @@ function ImportConversations() {
     },
   });
 
-  const handleFileChange = useCallback(
-    async (event: React.ChangeEvent<HTMLInputElement>) => {
-      const selectedFile = event.target.files?.[0];
-      if (!selectedFile) {
-        return;
-      }
-
+  const processSelectedFile = useCallback(
+    async (selectedFile: File) => {
       try {
         setFileName(selectedFile.name);
         setFile(selectedFile);
@@ -104,9 +117,7 @@ function ImportConversations() {
 
         // Check for duplicates
         const existingConvos = queryClient.getQueryData<any[]>([QueryKeys.allConversations]) || [];
-        const existingIds = new Set(
-          existingConvos.map((c) => c.conversationId).filter(Boolean),
-        );
+        const existingIds = new Set(existingConvos.map((c) => c.conversationId).filter(Boolean));
         const markedConversations = markDuplicates(parseResult.conversations, existingIds);
 
         setConversations(markedConversations);
@@ -121,10 +132,20 @@ function ImportConversations() {
           status: NotificationSeverity.ERROR,
         });
       }
+    },
+    [queryClient, showToast],
+  );
+
+  const handleFileChange = useCallback(
+    async (event: React.ChangeEvent<HTMLInputElement>) => {
+      const selectedFile = event.target.files?.[0];
+      if (selectedFile) {
+        await processSelectedFile(selectedFile);
+      }
 
       event.target.value = '';
     },
-    [queryClient, showToast],
+    [processSelectedFile],
   );
 
   const handleModeSelection = useCallback(
@@ -212,38 +233,64 @@ function ImportConversations() {
     setIsError(false);
   }, []);
 
+  const importLabel = localize('com_ui_import');
+  const importingLabel = localize('com_ui_importing');
+
+  useEffect(() => {
+    onUploadingChange?.(isUploading);
+  }, [isUploading, onUploadingChange]);
+
+  useEffect(() => {
+    if (!importFile) {
+      return;
+    }
+
+    processSelectedFile(importFile).finally(() => {
+      onImportFileHandled?.();
+    });
+  }, [importFile, onImportFileHandled, processSelectedFile]);
+
   return (
     <>
-      <div className="flex items-center justify-between">
-        <Label id="import-conversation-label">{localize('com_ui_import_conversation_info')}</Label>
-        <Button
-          variant="outline"
-          onClick={handleImportClick}
-          disabled={isUploading}
-          aria-label={localize('com_ui_import')}
-          aria-labelledby="import-conversation-label"
-        >
-          {isUploading ? (
-            <>
-              <Spinner className="mr-1 w-4" />
-              <span>{localize('com_ui_importing')}</span>
-            </>
-          ) : (
-            <>
-              <Import className="mr-1 flex h-4 w-4 items-center stroke-1" aria-hidden="true" />
-              <span>{localize('com_ui_import')}</span>
-            </>
-          )}
-        </Button>
-        <input
-          ref={fileInputRef}
-          type="file"
-          className={cn('hidden')}
-          accept=".json"
-          onChange={handleFileChange}
-          aria-hidden="true"
-        />
-      </div>
+      {renderTrigger ? (
+        renderTrigger({
+          onClick: handleImportClick,
+          isUploading,
+          importLabel,
+          importingLabel,
+        })
+      ) : (
+        <div className="flex items-center justify-between">
+          <Label id="import-conversation-label">{localize('com_ui_import_conversation_info')}</Label>
+          <Button
+            variant="outline"
+            onClick={handleImportClick}
+            disabled={isUploading}
+            aria-label={importLabel}
+            aria-labelledby="import-conversation-label"
+          >
+            {isUploading ? (
+              <>
+                <Spinner className="mr-1 w-4" />
+                <span>{importingLabel}</span>
+              </>
+            ) : (
+              <>
+                <Import className="mr-1 flex h-4 w-4 items-center stroke-1" aria-hidden="true" />
+                <span>{importLabel}</span>
+              </>
+            )}
+          </Button>
+        </div>
+      )}
+      <input
+        ref={fileInputRef}
+        type="file"
+        className={cn('hidden')}
+        accept=".json"
+        onChange={handleFileChange}
+        aria-hidden="true"
+      />
 
       {/* Mode Selection Dialog */}
       <ImportModeDialog
