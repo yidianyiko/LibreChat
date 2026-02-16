@@ -2,7 +2,13 @@ import { memo, useRef, useMemo, useEffect, useState, useCallback } from 'react';
 import { useWatch } from 'react-hook-form';
 import { Switch, TextareaAutosize } from '@librechat/client';
 import { useRecoilState, useRecoilValue } from 'recoil';
-import { Constants, isAssistantsEndpoint, isAgentsEndpoint } from 'librechat-data-provider';
+import {
+  Constants,
+  isAssistantsEndpoint,
+  isAgentsEndpoint,
+  Permissions,
+  PermissionTypes,
+} from 'librechat-data-provider';
 import {
   useChatContext,
   useChatFormContext,
@@ -18,6 +24,7 @@ import {
   useQueryParams,
   useSubmitMessage,
   useFocusChatEffect,
+  useHasAccess,
 } from '~/hooks';
 import { mainTextareaId, BadgeItem } from '~/common';
 import AttachFileChat from './Files/AttachFileChat';
@@ -65,6 +72,10 @@ const ChatForm = memo(({ index = 0 }: { index?: number }) => {
   const [useMemoryAgent, setUseMemoryAgent] = useRecoilState(store.useMemoryAgent);
 
   const { requiresKey } = useRequiresKey();
+  const hasAccessToMemories = useHasAccess({
+    permissionType: PermissionTypes.MEMORIES,
+    permission: Permissions.USE,
+  });
   const methods = useChatFormContext();
   const {
     files,
@@ -192,8 +203,8 @@ const ChatForm = memo(({ index = 0 }: { index?: number }) => {
 
   const isMoreThanThreeRows = visualRowCount > 3;
   const showMemoryAgentSwitch = useMemo(
-    () => !!endpoint && !isAssistantsEndpoint(endpoint),
-    [endpoint],
+    () => hasAccessToMemories && !!endpoint && !isAssistantsEndpoint(endpoint),
+    [hasAccessToMemories, endpoint],
   );
 
   const baseClasses = useMemo(
