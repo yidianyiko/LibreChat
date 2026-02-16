@@ -9,6 +9,7 @@ import { parseImportFile, markDuplicates, ConversationPreview } from '~/utils/co
 import ImportModeDialog, { ImportModeSelection } from './ImportModeDialog';
 import SelectiveImportDialog from './SelectiveImportDialog';
 import ImportProgressModal from './ImportProgressModal';
+import ImportResultDialog from './ImportResultDialog';
 import { NotificationSeverity } from '~/common';
 import { useLocalize } from '~/hooks';
 import { cn, logger } from '~/utils';
@@ -31,6 +32,11 @@ function ImportConversations() {
   const [fileName, setFileName] = useState('');
   const [isComplete, setIsComplete] = useState(false);
   const [isError, setIsError] = useState(false);
+  const [showResultDialog, setShowResultDialog] = useState(false);
+  const [importResults, setImportResults] = useState<{
+    success: number;
+    failed: any[];
+  }>({ success: 0, failed: [] });
 
   const uploadFile = useUploadConversationsMutation({
     onSuccess: () => {
@@ -57,12 +63,10 @@ function ImportConversations() {
     onSuccess: (data) => {
       setIsComplete(true);
       setIsUploading(false);
+      setImportResults({ success: data.success.length, failed: data.failed });
 
       if (data.failed.length > 0) {
-        showToast({
-          message: data.message,
-          status: NotificationSeverity.WARNING,
-        });
+        setShowResultDialog(true);
       } else {
         showToast({
           message: data.message,
@@ -180,6 +184,19 @@ function ImportConversations() {
     [conversations, uploadSelectedConversations],
   );
 
+  const handleRetry = useCallback(
+    (failedItems: any[]) => {
+      // Map failed items back to ConversationPreview
+      const toRetry = failedItems
+        .map((item) => conversations.find((c) => c.conversationId === item.conversationId))
+        .filter(Boolean) as ConversationPreview[];
+
+      setShowResultDialog(false);
+      uploadSelectedConversations(toRetry);
+    },
+    [conversations, uploadSelectedConversations],
+  );
+
   const handleImportClick = useCallback(() => {
     fileInputRef.current?.click();
   }, []);
@@ -252,6 +269,15 @@ function ImportConversations() {
         isComplete={isComplete}
         isError={isError}
         onClose={resetState}
+      />
+
+      {/* Result Dialog */}
+      <ImportResultDialog
+        open={showResultDialog}
+        successCount={importResults.success}
+        failedItems={importResults.failed}
+        onClose={() => setShowResultDialog(false)}
+        onRetry={handleRetry}
       />
     </>
   );
