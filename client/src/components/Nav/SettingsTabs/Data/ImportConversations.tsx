@@ -1,343 +1,244 @@
-import { useState, useRef, useCallback, useEffect } from 'react';
+import { useState, useRef, useCallback } from 'react';
 import { Import } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
-import { QueryKeys, TStartupConfig } from 'librechat-data-provider';
+import { QueryKeys } from 'librechat-data-provider';
 import { Spinner, useToastContext, Label, Button } from '@librechat/client';
 import { useUploadConversationsMutation } from '~/data-provider';
+import { parseImportFile, markDuplicates, ConversationPreview } from '~/utils/conversationParser';
+import ImportModeDialog, { ImportModeSelection } from './ImportModeDialog';
+import SelectiveImportDialog from './SelectiveImportDialog';
 import ImportProgressModal from './ImportProgressModal';
 import { NotificationSeverity } from '~/common';
 import { useLocalize } from '~/hooks';
 import { cn, logger } from '~/utils';
-import { DEFAULT_CHUNK_THRESHOLD } from '~/utils/importChunker';
+
+type ImportStep = 'idle' | 'mode-selection' | 'selective-import' | 'uploading';
 
 function ImportConversations() {
   const localize = useLocalize();
   const queryClient = useQueryClient();
   const { showToast } = useToastContext();
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // State
+  const [step, setStep] = useState<ImportStep>('idle');
+  const [file, setFile] = useState<File | null>(null);
+  const [conversations, setConversations] = useState<ConversationPreview[]>([]);
+  const [duplicateCount, setDuplicateCount] = useState(0);
   const [isUploading, setIsUploading] = useState(false);
   const [showProgressModal, setShowProgressModal] = useState(false);
   const [fileName, setFileName] = useState('');
   const [isComplete, setIsComplete] = useState(false);
   const [isError, setIsError] = useState(false);
-  const [currentChunk, setCurrentChunk] = useState<number | undefined>(undefined);
-  const [totalChunks, setTotalChunks] = useState<number | undefined>(undefined);
-  const [isPolling, setIsPolling] = useState(false);
-  const [pollingAttempt, setPollingAttempt] = useState(0);
-  const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
-  const resetProgressState = useCallback(() => {
-    setShowProgressModal(false);
-    setFileName('');
-    setIsComplete(false);
-    setIsError(false);
-    setCurrentChunk(undefined);
-    setTotalChunks(undefined);
-    setIsPolling(false);
-    setPollingAttempt(0);
-    if (pollingIntervalRef.current) {
-      clearInterval(pollingIntervalRef.current);
-      pollingIntervalRef.current = null;
-    }
-  }, []);
-
-  const startPollingForCompletion = useCallback(
-    (maxAttempts = 24) => {
-      // Clear any existing interval first to prevent orphaned intervals
-      if (pollingIntervalRef.current) {
-        clearInterval(pollingIntervalRef.current);
-        pollingIntervalRef.current = null;
-      }
-
-      let attempt = 0;
-      setIsPolling(true);
-      setPollingAttempt(0);
-
-      pollingIntervalRef.current = setInterval(() => {
-        attempt++;
-        setPollingAttempt(attempt);
-
-        queryClient.invalidateQueries([QueryKeys.allConversations]);
-
-        if (attempt >= maxAttempts) {
-          if (pollingIntervalRef.current) {
-            clearInterval(pollingIntervalRef.current);
-            pollingIntervalRef.current = null;
-          }
-          setIsPolling(false);
-          showToast({
-            message: localize('com_ui_import_conversation_timeout_warning'),
-            status: NotificationSeverity.WARNING,
-            duration: 8000,
-          });
-        }
-      }, 5000);
-    },
-    [queryClient, showToast, localize],
-  );
-
-  const handleSuccess = useCallback(
-    (data?: { message?: string }) => {
-      const serverMessage = data?.message?.trim();
-      const isProcessing = serverMessage?.toLowerCase().includes('processing');
-
+  const uploadFile = useUploadConversationsMutation({
+    onSuccess: () => {
       setIsComplete(true);
       setIsUploading(false);
-
       showToast({
-        message: isProcessing
-          ? localize('com_ui_import_conversation_processing')
-          : localize('com_ui_import_conversation_success'),
-        status: isProcessing ? NotificationSeverity.INFO : NotificationSeverity.SUCCESS,
+        message: localize('com_ui_import_conversation_success'),
+        status: NotificationSeverity.SUCCESS,
       });
-
-      if (isProcessing) {
-        startPollingForCompletion();
-      }
+      queryClient.invalidateQueries([QueryKeys.allConversations]);
     },
-    [localize, showToast, startPollingForCompletion],
-  );
-
-  const handleError = useCallback(
-    (error: unknown) => {
+    onError: (error) => {
       logger.error('Import error:', error);
       setIsError(true);
       setIsUploading(false);
-
-      const isUnsupportedType = error?.toString().includes('Unsupported import type');
-
       showToast({
-        message: localize(
-          isUnsupportedType
-            ? 'com_ui_import_conversation_file_type_error'
-            : 'com_ui_import_conversation_error',
-        ),
+        message: localize('com_ui_import_conversation_error'),
         status: NotificationSeverity.ERROR,
       });
     },
-    [localize, showToast],
-  );
-
-  const uploadFile = useUploadConversationsMutation({
-    onSuccess: handleSuccess,
-    onError: handleError,
-    onMutate: () => setIsUploading(true),
   });
 
-  const uploadSingleFile = useCallback(
-    (blob: Blob, name: string): Promise<{ isBackground: boolean }> => {
-      return new Promise((resolve, reject) => {
-        const formData = new FormData();
-        formData.append('file', blob, encodeURIComponent(name));
-        uploadFile.mutate(formData, {
-          onSuccess: (data) => {
-            const serverMessage = data?.message?.trim();
-            const isProcessing = serverMessage?.toLowerCase().includes('processing');
-            resolve({ isBackground: isProcessing });
-          },
-          onError: (err) => reject(err),
+  const handleFileChange = useCallback(
+    async (event: React.ChangeEvent<HTMLInputElement>) => {
+      const selectedFile = event.target.files?.[0];
+      if (!selectedFile) {
+        return;
+      }
+
+      try {
+        setFileName(selectedFile.name);
+        setFile(selectedFile);
+
+        // Parse file
+        const text = await selectedFile.text();
+        const parseResult = await parseImportFile(text);
+
+        // Check for duplicates
+        const existingConvos = queryClient.getQueryData<any[]>([QueryKeys.allConversations]) || [];
+        const existingIds = new Set(
+          existingConvos.map((c) => c.conversationId).filter(Boolean),
+        );
+        const markedConversations = markDuplicates(parseResult.conversations, existingIds);
+
+        setConversations(markedConversations);
+        setDuplicateCount(markedConversations.filter((c) => c.isDuplicate).length);
+
+        // Show mode selection dialog
+        setStep('mode-selection');
+      } catch (error) {
+        logger.error('File parsing error:', error);
+        showToast({
+          message: '文件解析失败，请检查文件格式',
+          status: NotificationSeverity.ERROR,
         });
-      });
+      }
+
+      event.target.value = '';
     },
-    [uploadFile],
+    [queryClient, showToast],
   );
 
-  const handleFileUpload = useCallback(
-    async (file: File) => {
-      try {
-        // For files under the chunk threshold, use the existing simple upload
-        if (file.size < DEFAULT_CHUNK_THRESHOLD) {
-          const startupConfig = queryClient.getQueryData<TStartupConfig>([QueryKeys.startupConfig]);
-          const maxFileSize = startupConfig?.conversationImportMaxFileSize;
-          if (maxFileSize && file.size > maxFileSize) {
-            const size = (maxFileSize / (1024 * 1024)).toFixed(2);
-            showToast({
-              message: localize('com_error_files_upload_too_large', { 0: size }),
-              status: NotificationSeverity.ERROR,
-            });
-            setIsUploading(false);
-            resetProgressState();
-            return;
-          }
-          const formData = new FormData();
-          formData.append('file', file, encodeURIComponent(file.name || 'File'));
-          uploadFile.mutate(formData);
+  const handleModeSelection = useCallback(
+    (selection: ImportModeSelection) => {
+      setStep('idle');
+
+      if (selection.mode === 'full') {
+        // Upload original file
+        if (!file) {
           return;
         }
-
-        // Large file: read, parse, and potentially chunk
-        const text = await file.text();
-        let parsed: unknown;
-        try {
-          parsed = JSON.parse(text);
-        } catch {
-          // Not valid JSON - let the server handle the error via normal upload
-          const formData = new FormData();
-          formData.append('file', file, encodeURIComponent(file.name || 'File'));
-          uploadFile.mutate(formData);
-          return;
-        }
-
-        if (!Array.isArray(parsed)) {
-          // Not an array - upload as-is and let the server handle it
-          const formData = new FormData();
-          formData.append('file', file, encodeURIComponent(file.name || 'File'));
-          uploadFile.mutate(formData);
-          return;
-        }
-
-        // Dynamic import of the chunker utility
-        const { splitJsonArrayIntoChunks } = await import('~/utils/importChunker');
-        const chunks = splitJsonArrayIntoChunks(parsed, DEFAULT_CHUNK_THRESHOLD);
-
-        if (chunks.length <= 1) {
-          // Only one chunk needed - upload normally
-          const formData = new FormData();
-          formData.append('file', file, encodeURIComponent(file.name || 'File'));
-          uploadFile.mutate(formData);
-          return;
-        }
-
-        // Multiple chunks: upload sequentially
-        setTotalChunks(chunks.length);
+        const formData = new FormData();
+        formData.append('file', file, encodeURIComponent(file.name));
+        setShowProgressModal(true);
         setIsUploading(true);
+        uploadFile.mutate(formData);
+      } else if (selection.mode === 'batch') {
+        // Extract range and upload
+        const { start = 1, end = 500 } = selection;
+        const selected = conversations
+          .filter((c) => !c.isDuplicate)
+          .slice(start - 1, end);
+        uploadSelectedConversations(selected);
+      } else if (selection.mode === 'selective') {
+        // Show selective import dialog
+        setStep('selective-import');
+      }
+    },
+    [file, conversations, uploadFile],
+  );
 
-        let hasBackgroundProcessing = false;
-
-        for (let i = 0; i < chunks.length; i++) {
-          setCurrentChunk(i + 1);
-          const chunkJson = JSON.stringify(chunks[i]);
-          const blob = new Blob([chunkJson], { type: 'application/json' });
-          const chunkName = `${file.name || 'File'}_part${i + 1}of${chunks.length}.json`;
-
-          const result = await uploadSingleFile(blob, chunkName);
-          if (result.isBackground) {
-            hasBackgroundProcessing = true;
-          }
-        }
-
-        // All chunks uploaded successfully
-        queryClient.invalidateQueries([QueryKeys.allConversations]);
-        setIsComplete(true);
-        setIsUploading(false);
-
-        if (hasBackgroundProcessing) {
-          showToast({
-            message: localize('com_ui_import_conversation_background'),
-            status: NotificationSeverity.INFO,
-            duration: 6000,
-          });
-          startPollingForCompletion();
-        } else {
-          showToast({
-            message: localize('com_ui_import_conversation_success'),
-            status: NotificationSeverity.SUCCESS,
-          });
-        }
-      } catch (error) {
-        logger.error('File processing error:', error);
-        setIsUploading(false);
-        setIsError(true);
+  const uploadSelectedConversations = useCallback(
+    async (selected: ConversationPreview[]) => {
+      if (selected.length === 0) {
         showToast({
-          message: localize('com_ui_import_conversation_upload_error'),
+          message: '没有选择任何对话',
+          status: NotificationSeverity.WARNING,
+        });
+        return;
+      }
+
+      setShowProgressModal(true);
+      setIsUploading(true);
+
+      try {
+        const conversationData = selected.map((c) => c.rawData);
+        const blob = new Blob([JSON.stringify(conversationData)], {
+          type: 'application/json',
+        });
+        const formData = new FormData();
+        formData.append('file', blob, 'selected-conversations.json');
+
+        uploadFile.mutate(formData);
+      } catch (error) {
+        logger.error('Upload error:', error);
+        setIsError(true);
+        setIsUploading(false);
+        showToast({
+          message: '上传失败',
           status: NotificationSeverity.ERROR,
         });
       }
     },
-    [
-      uploadFile,
-      uploadSingleFile,
-      showToast,
-      localize,
-      queryClient,
-      resetProgressState,
-      startPollingForCompletion,
-    ],
+    [uploadFile, showToast],
   );
 
-  const handleFileChange = useCallback(
-    (event: React.ChangeEvent<HTMLInputElement>) => {
-      const file = event.target.files?.[0];
-      if (file) {
-        setIsUploading(true);
-        setFileName(file.name);
-        setShowProgressModal(true);
-        setIsComplete(false);
-        setIsError(false);
-        handleFileUpload(file);
-      }
-      event.target.value = '';
+  const handleSelectiveImport = useCallback(
+    (selectedIds: string[]) => {
+      const selected = conversations.filter((c) => selectedIds.includes(c.id));
+      setStep('idle');
+      uploadSelectedConversations(selected);
     },
-    [handleFileUpload],
+    [conversations, uploadSelectedConversations],
   );
 
   const handleImportClick = useCallback(() => {
     fileInputRef.current?.click();
   }, []);
 
-  const handleKeyDown = useCallback(
-    (event: React.KeyboardEvent<HTMLButtonElement>) => {
-      if (event.key === 'Enter' || event.key === ' ') {
-        event.preventDefault();
-        handleImportClick();
-      }
-    },
-    [handleImportClick],
-  );
-
-  const isImportDisabled = isUploading || isPolling;
-
-  useEffect(() => {
-    return () => {
-      if (pollingIntervalRef.current) {
-        clearInterval(pollingIntervalRef.current);
-      }
-    };
+  const resetState = useCallback(() => {
+    setStep('idle');
+    setFile(null);
+    setConversations([]);
+    setDuplicateCount(0);
+    setShowProgressModal(false);
+    setFileName('');
+    setIsComplete(false);
+    setIsError(false);
   }, []);
 
   return (
-    <div className="flex items-center justify-between">
-      <Label id="import-conversation-label">{localize('com_ui_import_conversation_info')}</Label>
-      <Button
-        variant="outline"
-        onClick={handleImportClick}
-        onKeyDown={handleKeyDown}
-        disabled={isImportDisabled}
-        aria-label={localize('com_ui_import')}
-        aria-labelledby="import-conversation-label"
-      >
-        {isUploading ? (
-          <>
-            <Spinner className="mr-1 w-4" />
-            <span>{localize('com_ui_importing')}</span>
-          </>
-        ) : (
-          <>
-            <Import className="mr-1 flex h-4 w-4 items-center stroke-1" aria-hidden="true" />
-            <span>{localize('com_ui_import')}</span>
-          </>
-        )}
-      </Button>
-      <input
-        ref={fileInputRef}
-        type="file"
-        className={cn('hidden')}
-        accept=".json"
-        onChange={handleFileChange}
-        aria-hidden="true"
+    <>
+      <div className="flex items-center justify-between">
+        <Label id="import-conversation-label">{localize('com_ui_import_conversation_info')}</Label>
+        <Button
+          variant="outline"
+          onClick={handleImportClick}
+          disabled={isUploading}
+          aria-label={localize('com_ui_import')}
+          aria-labelledby="import-conversation-label"
+        >
+          {isUploading ? (
+            <>
+              <Spinner className="mr-1 w-4" />
+              <span>{localize('com_ui_importing')}</span>
+            </>
+          ) : (
+            <>
+              <Import className="mr-1 flex h-4 w-4 items-center stroke-1" aria-hidden="true" />
+              <span>{localize('com_ui_import')}</span>
+            </>
+          )}
+        </Button>
+        <input
+          ref={fileInputRef}
+          type="file"
+          className={cn('hidden')}
+          accept=".json"
+          onChange={handleFileChange}
+          aria-hidden="true"
+        />
+      </div>
+
+      {/* Mode Selection Dialog */}
+      <ImportModeDialog
+        open={step === 'mode-selection'}
+        totalConversations={conversations.length}
+        duplicateCount={duplicateCount}
+        onClose={resetState}
+        onSelectMode={handleModeSelection}
       />
+
+      {/* Selective Import Dialog */}
+      <SelectiveImportDialog
+        open={step === 'selective-import'}
+        conversations={conversations.filter((c) => !c.isDuplicate)}
+        onClose={resetState}
+        onImport={handleSelectiveImport}
+      />
+
+      {/* Progress Modal */}
       <ImportProgressModal
         open={showProgressModal}
         fileName={fileName}
         isComplete={isComplete}
         isError={isError}
-        onClose={resetProgressState}
-        currentChunk={currentChunk}
-        totalChunks={totalChunks}
-        isPolling={isPolling}
-        pollingAttempt={pollingAttempt}
+        onClose={resetState}
       />
-    </div>
+    </>
   );
 }
 
