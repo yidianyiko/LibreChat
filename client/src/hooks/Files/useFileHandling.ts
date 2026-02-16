@@ -18,7 +18,7 @@ import type { ExtendedFile, FileSetter } from '~/common';
 import { useGetFileConfig, useUploadFileMutation } from '~/data-provider';
 import useLocalize, { TranslationKeys } from '~/hooks/useLocalize';
 import { useDelayedUploadToast } from './useDelayedUploadToast';
-import { processFileForUpload } from '~/utils/heicConverter';
+import { processFileForUpload, isLikelyHeicFile } from '~/utils/heicConverter';
 import { useChatContext } from '~/Providers/ChatContext';
 import { ephemeralAgentByConvoId } from '~/store';
 import { logger, validateFiles } from '~/utils';
@@ -300,12 +300,7 @@ const useFileHandling = (params?: UseFileHandling) => {
         addFile(initialExtendedFile);
 
         // Check if HEIC conversion is needed and show toast
-        const isHEIC =
-          originalFile.type === 'image/heic' ||
-          originalFile.type === 'image/heif' ||
-          originalFile.name.toLowerCase().match(/\.(heic|heif)$/);
-
-        if (isHEIC) {
+        if (isLikelyHeicFile(originalFile)) {
           showToast({
             message: localize('com_info_heic_converting'),
             status: 'info',
