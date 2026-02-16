@@ -643,6 +643,33 @@ export const useUploadConversationsMutation = (
   });
 };
 
+export interface SelectiveImportRequest {
+  conversations: unknown[];
+}
+
+export interface SelectiveImportResponse {
+  message: string;
+  success: Array<{ index: number; conversationId: string; title: string }>;
+  failed: Array<{ index: number; conversationId: string; title: string; error: string }>;
+}
+
+export const useImportSelectiveConversationsMutation = (
+  options?: {
+    onSuccess?: (data: SelectiveImportResponse) => void;
+    onError?: (error: unknown) => void;
+  },
+) => {
+  return useMutation({
+    mutationFn: async (payload: SelectiveImportRequest) => {
+      const response = await dataService.importSelectiveConversations(payload);
+      return response as SelectiveImportResponse;
+    },
+    onSuccess: options?.onSuccess,
+    onError: options?.onError,
+  });
+};
+
+
 export const useUpdatePresetMutation = (
   options?: t.UpdatePresetOptions,
 ): UseMutationResult<

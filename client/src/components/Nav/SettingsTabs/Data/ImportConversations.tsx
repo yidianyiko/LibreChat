@@ -4,6 +4,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { QueryKeys } from 'librechat-data-provider';
 import { Spinner, useToastContext, Label, Button } from '@librechat/client';
 import { useUploadConversationsMutation } from '~/data-provider';
+import { useImportSelectiveConversationsMutation } from '~/data-provider/mutations';
 import { parseImportFile, markDuplicates, ConversationPreview } from '~/utils/conversationParser';
 import ImportModeDialog, { ImportModeSelection } from './ImportModeDialog';
 import SelectiveImportDialog from './SelectiveImportDialog';
@@ -47,6 +48,36 @@ function ImportConversations() {
       setIsUploading(false);
       showToast({
         message: localize('com_ui_import_conversation_error'),
+        status: NotificationSeverity.ERROR,
+      });
+    },
+  });
+
+  const selectiveMutation = useImportSelectiveConversationsMutation({
+    onSuccess: (data) => {
+      setIsComplete(true);
+      setIsUploading(false);
+
+      if (data.failed.length > 0) {
+        showToast({
+          message: data.message,
+          status: NotificationSeverity.WARNING,
+        });
+      } else {
+        showToast({
+          message: data.message,
+          status: NotificationSeverity.SUCCESS,
+        });
+      }
+
+      queryClient.invalidateQueries([QueryKeys.allConversations]);
+    },
+    onError: (error) => {
+      logger.error('Selective import error:', error);
+      setIsError(true);
+      setIsUploading(false);
+      showToast({
+        message: '导入失败',
         status: NotificationSeverity.ERROR,
       });
     },
@@ -134,26 +165,10 @@ function ImportConversations() {
       setShowProgressModal(true);
       setIsUploading(true);
 
-      try {
-        const conversationData = selected.map((c) => c.rawData);
-        const blob = new Blob([JSON.stringify(conversationData)], {
-          type: 'application/json',
-        });
-        const formData = new FormData();
-        formData.append('file', blob, 'selected-conversations.json');
-
-        uploadFile.mutate(formData);
-      } catch (error) {
-        logger.error('Upload error:', error);
-        setIsError(true);
-        setIsUploading(false);
-        showToast({
-          message: '上传失败',
-          status: NotificationSeverity.ERROR,
-        });
-      }
+      const conversationData = selected.map((c) => c.rawData);
+      selectiveMutation.mutate({ conversations: conversationData });
     },
-    [uploadFile, showToast],
+    [selectiveMutation, showToast],
   );
 
   const handleSelectiveImport = useCallback(
