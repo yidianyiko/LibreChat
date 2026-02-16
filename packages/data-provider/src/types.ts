@@ -108,6 +108,7 @@ export type TPayload = Partial<TMessage> &
     conversationId: string | null;
     messages?: TMessages;
     isTemporary: boolean;
+    useMemoryAgent?: boolean;
     ephemeralAgent?: TEphemeralAgent | null;
     editedContent?: TEditedContent | null;
     /** Added conversation for multi-convo feature */
@@ -136,6 +137,7 @@ export type TSubmission = {
   initialResponse?: TMessage;
   conversation: Partial<TConversation>;
   endpointOption: TEndpointOption;
+  useMemoryAgent?: boolean;
   clientTimestamp?: string;
   ephemeralAgent?: TEphemeralAgent | null;
   editedContent?: TEditedContent | null;

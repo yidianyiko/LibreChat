@@ -96,6 +96,21 @@ function logToolError(graph, error, toolId) {
   });
 }
 
+/**
+ * Accept both strict booleans and common serialized false-like values.
+ * This avoids accidental memory usage when request parsing/coercion differs by transport.
+ * @param {unknown} useMemoryAgent
+ * @returns {boolean}
+ */
+function isMemoryAgentDisabled(useMemoryAgent) {
+  return (
+    useMemoryAgent === false ||
+    useMemoryAgent === 0 ||
+    useMemoryAgent === 'false' ||
+    useMemoryAgent === '0'
+  );
+}
+
 /** Regex pattern to match agent ID suffix (____N) */
 const AGENT_SUFFIX_PATTERN = /____(\d+)$/;
 
@@ -582,8 +597,17 @@ class AgentClient extends BaseClient {
    * @returns {Promise<string | undefined>}
    */
   async useMemory() {
+    if (isMemoryAgentDisabled(this.options.req.body?.useMemoryAgent)) {
+      return;
+    }
+    const appConfig = this.options.req.config;
+    const memoryConfig = appConfig.memory;
+    if (!memoryConfig || memoryConfig.disabled === true) {
+      return;
+    }
+
     const user = this.options.req.user;
-    if (user.personalization?.memories === false) {
+    if (memoryConfig.personalize !== false && user.personalization?.memories === false) {
       return;
     }
     const hasAccess = await checkAccess({
@@ -597,11 +621,6 @@ class AgentClient extends BaseClient {
       logger.debug(
         `[api/server/controllers/agents/client.js #useMemory] User ${user.id} does not have USE permission for memories`,
       );
-      return;
-    }
-    const appConfig = this.options.req.config;
-    const memoryConfig = appConfig.memory;
-    if (!memoryConfig || memoryConfig.disabled === true) {
       return;
     }
 
@@ -746,6 +765,9 @@ class AgentClient extends BaseClient {
    */
   async runMemory(messages) {
     try {
+      if (isMemoryAgentDisabled(this.options.req.body?.useMemoryAgent)) {
+        return;
+      }
       if (this.processMemory == null) {
         return;
       }

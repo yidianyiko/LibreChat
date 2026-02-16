@@ -408,6 +408,40 @@ describe('createSetBalanceConfig', () => {
       expect(balanceRecord?.refillAmount).toBe(500);
     });
 
+    test('should disable auto-refill for existing user when config turns it off', async () => {
+      const userId = new mongoose.Types.ObjectId();
+
+      await Balance.create({
+        user: userId,
+        tokenCredits: 500,
+        autoRefillEnabled: true,
+        refillIntervalValue: 30,
+        refillIntervalUnit: 'days',
+        refillAmount: 500000,
+      });
+
+      const getAppConfig = jest.fn().mockResolvedValue({
+        balance: {
+          enabled: true,
+          startBalance: 1000,
+          autoRefillEnabled: false,
+        },
+      });
+
+      const middleware = createSetBalanceConfig({
+        getAppConfig,
+        Balance,
+      });
+
+      const req = createMockRequest(userId);
+      const res = createMockResponse();
+
+      await middleware(req as ServerRequest, res as ServerResponse, mockNext);
+
+      const balanceRecord = await Balance.findOne({ user: userId });
+      expect(balanceRecord?.autoRefillEnabled).toBe(false);
+    });
+
     test('should not update if values are already the same', async () => {
       const userId = new mongoose.Types.ObjectId();
       const lastRefillTime = new Date();

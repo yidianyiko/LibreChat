@@ -15,7 +15,8 @@ WORKDIR /app
 RUN apk --no-cache add curl
 RUN npm config set fetch-retry-maxtimeout 600000 && \
     npm config set fetch-retries 5 && \
-    npm config set fetch-retry-mintimeout 15000
+    npm config set fetch-retry-mintimeout 15000 && \
+    npm config set fetch-timeout 600000
 COPY package*.json ./
 COPY packages/data-provider/package*.json ./packages/data-provider/
 COPY packages/api/package*.json ./packages/api/
@@ -27,6 +28,15 @@ COPY api/package*.json ./api/
 # Install all dependencies for every build
 FROM base-min AS base
 WORKDIR /app
+# Build-time toolchain for native npm packages (e.g. gifsicle fallback compile)
+RUN apk add --no-cache \
+    autoconf \
+    automake \
+    build-base \
+    libtool \
+    nasm \
+    python3 \
+    zlib-dev
 RUN npm ci
 
 # Build `data-provider` package
@@ -73,17 +83,32 @@ FROM base-min AS api-build
 ARG UV_VERSION=0.6.13
 ARG TARGETARCH
 RUN set -eux; \
+    apk add --no-cache python3 py3-pip; \
     case "${TARGETARCH:-amd64}" in \
       amd64) UV_ARCH="x86_64-unknown-linux-musl" ;; \
       arm64) UV_ARCH="aarch64-unknown-linux-musl" ;; \
       *) echo "Unsupported TARGETARCH: ${TARGETARCH}"; exit 1 ;; \
     esac; \
-    curl -fsSL "https://github.com/astral-sh/uv/releases/download/${UV_VERSION}/uv-${UV_ARCH}.tar.gz" \
-      -o /tmp/uv.tar.gz; \
-    tar -xzf /tmp/uv.tar.gz -C /tmp; \
-    install -m 0755 /tmp/uv-${UV_ARCH}/uv /bin/uv; \
-    install -m 0755 /tmp/uv-${UV_ARCH}/uvx /bin/uvx; \
-    rm -rf /tmp/uv.tar.gz /tmp/uv-${UV_ARCH}
+    UV_URL="https://github.com/astral-sh/uv/releases/download/${UV_VERSION}/uv-${UV_ARCH}.tar.gz"; \
+    UV_DOWNLOADED=0; \
+    for attempt in 1 2 3 4 5; do \
+      if curl -fL --connect-timeout 20 --max-time 180 "${UV_URL}" -o /tmp/uv.tar.gz; then \
+        UV_DOWNLOADED=1; \
+        break; \
+      fi; \
+      echo "Failed to download uv (attempt ${attempt}/5), retrying..." >&2; \
+      sleep $((attempt * 2)); \
+    done; \
+    if [ "${UV_DOWNLOADED}" -eq 1 ] && [ -s /tmp/uv.tar.gz ]; then \
+      tar -xzf /tmp/uv.tar.gz -C /tmp; \
+      install -m 0755 /tmp/uv-${UV_ARCH}/uv /bin/uv; \
+      install -m 0755 /tmp/uv-${UV_ARCH}/uvx /bin/uvx; \
+      rm -rf /tmp/uv.tar.gz /tmp/uv-${UV_ARCH}; \
+    else \
+      echo "GitHub download failed after retries, falling back to pip install uv==${UV_VERSION}" >&2; \
+      pip install --no-cache-dir --break-system-packages "uv==${UV_VERSION}"; \
+      install -m 0755 "$(command -v uv)" /bin/uv; \
+    fi
 RUN uv --version
 WORKDIR /app
 # Install only production deps

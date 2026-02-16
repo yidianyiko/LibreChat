@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { RecoilRoot } from 'recoil';
 import { DndProvider } from 'react-dnd';
 import { RouterProvider } from 'react-router-dom';
+import { HelmetProvider } from 'react-helmet-async';
 import * as RadixToast from '@radix-ui/react-toast';
 import { HTML5Backend } from 'react-dnd-html5-backend';
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
@@ -57,6 +58,7 @@ const App = () => {
   return (
     <QueryClientProvider client={queryClient}>
       <RecoilRoot>
+        <HelmetProvider>
         <LiveAnnouncer>
           <ThemeProvider
             // Only pass initialTheme and themeRGB if environment theme exists
@@ -81,6 +83,7 @@ const App = () => {
             </RadixToast.Provider>
           </ThemeProvider>
         </LiveAnnouncer>
+        </HelmetProvider>
       </RecoilRoot>
     </QueryClientProvider>
   );

@@ -358,19 +358,22 @@ async function seedTokenPricing() {
       const provider = inferProvider(modelPattern);
       const premium = premiumTokenValues[modelPattern];
 
+      // Apply 20% markup to all rates
+      const MARKUP = 1.20;
+
       const record = {
         modelPattern,
         provider,
-        inputRate: rates.prompt,
-        outputRate: rates.completion,
+        inputRate: rates.prompt * MARKUP,
+        outputRate: rates.completion * MARKUP,
         isActive: true,
       };
 
       // Add long context pricing if available
       if (premium) {
         record.longContextThreshold = premium.threshold;
-        record.longContextInputRate = premium.prompt;
-        record.longContextOutputRate = premium.completion;
+        record.longContextInputRate = premium.prompt * MARKUP;
+        record.longContextOutputRate = premium.completion * MARKUP;
       }
 
       records.push(record);

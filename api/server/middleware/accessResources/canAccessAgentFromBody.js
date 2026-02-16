@@ -56,7 +56,10 @@ const canAccessAgentFromBody = (options) => {
       const { endpoint, agent_id } = req.body;
       let agentId = agent_id;
 
-      if (!isAgentsEndpoint(endpoint)) {
+      // For agents endpoint, default to ephemeral when client does not provide agent_id
+      if (isAgentsEndpoint(endpoint)) {
+        agentId = agentId || Constants.EPHEMERAL_AGENT_ID;
+      } else {
         agentId = Constants.EPHEMERAL_AGENT_ID;
       }
 

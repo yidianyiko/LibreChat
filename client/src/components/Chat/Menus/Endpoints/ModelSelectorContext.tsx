@@ -1,6 +1,12 @@
 import debounce from 'lodash/debounce';
 import React, { createContext, useContext, useState, useMemo, useCallback } from 'react';
-import { EModelEndpoint, isAgentsEndpoint, isAssistantsEndpoint, PermissionTypes, Permissions } from 'librechat-data-provider';
+import {
+  EModelEndpoint,
+  isAgentsEndpoint,
+  isAssistantsEndpoint,
+  PermissionTypes,
+  Permissions,
+} from 'librechat-data-provider';
 import type * as t from 'librechat-data-provider';
 import type { Endpoint, SelectedValues } from '~/common';
 import {
@@ -65,21 +71,20 @@ export function ModelSelectorProvider({ children, startupConfig }: ModelSelector
   const { announcePolite } = useLiveAnnouncer();
   const modelSpecs = useMemo(() => {
     const specs = startupConfig?.modelSpecs?.list ?? [];
-    if (!agentsMap) {
-      return specs;
-    }
+    const permissionFilteredSpecs = !agentsMap
+      ? specs
+      : specs.filter((spec) => {
+          if (spec.preset?.endpoint === EModelEndpoint.agents && spec.preset?.agent_id) {
+            return spec.preset.agent_id in agentsMap;
+          }
+          /** Keep non-agent modelSpecs */
+          return true;
+        });
 
-    /**
-     * Filter modelSpecs to only include agents the user has access to.
-     * Use agentsMap which already contains permission-filtered agents (consistent with other components).
-     */
-    return specs.filter((spec) => {
-      if (spec.preset?.endpoint === EModelEndpoint.agents && spec.preset?.agent_id) {
-        return spec.preset.agent_id in agentsMap;
-      }
-      /** Keep non-agent modelSpecs */
-      return true;
-    });
+    return permissionFilteredSpecs.filter(
+      (spec) =>
+        spec.preset?.endpoint !== EModelEndpoint.agents && spec.group !== EModelEndpoint.agents,
+    );
   }, [startupConfig, agentsMap]);
 
   const permissionLevel = useAgentDefaultPermissionLevel();
@@ -101,6 +106,11 @@ export function ModelSelectorProvider({ children, startupConfig }: ModelSelector
     startupConfig,
     endpointsConfig,
   });
+
+  const visibleMappedEndpoints = useMemo(
+    () => mappedEndpoints.filter((endpoint) => endpoint.value !== EModelEndpoint.agents),
+    [mappedEndpoints],
+  );
 
   const getModelDisplayName = useCallback(
     (endpoint: Endpoint, model: string): string => {
@@ -166,9 +176,9 @@ export function ModelSelectorProvider({ children, startupConfig }: ModelSelector
     if (!searchValue) {
       return null;
     }
-    const allItems = [...modelSpecs, ...mappedEndpoints];
+    const allItems = [...modelSpecs, ...visibleMappedEndpoints];
     return filterItems(allItems, searchValue, agentsMap, assistantsMap || {});
-  }, [searchValue, modelSpecs, mappedEndpoints, agentsMap, assistantsMap]);
+  }, [searchValue, modelSpecs, visibleMappedEndpoints, agentsMap, assistantsMap]);
 
   const setDebouncedSearchValue = useMemo(
     () =>
@@ -247,7 +257,7 @@ export function ModelSelectorProvider({ children, startupConfig }: ModelSelector
     agentsMap,
     modelSpecs,
     assistantsMap,
-    mappedEndpoints,
+    mappedEndpoints: visibleMappedEndpoints,
     endpointsConfig,
 
     // Functions

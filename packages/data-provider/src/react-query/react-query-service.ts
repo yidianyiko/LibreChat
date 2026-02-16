@@ -8,7 +8,6 @@ import { Constants, initialModelsConfig } from '../config';
 import { defaultOrderQuery } from '../types/assistants';
 import { MCPServerConnectionStatusResponse } from '../types/queries';
 import * as dataService from '../data-service';
-import { isDemoMode } from '../demo';
 import * as m from '../types/mutations';
 import * as q from '../types/queries';
 import { QueryKeys } from '../keys';
@@ -186,7 +185,7 @@ export const useGetModelsQuery = (
 ): QueryObserverResult<t.TModelsConfig> => {
   return useQuery<t.TModelsConfig>(
     [QueryKeys.models],
-    () => (isDemoMode() ? Promise.resolve(initialModelsConfig) : dataService.getModels()),
+    () => dataService.getModels(),
     {
       initialData: initialModelsConfig,
       refetchOnWindowFocus: false,
@@ -203,13 +202,16 @@ export const useGetModelRatesQuery = (
 ): QueryObserverResult<t.TModelRatesConfig> => {
   return useQuery<t.TModelRatesConfig>(
     [QueryKeys.modelRates],
-    () => (isDemoMode() ? Promise.resolve({}) : dataService.getModelRates()),
+    () => {
+      // Always fetch rates, don't check demo mode for pricing data
+      return dataService.getModelRates();
+    },
     {
-      initialData: {},
+      // Remove initialData to allow proper loading state
       refetchOnWindowFocus: false,
       refetchOnReconnect: false,
-      refetchOnMount: false,
-      staleTime: Infinity,
+      refetchOnMount: true,        // ← Changed: fetch on component mount
+      staleTime: 5 * 60 * 1000,    // ← Changed: 5 minutes instead of Infinity
       ...config,
     },
   );

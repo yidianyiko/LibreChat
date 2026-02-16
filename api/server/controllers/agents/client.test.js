@@ -1640,6 +1640,18 @@ describe('AgentClient - titleConvo', () => {
       expect(result).toBeUndefined();
       expect(mockProcessMemory).not.toHaveBeenCalled();
     });
+
+    it('should return early if useMemoryAgent is disabled in request body', async () => {
+      const { HumanMessage } = require('@langchain/core/messages');
+      mockReq.body = {
+        useMemoryAgent: 'false',
+      };
+
+      const result = await client.runMemory([new HumanMessage('Test')]);
+
+      expect(result).toBeUndefined();
+      expect(mockProcessMemory).not.toHaveBeenCalled();
+    });
   });
 
   describe('getMessagesForConversation - mapMethod and mapCondition', () => {
@@ -2165,6 +2177,44 @@ describe('AgentClient - titleConvo', () => {
       );
     });
 
+    it('should skip memory processing when useMemoryAgent is false', async () => {
+      mockReq.body = {
+        useMemoryAgent: false,
+      };
+      mockCheckAccess.mockResolvedValue(true);
+
+      client = new AgentClient(mockOptions);
+      client.conversationId = 'convo-123';
+      client.responseMessageId = 'response-123';
+
+      const result = await client.useMemory();
+
+      expect(result).toBeUndefined();
+      expect(mockCheckAccess).not.toHaveBeenCalled();
+      expect(mockLoadAgent).not.toHaveBeenCalled();
+      expect(mockInitializeAgent).not.toHaveBeenCalled();
+      expect(mockCreateMemoryProcessor).not.toHaveBeenCalled();
+    });
+
+    it('should skip memory processing when useMemoryAgent is the string "false"', async () => {
+      mockReq.body = {
+        useMemoryAgent: 'false',
+      };
+      mockCheckAccess.mockResolvedValue(true);
+
+      client = new AgentClient(mockOptions);
+      client.conversationId = 'convo-123';
+      client.responseMessageId = 'response-123';
+
+      const result = await client.useMemory();
+
+      expect(result).toBeUndefined();
+      expect(mockCheckAccess).not.toHaveBeenCalled();
+      expect(mockLoadAgent).not.toHaveBeenCalled();
+      expect(mockInitializeAgent).not.toHaveBeenCalled();
+      expect(mockCreateMemoryProcessor).not.toHaveBeenCalled();
+    });
+
     it('should load different agent when memory config agent.id differs from current agent id', async () => {
       const differentAgentId = 'different-agent-456';
       const differentAgent = {
@@ -2254,6 +2304,26 @@ describe('AgentClient - titleConvo', () => {
         }),
         expect.any(Object),
       );
+    });
+
+    it('should ignore user opt-out when memory personalize is disabled', async () => {
+      mockReq.user.personalization.memories = false;
+      mockReq.config.memory.personalize = false;
+      mockCheckAccess.mockResolvedValue(true);
+      mockInitializeAgent.mockResolvedValue({
+        ...mockAgent,
+        provider: EModelEndpoint.openAI,
+      });
+      mockCreateMemoryProcessor.mockResolvedValue([undefined, jest.fn()]);
+
+      client = new AgentClient(mockOptions);
+      client.conversationId = 'convo-123';
+      client.responseMessageId = 'response-123';
+
+      await client.useMemory();
+
+      expect(mockCheckAccess).toHaveBeenCalled();
+      expect(mockInitializeAgent).toHaveBeenCalled();
     });
   });
 });

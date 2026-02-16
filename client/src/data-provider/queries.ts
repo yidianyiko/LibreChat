@@ -32,8 +32,6 @@ import type {
 } from 'librechat-data-provider';
 import type { ConversationCursorData } from '~/utils/convos';
 import { findConversationInInfinite } from '~/utils';
-import { isDemoMode } from '~/utils/demoMode';
-import { getDemoConversation } from '~/demo/demoData';
 
 export const useGetPresetsQuery = (
   config?: UseQueryOptions<TPreset[]>,
@@ -52,14 +50,10 @@ export const useGetConvoIdQuery = (
   config?: UseQueryOptions<t.TConversation>,
 ): QueryObserverResult<t.TConversation> => {
   const queryClient = useQueryClient();
-  const demoMode = isDemoMode();
 
   return useQuery<t.TConversation>(
     [QueryKeys.conversation, id],
     () => {
-      if (demoMode) {
-        return getDemoConversation(id);
-      }
       // Try to find in all fetched infinite pages
       const convosQuery = queryClient.getQueryData<InfiniteData<ConversationCursorData>>(
         [QueryKeys.allConversations],

@@ -13,6 +13,7 @@ export default function createPayload(submission: t.TSubmission) {
     conversation,
     editedContent,
     ephemeralAgent,
+    useMemoryAgent,
     endpointOption,
   } = submission;
   const { conversationId } = s.tConvoUpdateSchema.parse(conversation);
@@ -39,6 +40,7 @@ export default function createPayload(submission: t.TSubmission) {
     editedContent,
     conversationId,
     isContinued: !!(isEdited && isContinued),
+    useMemoryAgent: s.isAssistantsEndpoint(endpoint) ? undefined : useMemoryAgent,
     ephemeralAgent: s.isAssistantsEndpoint(endpoint) ? undefined : ephemeralAgent,
   };
 

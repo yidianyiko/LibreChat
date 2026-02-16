@@ -1,6 +1,6 @@
 import { memo, useRef, useMemo, useEffect, useState, useCallback } from 'react';
 import { useWatch } from 'react-hook-form';
-import { TextareaAutosize } from '@librechat/client';
+import { Switch, TextareaAutosize } from '@librechat/client';
 import { useRecoilState, useRecoilValue } from 'recoil';
 import { Constants, isAssistantsEndpoint, isAgentsEndpoint } from 'librechat-data-provider';
 import {
@@ -62,6 +62,7 @@ const ChatForm = memo(({ index = 0 }: { index?: number }) => {
   const [showMentionPopover, setShowMentionPopover] = useRecoilState(
     store.showMentionPopoverFamily(index),
   );
+  const [useMemoryAgent, setUseMemoryAgent] = useRecoilState(store.useMemoryAgent);
 
   const { requiresKey } = useRequiresKey();
   const methods = useChatFormContext();
@@ -190,6 +191,10 @@ const ChatForm = memo(({ index = 0 }: { index?: number }) => {
   }, [backupBadges, setBadges, setIsEditingBadges]);
 
   const isMoreThanThreeRows = visualRowCount > 3;
+  const showMemoryAgentSwitch = useMemo(
+    () => !!endpoint && !isAssistantsEndpoint(endpoint),
+    [endpoint],
+  );
 
   const baseClasses = useMemo(
     () =>
@@ -330,6 +335,20 @@ const ChatForm = memo(({ index = 0 }: { index?: number }) => {
                   Array.isArray(conversation?.messages) && conversation.messages.length >= 1
                 }
               />
+              {showMemoryAgentSwitch && (
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-text-secondary">
+                    {localize('com_ui_use_memory')}
+                  </span>
+                  <Switch
+                    id="use-memory-agent-switch"
+                    checked={useMemoryAgent}
+                    onCheckedChange={setUseMemoryAgent}
+                    data-testid="use-memory-agent-switch"
+                    aria-label={localize('com_ui_use_memory')}
+                  />
+                </div>
+              )}
               <div className="mx-auto flex" />
               {/* Voice recording UI is disabled */}
               <div className={`${isRTL ? 'ml-2' : 'mr-2'}`}>
