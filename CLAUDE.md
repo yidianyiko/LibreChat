@@ -280,6 +280,34 @@ Frontend changes are reflected immediately with Vite HMR. Backend uses nodemon f
 3. Export from `api/models/index.js`
 4. Rebuild schemas: `npm run build:data-schemas`
 
+## Conversation Import
+
+LibreChat supports importing conversations from multiple sources with three import modes:
+
+**Import Modes:**
+- **Full Import** - Upload entire file, backend processes all conversations
+- **Batch Import** - Select range (e.g., conversations 1-500)
+- **Selective Import** - Manually pick conversations with virtual scrolling UI
+
+**Supported Formats:**
+- LibreChat native export
+- ChatGPT export (OpenAI)
+- Claude export (Anthropic)
+
+**Key Files:**
+- Parser: `client/src/utils/conversationParser.ts`
+- Mode Dialog: `client/src/components/Nav/SettingsTabs/Data/ImportModeDialog.tsx`
+- Selective UI: `client/src/components/Nav/SettingsTabs/Data/SelectiveImportDialog.tsx`
+- Backend: `api/server/routes/convos.js` (POST /import-selective)
+
+**Features:**
+- Automatic duplicate detection (by conversationId)
+- Virtual scrolling for large datasets (10,000+ conversations)
+- Search and date filtering in selective mode
+- Partial failure handling with retry option
+
+**Documentation:** See `docs/features/selective-import.md` for full documentation.
+
 ## Stripe Payment Integration
 
 Environment variables required in `.env`:
