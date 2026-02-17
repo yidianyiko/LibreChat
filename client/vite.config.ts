@@ -43,6 +43,8 @@ export default defineConfig(({ command }) => ({
       devOptions: {
         enabled: false, // disable service worker registration in development mode
       },
+      selfDestroying: false,  // 保持 SW 激活
+      cleanupOutdatedCaches: true,  // 自动清理旧缓存
       useCredentials: true,
       includeManifestIcons: false,
       workbox: {
@@ -61,13 +63,14 @@ export default defineConfig(({ command }) => ({
           {
             urlPattern: ({ request }) =>
               request.destination === 'script' || request.destination === 'style',
-            handler: 'StaleWhileRevalidate',
+            handler: 'NetworkFirst',  // 优先从网络获取最新版本
             options: {
               cacheName: 'static-assets-cache',
               expiration: {
                 maxEntries: 100,
                 maxAgeSeconds: 60 * 60 * 24 * 7, // 7 days
               },
+              networkTimeoutSeconds: 3,  // 3秒超时后使用缓存
             },
           },
           {
