@@ -43,7 +43,7 @@ LAST_DEPLOYED_COMMIT_FILE="${DEPLOY_DIR}/last_deployed_commit.txt"
 
 # 标志变量
 INIT_ONLY=false
-NO_CACHE=true  # 默认强制重新构建，避免 Docker 缓存问题
+NO_CACHE=false  # 默认使用 Docker 缓存，加速构建（可用 --no-cache 强制重建）
 DEPLOY_MODE="full-build"  # full-build | config-only | no-change
 CHANGED_FILES=""
 

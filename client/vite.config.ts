@@ -49,7 +49,7 @@ export default defineConfig(({ command }) => ({
       includeManifestIcons: false,
       workbox: {
         globPatterns: [
-          '**/*.{css,html}',
+          '**/*.{css,html}',  // 恢复 HTML precache 以实现快速加载和离线支持
           'assets/favicon*.png',
           'assets/icon-*.png',
           'assets/apple-touch-icon*.png',
