@@ -4,7 +4,11 @@ import { useToastContext } from '@librechat/client';
 import { useLocalize } from '~/hooks';
 import { SubscriptionTab } from './SubscriptionTab';
 import { TopupTab } from './TopupTab';
-import { usePricingQuery, useCreateSubscription, useCreateTopup } from '~/hooks/Recharge/useRechargeQueries';
+import {
+  usePricingQuery,
+  useCreateSubscription,
+  useCreateTopup,
+} from '~/hooks/Recharge/useRechargeQueries';
 import { useGetSubscriptionStatus } from '~/hooks/Subscriptions';
 import type { PricingResponse } from '~/types/recharge';
 
@@ -115,7 +119,9 @@ export const RechargePage: React.FC = () => {
   if (isLoading) {
     return (
       <div className="flex h-full items-center justify-center">
-        <div className="text-lg text-gray-600 dark:text-gray-300">{localize('com_recharge_loading')}</div>
+        <div className="text-lg text-gray-600 dark:text-gray-300">
+          {localize('com_recharge_loading')}
+        </div>
       </div>
     );
   }

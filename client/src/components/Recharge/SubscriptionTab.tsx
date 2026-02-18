@@ -1,6 +1,10 @@
 import React, { useState } from 'react';
 import { PricingCard } from './PricingCard';
-import { useCancelSubscription, useResumeSubscription, useChangeSubscriptionTier } from '~/hooks/Subscriptions';
+import {
+  useCancelSubscription,
+  useResumeSubscription,
+  useChangeSubscriptionTier,
+} from '~/hooks/Subscriptions';
 import { useToastContext } from '@librechat/client';
 import { useLocalize } from '~/hooks';
 import type { PricingTier, SubscriptionStatus } from '~/types/recharge';
@@ -148,11 +152,11 @@ export const SubscriptionTab: React.FC<SubscriptionTabProps> = ({
                 <p className="text-sm text-gray-600 dark:text-gray-400">
                   {cancelAtPeriodEnd
                     ? localize('com_recharge_cancels_on', {
-                      0: formatDate(subscriptionStatus.currentPeriodEnd),
-                    })
+                        0: formatDate(subscriptionStatus.currentPeriodEnd),
+                      })
                     : localize('com_recharge_renews_on', {
-                      0: formatDate(subscriptionStatus.currentPeriodEnd),
-                    })}
+                        0: formatDate(subscriptionStatus.currentPeriodEnd),
+                      })}
                 </p>
               )}
               <div className="flex flex-col gap-1 text-sm text-gray-700 dark:text-gray-300">

@@ -161,7 +161,9 @@ class SubscriptionWebhookHandler {
       return { received: true, message: 'Not a subscription invoice' };
     }
 
-    const subscription = await this.stripeService.stripe.subscriptions.retrieve(invoice.subscription);
+    const subscription = await this.stripeService.stripe.subscriptions.retrieve(
+      invoice.subscription,
+    );
     const userId = subscription.metadata?.userId;
     const tierId = subscription.metadata?.tierId;
 
@@ -200,7 +202,9 @@ class SubscriptionWebhookHandler {
       },
     });
 
-    logger.info(`[SubscriptionWebhook] Granted ${pricingTier.credits} subscription credits to user ${userId}`);
+    logger.info(
+      `[SubscriptionWebhook] Granted ${pricingTier.credits} subscription credits to user ${userId}`,
+    );
     return { received: true, message: 'Subscription credits granted' };
   }
 
@@ -212,7 +216,9 @@ class SubscriptionWebhookHandler {
       return { received: true, message: 'Not a subscription invoice' };
     }
 
-    const subscription = await this.stripeService.stripe.subscriptions.retrieve(invoice.subscription);
+    const subscription = await this.stripeService.stripe.subscriptions.retrieve(
+      invoice.subscription,
+    );
     const userId = subscription.metadata?.userId;
 
     if (!userId) {
@@ -224,7 +230,9 @@ class SubscriptionWebhookHandler {
       subscriptionStatus: 'past_due',
     });
 
-    logger.warn(`[SubscriptionWebhook] Payment failed for user ${userId}, subscription ${subscription.id}`);
+    logger.warn(
+      `[SubscriptionWebhook] Payment failed for user ${userId}, subscription ${subscription.id}`,
+    );
     return { received: true, message: 'Payment failure recorded' };
   }
 
@@ -260,7 +268,9 @@ class SubscriptionWebhookHandler {
       },
     });
 
-    logger.info(`[SubscriptionWebhook] Granted ${pricingTier.credits} topup credits to user ${userId}`);
+    logger.info(
+      `[SubscriptionWebhook] Granted ${pricingTier.credits} topup credits to user ${userId}`,
+    );
     return { received: true, message: 'Topup credits granted' };
   }
 }

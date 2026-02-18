@@ -11,18 +11,20 @@ const router = express.Router();
 let ensureStripeRechargeIndexPromise;
 async function ensureStripeRechargeIndex() {
   if (!ensureStripeRechargeIndexPromise) {
-    ensureStripeRechargeIndexPromise = Transaction.collection.createIndex(
-      { context: 1, 'metadata.sessionId': 1 },
-      {
-        name: 'uniq_stripe_recharge_session',
-        unique: true,
-        partialFilterExpression: { 'metadata.sessionId': { $exists: true } },
-      },
-    ).catch((err) => {
-      // Don't cache a rejection; allow the next webhook delivery to retry index creation.
-      ensureStripeRechargeIndexPromise = null;
-      throw err;
-    });
+    ensureStripeRechargeIndexPromise = Transaction.collection
+      .createIndex(
+        { context: 1, 'metadata.sessionId': 1 },
+        {
+          name: 'uniq_stripe_recharge_session',
+          unique: true,
+          partialFilterExpression: { 'metadata.sessionId': { $exists: true } },
+        },
+      )
+      .catch((err) => {
+        // Don't cache a rejection; allow the next webhook delivery to retry index creation.
+        ensureStripeRechargeIndexPromise = null;
+        throw err;
+      });
   }
   return ensureStripeRechargeIndexPromise;
 }
@@ -50,7 +52,7 @@ router.get('/pricing', requireJwtAuth, checkBan, async (req, res) => {
 
     res.json({
       enabled: true,
-      tiers: pricingTiers.map(tier => ({
+      tiers: pricingTiers.map((tier) => ({
         id: tier.id,
         name: tier.name,
         description: tier.description,
@@ -108,7 +110,7 @@ router.post('/create-checkout-session', requireJwtAuth, checkBan, async (req, re
 
     // 构建成功和取消的跳转地址
     const baseUrl = process.env.DOMAIN_CLIENT || 'http://localhost:3080';
-    const successUrl = `${baseUrl}/recharge/success?session_id={CHECKOUT_SESSION_ID}&type=topup`;
+    const successUrl = `${baseUrl}/recharge/success?session_id={CHECKOUT_SESSION_ID}`;
     const cancelUrl = `${baseUrl}/recharge/cancel`;
 
     // 创建 Checkout Session
@@ -178,7 +180,7 @@ router.post('/create-subscription', requireJwtAuth, checkBan, async (req, res) =
 
     // Build redirect URLs
     const baseUrl = process.env.DOMAIN_CLIENT || 'http://localhost:3080';
-    const successUrl = `${baseUrl}/recharge/success?session_id={CHECKOUT_SESSION_ID}&type=subscription`;
+    const successUrl = `${baseUrl}/recharge/subscription-success?session_id={CHECKOUT_SESSION_ID}`;
     const cancelUrl = `${baseUrl}/recharge/cancel`;
 
     // Create subscription checkout session
@@ -191,7 +193,10 @@ router.post('/create-subscription', requireJwtAuth, checkBan, async (req, res) =
       stripeCustomerId: user.stripeCustomerId, // Pass existing customer ID if available
     });
 
-    logger.info(`[Recharge API] Created subscription checkout session for user ${userId}:`, session.id);
+    logger.info(
+      `[Recharge API] Created subscription checkout session for user ${userId}:`,
+      session.id,
+    );
 
     res.json({
       sessionId: session.id,
@@ -234,7 +239,8 @@ router.post('/create-topup', requireJwtAuth, checkBan, async (req, res) => {
     const user = await User.findById(userId);
     if (user.subscriptionStatus !== 'active') {
       return res.status(403).json({
-        message: 'Topup purchases are only available to active subscribers. Please subscribe first.',
+        message:
+          'Topup purchases are only available to active subscribers. Please subscribe first.',
       });
     }
 
@@ -254,7 +260,7 @@ router.post('/create-topup', requireJwtAuth, checkBan, async (req, res) => {
 
     // Build redirect URLs
     const baseUrl = process.env.DOMAIN_CLIENT || 'http://localhost:3080';
-    const successUrl = `${baseUrl}/recharge/success?session_id={CHECKOUT_SESSION_ID}&type=topup`;
+    const successUrl = `${baseUrl}/recharge/topup-success?session_id={CHECKOUT_SESSION_ID}`;
     const cancelUrl = `${baseUrl}/recharge/cancel`;
 
     // Create topup checkout session
@@ -290,7 +296,7 @@ router.get('/subscription-status', requireJwtAuth, checkBan, async (req, res) =>
     const userId = req.user.id;
 
     const user = await User.findById(userId).select(
-      'subscriptionStatus subscriptionTier subscriptionId currentPeriodEnd cancelAtPeriodEnd'
+      'subscriptionStatus subscriptionTier subscriptionId currentPeriodEnd cancelAtPeriodEnd',
     );
 
     if (!user) {
@@ -358,7 +364,9 @@ router.post('/cancel-subscription', requireJwtAuth, checkBan, async (req, res) =
       cancelAtPeriodEnd: true,
     });
 
-    logger.info(`[Recharge API] User ${userId} canceled subscription ${user.subscriptionId} at period end`);
+    logger.info(
+      `[Recharge API] User ${userId} canceled subscription ${user.subscriptionId} at period end`,
+    );
 
     res.json({
       message: 'Subscription will be canceled at the end of the current billing period',
@@ -533,7 +541,7 @@ router.post(
       logger.error('[Recharge Webhook] Error processing webhook:', error);
       res.status(400).send(`Webhook Error: ${error.message}`);
     }
-  }
+  },
 );
 
 /**
@@ -602,20 +610,20 @@ router.get('/verify-session/:sessionId', requireJwtAuth, checkBan, async (req, r
       });
     }
 
-	    // 检查支付状态
-	    const isPaid = session.payment_status === 'paid';
-	    const tierId = session.metadata?.tierId;
-	    const tier = tierId ? stripeService.getPricingTierById(tierId) : null;
-	    const credits = tier?.credits ?? 0;
+    // 检查支付状态
+    const isPaid = session.payment_status === 'paid';
+    const tierId = session.metadata?.tierId;
+    const tier = tierId ? stripeService.getPricingTierById(tierId) : null;
+    const credits = tier?.credits ?? 0;
 
-	    res.json({
-	      sessionId,
-	      paymentStatus: session.payment_status,
-	      isPaid,
-	      credits,
-	      tierId,
-	      amountTotal: session.amount_total,
-	    });
+    res.json({
+      sessionId,
+      paymentStatus: session.payment_status,
+      isPaid,
+      credits,
+      tierId,
+      amountTotal: session.amount_total,
+    });
   } catch (error) {
     logger.error('[Recharge API] Error verifying session:', error);
     res.status(500).json({

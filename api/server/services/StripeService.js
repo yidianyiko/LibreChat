@@ -16,7 +16,7 @@ const PRICING_TIERS = [
   {
     id: 'artisan',
     name: 'Artisan',
-    description: 'The Creator\'s Safe Haven - 700 Premium GPT-4o msgs, 15,000 Base 4o-mini msgs',
+    description: "The Creator's Safe Haven - 700 Premium GPT-4o msgs, 15,000 Base 4o-mini msgs",
     price: 1499, // $14.99
     credits: 15000000, // 1500万积分 = $15
     subscriptionPriceId: process.env.STRIPE_PRICE_ARTISAN_MONTHLY,
@@ -24,7 +24,8 @@ const PRICING_TIERS = [
   {
     id: 'elite',
     name: 'Elite',
-    description: 'The Power Productivity Hub - 2,000 Premium GPT-4o msgs, Unlimited Base 4o-mini msgs',
+    description:
+      'The Power Productivity Hub - 2,000 Premium GPT-4o msgs, Unlimited Base 4o-mini msgs',
     price: 3499, // $34.99
     credits: 35000000, // 3500万积分 = $35
     subscriptionPriceId: process.env.STRIPE_PRICE_ELITE_MONTHLY,
@@ -73,7 +74,7 @@ class StripeService {
    * 根据 ID 获取价格套餐
    */
   getPricingTierById(tierId) {
-    return PRICING_TIERS.find(tier => tier.id === tierId);
+    return PRICING_TIERS.find((tier) => tier.id === tierId);
   }
 
   /**
@@ -144,7 +145,14 @@ class StripeService {
    * @param {string} [stripeCustomerId] - Existing Stripe Customer ID (optional)
    * @returns {Promise<Object>} Stripe Checkout Session
    */
-  async createSubscriptionCheckoutSession({ userId, userEmail, tierId, successUrl, cancelUrl, stripeCustomerId }) {
+  async createSubscriptionCheckoutSession({
+    userId,
+    userEmail,
+    tierId,
+    successUrl,
+    cancelUrl,
+    stripeCustomerId,
+  }) {
     if (!this.enabled) {
       throw new Error('Stripe service is not enabled');
     }
@@ -192,7 +200,9 @@ class StripeService {
 
       const session = await this.stripe.checkout.sessions.create(sessionParams);
 
-      logger.info(`[StripeService] Created subscription checkout session for user ${userId}, tier ${tierId}`);
+      logger.info(
+        `[StripeService] Created subscription checkout session for user ${userId}, tier ${tierId}`,
+      );
       return session;
     } catch (error) {
       logger.error('[StripeService] Failed to create subscription checkout session:', error);
@@ -251,7 +261,9 @@ class StripeService {
         },
       });
 
-      logger.info(`[StripeService] Created topup checkout session for user ${userId}, tier ${tierId}`);
+      logger.info(
+        `[StripeService] Created topup checkout session for user ${userId}, tier ${tierId}`,
+      );
       return session;
     } catch (error) {
       logger.error('[StripeService] Failed to create topup checkout session:', error);
@@ -308,7 +320,7 @@ class StripeService {
       logger.error('[StripeService] Invalid tierId in session metadata:', {
         sessionId: session.id,
         tierId,
-        validTierIds: PRICING_TIERS.map(t => t.id),
+        validTierIds: PRICING_TIERS.map((t) => t.id),
       });
       throw new Error(`Invalid pricing tier: ${tierId}`);
     }
@@ -348,7 +360,7 @@ class StripeService {
     return {
       userId,
       tierId,
-      credits,  // 服务端计算的积分
+      credits, // 服务端计算的积分
       sessionId: session.id,
       subscriptionId: session.subscription,
       amountTotal: session.amount_total,
@@ -374,10 +386,10 @@ class StripeService {
 
       // 过滤出属于该用户的记录
       const userSessions = sessions.data.filter(
-        session => session.metadata?.userId === userId && session.status === 'complete'
+        (session) => session.metadata?.userId === userId && session.status === 'complete',
       );
 
-      return userSessions.map(session => ({
+      return userSessions.map((session) => ({
         sessionId: session.id,
         tierId: session.metadata.tierId,
         subscriptionId: session.subscription,
@@ -407,7 +419,9 @@ class StripeService {
         cancel_at_period_end: true,
       });
 
-      logger.info(`[StripeService] Scheduled subscription ${subscriptionId} for cancellation at period end`);
+      logger.info(
+        `[StripeService] Scheduled subscription ${subscriptionId} for cancellation at period end`,
+      );
       return subscription;
     } catch (error) {
       logger.error('[StripeService] Failed to cancel subscription:', error);

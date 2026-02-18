@@ -13,8 +13,7 @@ export const RechargeKeys = {
   all: ['recharge'] as const,
   pricing: () => [...RechargeKeys.all, 'pricing'] as const,
   history: () => [...RechargeKeys.all, 'history'] as const,
-  verifySession: (sessionId: string) =>
-    [...RechargeKeys.all, 'verify', sessionId] as const,
+  verifySession: (sessionId: string) => [...RechargeKeys.all, 'verify', sessionId] as const,
 };
 
 export const usePricingQuery = () => {
@@ -38,9 +37,7 @@ export const useRechargeHistoryQuery = (limit = 10) => {
   return useQuery<{ history: RechargeHistory[] }>({
     queryKey: [...RechargeKeys.history(), limit],
     queryFn: async () => {
-      return request.get<{ history: RechargeHistory[] }>(
-        `${BASE_URL}/history?limit=${limit}`,
-      );
+      return request.get<{ history: RechargeHistory[] }>(`${BASE_URL}/history?limit=${limit}`);
     },
   });
 };
@@ -52,9 +49,7 @@ export const useVerifySessionQuery = (sessionId: string | null) => {
       if (!sessionId) {
         throw new Error('No session ID provided');
       }
-      return request.get<VerifySessionResponse>(
-        `${BASE_URL}/verify-session/${sessionId}`,
-      );
+      return request.get<VerifySessionResponse>(`${BASE_URL}/verify-session/${sessionId}`);
     },
     enabled: !!sessionId,
   });

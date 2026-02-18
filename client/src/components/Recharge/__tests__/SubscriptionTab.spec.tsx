@@ -81,7 +81,8 @@ jest.mock('~/hooks', () => ({
     if (key === 'com_recharge_cancel_subscription') return 'Cancel Subscription';
     if (key === 'com_recharge_confirm_cancel') return 'Confirm Cancel';
     if (key === 'com_recharge_resume_subscription') return 'Resume Subscription';
-    if (key === 'com_recharge_subscription_balance') return `Subscription Balance: ${vars?.['0'] ?? ''}`;
+    if (key === 'com_recharge_subscription_balance')
+      return `Subscription Balance: ${vars?.['0'] ?? ''}`;
     if (key === 'com_recharge_topup_balance') return `Topup Balance: ${vars?.['0'] ?? ''}`;
     if (key === 'com_recharge_subscription_cancelled') return 'Subscription cancelled';
     if (key === 'com_recharge_subscription_resumed') return 'Subscription resumed';

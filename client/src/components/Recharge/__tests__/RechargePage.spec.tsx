@@ -44,9 +44,12 @@ jest.mock('../TopupTab', () => ({
 }));
 
 const mockUsePricingQuery = jest.requireMock('~/hooks/Recharge/useRechargeQueries').usePricingQuery;
-const mockUseCreateSubscription = jest.requireMock('~/hooks/Recharge/useRechargeQueries').useCreateSubscription;
+const mockUseCreateSubscription = jest.requireMock(
+  '~/hooks/Recharge/useRechargeQueries',
+).useCreateSubscription;
 const mockUseCreateTopup = jest.requireMock('~/hooks/Recharge/useRechargeQueries').useCreateTopup;
-const mockUseGetSubscriptionStatus = jest.requireMock('~/hooks/Subscriptions').useGetSubscriptionStatus;
+const mockUseGetSubscriptionStatus =
+  jest.requireMock('~/hooks/Subscriptions').useGetSubscriptionStatus;
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -58,10 +61,8 @@ const queryClient = new QueryClient({
 const renderWithProviders = (component: React.ReactElement) => {
   return render(
     <RecoilRoot>
-      <QueryClientProvider client={queryClient}>
-        {component}
-      </QueryClientProvider>
-    </RecoilRoot>
+      <QueryClientProvider client={queryClient}>{component}</QueryClientProvider>
+    </RecoilRoot>,
   );
 };
 

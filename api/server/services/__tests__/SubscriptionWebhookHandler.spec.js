@@ -84,7 +84,7 @@ describe('SubscriptionWebhookHandler', () => {
       };
 
       await expect(handler.handleSubscriptionCreated(subscription)).rejects.toThrow(
-        'Missing userId or tierId'
+        'Missing userId or tierId',
       );
     });
   });
@@ -121,7 +121,7 @@ describe('SubscriptionWebhookHandler', () => {
           user: 'user123',
           context: 'subscription_charge',
           balanceType: 'subscription',
-        })
+        }),
       );
     });
 
@@ -152,7 +152,7 @@ describe('SubscriptionWebhookHandler', () => {
         expect.objectContaining({
           context: 'subscription_topup',
           balanceType: 'topup',
-        })
+        }),
       );
     });
   });

@@ -17,4 +17,3 @@ describe('StripeService.handlePaymentSuccess', () => {
     await expect(service.handlePaymentSuccess(session)).resolves.toBeTruthy();
   });
 });
-

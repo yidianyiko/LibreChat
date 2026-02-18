@@ -59,9 +59,7 @@ describe('Recharge API Routes', () => {
 
   describe('GET /api/recharge/pricing', () => {
     it('should return pricing tiers when Stripe is enabled', async () => {
-      const response = await request(app)
-        .get('/api/recharge/pricing')
-        .expect(200);
+      const response = await request(app).get('/api/recharge/pricing').expect(200);
 
       expect(response.body).toEqual({
         enabled: true,
@@ -77,9 +75,7 @@ describe('Recharge API Routes', () => {
     it('should return 503 when Stripe is not enabled', async () => {
       mockStripeService.isEnabled.mockReturnValue(false);
 
-      const response = await request(app)
-        .get('/api/recharge/pricing')
-        .expect(503);
+      const response = await request(app).get('/api/recharge/pricing').expect(503);
 
       expect(response.body.enabled).toBe(false);
     });

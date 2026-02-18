@@ -48,14 +48,24 @@ describe('PricingCard - subscription mode', () => {
 
   it('shows UPGRADE button for upgrade action', () => {
     render(
-      <PricingCard tier={baseTier} onSelect={jest.fn()} mode="subscription" subscriptionAction="upgrade" />,
+      <PricingCard
+        tier={baseTier}
+        onSelect={jest.fn()}
+        mode="subscription"
+        subscriptionAction="upgrade"
+      />,
     );
     expect(screen.getByRole('button', { name: /upgrade/i })).toBeInTheDocument();
   });
 
   it('shows DOWNGRADE button for downgrade action', () => {
     render(
-      <PricingCard tier={baseTier} onSelect={jest.fn()} mode="subscription" subscriptionAction="downgrade" />,
+      <PricingCard
+        tier={baseTier}
+        onSelect={jest.fn()}
+        mode="subscription"
+        subscriptionAction="downgrade"
+      />,
     );
     expect(screen.getByRole('button', { name: /downgrade/i })).toBeInTheDocument();
   });

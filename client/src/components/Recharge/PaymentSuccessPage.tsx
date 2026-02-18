@@ -4,7 +4,6 @@ import { useQueryClient } from '@tanstack/react-query';
 import { QueryKeys } from 'librechat-data-provider';
 import { useLocalize } from '~/hooks';
 import { useVerifySessionQuery } from '~/hooks/Recharge/useRechargeQueries';
-import { useGetSubscriptionStatus } from '~/hooks/Subscriptions';
 
 export const PaymentSuccessPage: React.FC = () => {
   const navigate = useNavigate();
@@ -12,42 +11,29 @@ export const PaymentSuccessPage: React.FC = () => {
   const queryClient = useQueryClient();
   const localize = useLocalize();
   const sessionId = searchParams.get('session_id');
-  const paymentType = (searchParams.get('type') ?? 'topup') as 'subscription' | 'topup';
-  const isSubscription = paymentType === 'subscription';
 
-  // For topup: verify session; For subscription: skip verification (webhook handles it)
-  const { data: verifyData, isLoading: isVerifying, error: verifyError } = useVerifySessionQuery(
-    isSubscription ? null : sessionId,
-  );
-
-  // Get subscription status for both types
-  const { data: subscriptionData } = useGetSubscriptionStatus();
+  const { data, isLoading, error } = useVerifySessionQuery(sessionId);
 
   useEffect(() => {
-    if (isSubscription) {
-      // Subscription: invalidate both queries
-      queryClient.invalidateQueries({ queryKey: ['subscriptionStatus'] });
-      queryClient.invalidateQueries({ queryKey: [QueryKeys.balance] });
-    } else if (verifyData?.isPaid) {
-      // Topup: invalidate balance only
+    if (data?.isPaid) {
       queryClient.invalidateQueries({ queryKey: [QueryKeys.balance] });
     }
-  }, [isSubscription, verifyData, queryClient]);
+  }, [data, queryClient]);
 
-  // Loading state (only for topup)
-  if (!isSubscription && isVerifying) {
+  if (isLoading) {
     return (
       <div className="flex h-full items-center justify-center">
         <div className="text-center">
           <div className="mb-4 text-4xl">⏳</div>
-          <div className="text-lg text-gray-600 dark:text-gray-300">{localize('com_recharge_verifying')}</div>
+          <div className="text-lg text-gray-600 dark:text-gray-300">
+            {localize('com_recharge_verifying')}
+          </div>
         </div>
       </div>
     );
   }
 
-  // Error state (only for topup)
-  if (!isSubscription && (verifyError || !verifyData?.isPaid)) {
+  if (error || !data?.isPaid) {
     return (
       <div className="flex h-full items-center justify-center">
         <div className="text-center">
@@ -69,71 +55,31 @@ export const PaymentSuccessPage: React.FC = () => {
     );
   }
 
-  // Success state: render based on payment type
-  const renderSuccessContent = () => {
-    if (isSubscription) {
-      const tier = subscriptionData?.subscriptionTier ?? '';
-      const balance = subscriptionData?.subscriptionBalance ?? 0;
-      const formattedBalance = (balance / 1000000).toFixed(1);
-
-      return (
-        <>
-          <h1 className="text-2xl font-bold text-green-600 dark:text-green-400 sm:text-3xl">
-            {localize('com_recharge_subscription_success_title')}
-          </h1>
-          <p className="mt-4 text-lg text-gray-600 dark:text-gray-300">
-            {localize('com_recharge_subscription_success_desc')}
-          </p>
-
-          <div className="mt-6 rounded-lg bg-gray-100 p-4 dark:bg-gray-800 sm:mt-8 sm:p-6">
-            <div className="text-sm text-gray-500 dark:text-gray-400">
-              {localize('com_recharge_subscription_tier')}
-            </div>
-            <div className="mt-2 text-2xl font-bold text-gray-900 dark:text-white sm:text-3xl">
-              {tier.toUpperCase()}
-            </div>
-            <div className="mt-4 text-sm text-gray-500 dark:text-gray-400">
-              {localize('com_recharge_subscription_balance')}
-            </div>
-            <div className="mt-2 text-xl font-bold text-gray-900 dark:text-white">
-              {localize('com_recharge_credits_amount', { 0: formattedBalance })}
-            </div>
-          </div>
-        </>
-      );
-    } else {
-      const formattedCredits = (verifyData!.credits / 1000000).toFixed(1);
-      const formattedAmount = (verifyData!.amountTotal / 100).toFixed(2);
-
-      return (
-        <>
-          <h1 className="text-2xl font-bold text-green-600 dark:text-green-400 sm:text-3xl">
-            {localize('com_recharge_topup_success_title')}
-          </h1>
-          <p className="mt-4 text-lg text-gray-600 dark:text-gray-300">
-            {localize('com_recharge_topup_success_desc')}
-          </p>
-
-          <div className="mt-6 rounded-lg bg-gray-100 p-4 dark:bg-gray-800 sm:mt-8 sm:p-6">
-            <div className="text-sm text-gray-500 dark:text-gray-400">{localize('com_recharge_credits_added')}</div>
-            <div className="mt-2 text-2xl font-bold text-gray-900 dark:text-white sm:text-3xl">
-              {localize('com_recharge_credits_amount', { 0: formattedCredits })}
-            </div>
-            <div className="mt-2 text-sm text-gray-500 dark:text-gray-400">
-              {localize('com_recharge_amount_paid', { 0: formattedAmount })}
-            </div>
-          </div>
-        </>
-      );
-    }
-  };
+  const formattedCredits = (data.credits / 1000000).toFixed(1);
+  const formattedAmount = (data.amountTotal / 100).toFixed(2);
 
   return (
     <div className="flex h-full items-center justify-center">
       <div className="max-w-md px-4 text-center sm:px-6">
         <div className="mb-4 text-5xl sm:mb-6 sm:text-6xl">✅</div>
+        <h1 className="text-2xl font-bold text-green-600 dark:text-green-400 sm:text-3xl">
+          {localize('com_recharge_payment_success')}
+        </h1>
+        <p className="mt-4 text-lg text-gray-600 dark:text-gray-300">
+          {localize('com_recharge_credits_added_desc')}
+        </p>
 
-        {renderSuccessContent()}
+        <div className="mt-6 rounded-lg bg-gray-100 p-4 dark:bg-gray-800 sm:mt-8 sm:p-6">
+          <div className="text-sm text-gray-500 dark:text-gray-400">
+            {localize('com_recharge_credits_added')}
+          </div>
+          <div className="mt-2 text-2xl font-bold text-gray-900 dark:text-white sm:text-3xl">
+            {localize('com_recharge_credits_amount', { 0: formattedCredits })}
+          </div>
+          <div className="mt-2 text-sm text-gray-500 dark:text-gray-400">
+            {localize('com_recharge_amount_paid', { 0: formattedAmount })}
+          </div>
+        </div>
 
         <button
           onClick={() => navigate('/')}
@@ -143,10 +89,10 @@ export const PaymentSuccessPage: React.FC = () => {
         </button>
 
         <button
-          onClick={() => navigate('/recharge')}
+          onClick={() => navigate('/recharge/history')}
           className="mt-3 w-full rounded-lg border border-gray-300 px-6 py-3 text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-800"
         >
-          {localize('com_recharge_manage_subscription')}
+          {localize('com_recharge_view_history')}
         </button>
       </div>
     </div>
