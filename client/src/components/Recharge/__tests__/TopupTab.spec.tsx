@@ -1,13 +1,12 @@
 import React from 'react';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import TopupTab from '../TopupTab';
-import type { PricingTier } from '../types';
+import { TopupTab } from '../TopupTab';
+import type { PricingTier } from '~/types/recharge';
 
 // Mock child components
 jest.mock('../PricingCard', () => ({
-  __esModule: true,
-  default: ({ tier, isDisabled, recommended }: any) => (
+  PricingCard: ({ tier, isDisabled, recommended }: any) => (
     <div
       data-testid={`pricing-card-${tier.id}`}
       data-disabled={isDisabled}
@@ -19,9 +18,8 @@ jest.mock('../PricingCard', () => ({
 }));
 
 // Mock useLocalize hook
-jest.mock('~/hooks/useLocalize', () => ({
-  __esModule: true,
-  default: () => (key: string) => key,
+jest.mock('~/hooks', () => ({
+  useLocalize: () => (key: string) => key,
 }));
 
 const mockTiers: PricingTier[] = [

@@ -1,7 +1,7 @@
 import React from 'react';
-import useLocalize from '~/hooks/useLocalize';
-import PricingCard from './PricingCard';
-import type { PricingTier } from './types';
+import { useLocalize } from '~/hooks';
+import { PricingCard } from './PricingCard';
+import type { PricingTier } from '~/types/recharge';
 
 interface TopupTabProps {
   tiers: PricingTier[];
@@ -11,13 +11,13 @@ interface TopupTabProps {
   onSwitchToSubscription?: () => void;
 }
 
-export default function TopupTab({
+export const TopupTab: React.FC<TopupTabProps> = ({
   tiers,
   hasActiveSubscription,
   onTopup,
   isLoading,
   onSwitchToSubscription,
-}: TopupTabProps) {
+}) => {
   const localize = useLocalize();
 
   return (
@@ -62,4 +62,4 @@ export default function TopupTab({
       </div>
     </div>
   );
-}
+};
