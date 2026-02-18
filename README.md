@@ -150,6 +150,26 @@ Open source, actively developed, and built for anyone who values control over th
 
 ---
 
+## 💳 Payment System
+
+LibreChat supports **Stripe-based subscription billing** with a dual balance system:
+
+- **Monthly Subscriptions**: Recurring credits that reset each billing cycle
+- **Topup Credits**: One-time purchases for subscribers (never expire)
+- **Automatic Renewal**: Seamless monthly billing with Stripe
+- **Tier Management**: Upgrade/downgrade with automatic proration
+
+**Pricing Tiers:**
+- Explorer: $4.99/month (5M credits)
+- Artisan: $14.99/month (15M credits)
+- Elite: $34.99/month (35M credits)
+
+See [Subscription System Documentation](docs/features/subscription-system.md) for details.
+
+**Setup:** See [Stripe Setup Guide](docs/STRIPE-SETUP.md)
+
+---
+
 ## 🌐 Resources
 
 **GitHub Repo:**
