@@ -59,3 +59,19 @@ export const useVerifySessionQuery = (sessionId: string | null) => {
     enabled: !!sessionId,
   });
 };
+
+export const useCreateSubscription = () => {
+  return useMutation<CreateCheckoutSessionResponse, Error, { tierId: string }>({
+    mutationFn: async ({ tierId }) => {
+      return request.post(`${BASE_URL}/create-subscription`, { tierId });
+    },
+  });
+};
+
+export const useCreateTopup = () => {
+  return useMutation<CreateCheckoutSessionResponse, Error, { tierId: string }>({
+    mutationFn: async ({ tierId }) => {
+      return request.post(`${BASE_URL}/create-topup`, { tierId });
+    },
+  });
+};

@@ -76,3 +76,25 @@ describe('useRechargeQueries', () => {
     });
   });
 });
+
+describe('useCreateSubscription', () => {
+  it('returns a mutation hook', () => {
+    const { useCreateSubscription } = require('../useRechargeQueries');
+    const { result } = renderHook(() => useCreateSubscription(), {
+      wrapper: createWrapper(),
+    });
+    expect(typeof result.current.mutate).toBe('function');
+    expect(typeof result.current.mutateAsync).toBe('function');
+  });
+});
+
+describe('useCreateTopup', () => {
+  it('returns a mutation hook', () => {
+    const { useCreateTopup } = require('../useRechargeQueries');
+    const { result } = renderHook(() => useCreateTopup(), {
+      wrapper: createWrapper(),
+    });
+    expect(typeof result.current.mutate).toBe('function');
+    expect(typeof result.current.mutateAsync).toBe('function');
+  });
+});
