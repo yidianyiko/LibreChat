@@ -1,9 +1,10 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useToastContext } from '@librechat/client';
 import { useLocalize } from '~/hooks';
-import { PricingCard } from './PricingCard';
-import { usePricingQuery, useCreateCheckoutSession } from '~/hooks/Recharge/useRechargeQueries';
+import { SubscriptionTab } from './SubscriptionTab';
+import { TopupTab } from './TopupTab';
+import { usePricingQuery, useCreateSubscription, useCreateTopup } from '~/hooks/Recharge/useRechargeQueries';
 import { useGetSubscriptionStatus } from '~/hooks/Subscriptions';
 import type { PricingResponse } from '~/types/recharge';
 
@@ -50,6 +51,8 @@ function isRechargeDisabled(error: unknown, data: { enabled?: boolean } | undefi
 
 const isDev = import.meta.env.DEV;
 
+type TabType = 'subscription' | 'topup';
+
 export const RechargePage: React.FC = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -57,12 +60,15 @@ export const RechargePage: React.FC = () => {
   const { showToast } = useToastContext();
   const localize = useLocalize();
   const { data, isLoading, error } = usePricingQuery();
-  const createCheckoutMutation = useCreateCheckoutSession();
+  const createSubscriptionMutation = useCreateSubscription();
+  const createTopupMutation = useCreateTopup();
   const { data: subscriptionStatus } = useGetSubscriptionStatus();
+  const [activeTab, setActiveTab] = useState<TabType>('subscription');
 
   const useMockForDisplay = (!!error || !data?.enabled) && (uiPreviewParam || isDev);
+  const hasActiveSubscription = subscriptionStatus?.subscriptionStatus === 'active';
 
-  const handleSelectTier = async (tierId: string) => {
+  const handleSubscribe = async (tierId: string) => {
     if (useMockForDisplay) {
       showToast({
         message: localize('com_recharge_preview_mode'),
@@ -71,7 +77,29 @@ export const RechargePage: React.FC = () => {
       return;
     }
     try {
-      const result = await createCheckoutMutation.mutateAsync({ tierId });
+      const result = await createSubscriptionMutation.mutateAsync({ tierId });
+
+      if (result.url) {
+        window.location.href = result.url;
+      }
+    } catch (err) {
+      showToast({
+        message: err instanceof Error ? err.message : localize('com_recharge_error_payment'),
+        status: 'error',
+      });
+    }
+  };
+
+  const handleTopup = async (tierId: string) => {
+    if (useMockForDisplay) {
+      showToast({
+        message: localize('com_recharge_preview_mode'),
+        status: 'info',
+      });
+      return;
+    }
+    try {
+      const result = await createTopupMutation.mutateAsync({ tierId });
 
       if (result.url) {
         window.location.href = result.url;
@@ -137,29 +165,6 @@ export const RechargePage: React.FC = () => {
             </div>
           )}
 
-          {subscriptionStatus?.subscriptionStatus === 'active' ? (
-            <div className="mb-6 rounded-lg border border-green-500 bg-green-50 p-4 dark:border-green-600 dark:bg-green-900/20">
-              <h3 className="font-semibold text-green-800 dark:text-green-300">
-                Active Subscription: {subscriptionStatus.subscriptionTier}
-              </h3>
-              <p className="text-sm text-green-700 dark:text-green-400">
-                Subscription Balance: {subscriptionStatus.subscriptionBalance?.toLocaleString()} credits
-              </p>
-              <p className="text-sm text-green-700 dark:text-green-400">
-                Topup Balance: {subscriptionStatus.topupBalance?.toLocaleString()} credits
-              </p>
-              {subscriptionStatus.cancelAtPeriodEnd && (
-                <p className="mt-1 text-sm font-medium text-amber-700 dark:text-amber-400">
-                  Cancels at end of billing period: {subscriptionStatus.currentPeriodEnd ? new Date(subscriptionStatus.currentPeriodEnd).toLocaleDateString() : 'N/A'}
-                </p>
-              )}
-            </div>
-          ) : (
-            <div className="mb-6 rounded-lg border border-blue-400 bg-blue-50 p-4 dark:border-blue-600 dark:bg-blue-900/20">
-              <p className="text-blue-800 dark:text-blue-300">Subscribe to unlock monthly credits and topup purchases!</p>
-            </div>
-          )}
-
           <div className="mb-8 text-center sm:mb-12 md:mb-16 lg:mb-24">
             <h1
               className="mb-4 text-2xl font-black text-gray-900 dark:text-white sm:mb-6 sm:text-3xl md:text-4xl lg:text-6xl"
@@ -172,17 +177,55 @@ export const RechargePage: React.FC = () => {
             </p>
           </div>
 
-          <div className="grid grid-cols-1 items-stretch gap-6 text-left sm:gap-8 lg:grid-cols-3">
-            {displayData.tiers.map((tier) => (
-              <PricingCard
-                key={tier.id}
-                tier={tier}
-                onSelect={handleSelectTier}
-                isLoading={useMockForDisplay ? false : createCheckoutMutation.isLoading}
-                recommended={tier.id === 'artisan'}
-              />
-            ))}
+          {/* Tab Switcher */}
+          <div className="mb-8 flex justify-center">
+            <div className="inline-flex rounded-xl border border-gray-300 bg-white p-1 dark:border-gray-600 dark:bg-gray-800">
+              <button
+                type="button"
+                onClick={() => setActiveTab('subscription')}
+                className={`rounded-xl px-6 py-2 text-sm font-semibold transition-all ${
+                  activeTab === 'subscription'
+                    ? 'bg-gray-900 text-white dark:bg-white dark:text-gray-900'
+                    : 'text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-200'
+                }`}
+              >
+                {localize('com_recharge_subscription')}
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveTab('topup')}
+                className={`rounded-xl px-6 py-2 text-sm font-semibold transition-all ${
+                  activeTab === 'topup'
+                    ? 'bg-gray-900 text-white dark:bg-white dark:text-gray-900'
+                    : 'text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-200'
+                }`}
+              >
+                {localize('com_recharge_topup')}
+              </button>
+            </div>
           </div>
+
+          {/* Tab Content */}
+          {activeTab === 'subscription' ? (
+            <div data-testid="subscription-tab-panel">
+              <SubscriptionTab
+                tiers={displayData.tiers}
+                subscriptionStatus={subscriptionStatus}
+                onSubscribe={handleSubscribe}
+                isLoading={useMockForDisplay ? false : createSubscriptionMutation.isPending}
+              />
+            </div>
+          ) : (
+            <div data-testid="topup-tab-panel">
+              <TopupTab
+                tiers={displayData.tiers}
+                hasActiveSubscription={hasActiveSubscription}
+                onTopup={handleTopup}
+                isLoading={useMockForDisplay ? false : createTopupMutation.isPending}
+                onSwitchToSubscription={() => setActiveTab('subscription')}
+              />
+            </div>
+          )}
 
           <div className="mt-12 text-center text-sm text-gray-500 dark:text-gray-400">
             <p>{localize('com_recharge_secured_by_stripe')}</p>
