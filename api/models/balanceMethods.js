@@ -151,6 +151,210 @@ const checkBalance = async ({ req, res, txData }) => {
   throw new Error(JSON.stringify(errorMessage));
 };
 
+/**
+ * Updates user balance with dual balance pool support
+ * @param {Object} params
+ * @param {string} params.user - User ID
+ * @param {number} params.incrementValue - Value to add (positive) or subtract (negative)
+ * @param {string} params.balanceType - 'subscription' or 'topup'
+ * @param {Object} [params.setValues] - Additional fields to set
+ * @returns {Promise<Object>} Updated balance document
+ */
+async function updateDualBalance({ user, incrementValue, balanceType, setValues }) {
+  let maxRetries = 10;
+  let delay = 50;
+  let lastError = null;
+
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      const currentBalanceDoc = await Balance.findOne({ user }).lean();
+      const currentSubBalance = currentBalanceDoc?.subscriptionBalance || 0;
+      const currentTopupBalance = currentBalanceDoc?.topupBalance || 0;
+
+      // Calculate new balances
+      let newSubBalance = currentSubBalance;
+      let newTopupBalance = currentTopupBalance;
+
+      if (balanceType === 'subscription') {
+        newSubBalance = Math.max(0, currentSubBalance + incrementValue);
+      } else if (balanceType === 'topup') {
+        newTopupBalance = Math.max(0, currentTopupBalance + incrementValue);
+      } else {
+        throw new Error(`Invalid balanceType: ${balanceType}`);
+      }
+
+      const updatePayload = {
+        $set: {
+          subscriptionBalance: newSubBalance,
+          topupBalance: newTopupBalance,
+          // Also update legacy tokenCredits for backward compatibility
+          tokenCredits: newSubBalance + newTopupBalance,
+          ...(setValues || {}),
+        },
+      };
+
+      let updatedBalance = null;
+      if (currentBalanceDoc) {
+        // Conditional update with optimistic locking
+        updatedBalance = await Balance.findOneAndUpdate(
+          {
+            user: user,
+            subscriptionBalance: currentSubBalance,
+            topupBalance: currentTopupBalance,
+          },
+          updatePayload,
+          { new: true }
+        ).lean();
+
+        if (updatedBalance) {
+          return updatedBalance;
+        }
+        lastError = new Error(`Concurrency conflict for user ${user} on attempt ${attempt}`);
+      } else {
+        // Upsert for new user
+        updatedBalance = await Balance.findOneAndUpdate(
+          { user: user },
+          updatePayload,
+          { upsert: true, new: true }
+        ).lean();
+
+        if (updatedBalance) {
+          return updatedBalance;
+        }
+        lastError = new Error(`Upsert race condition for user ${user} on attempt ${attempt}`);
+      }
+    } catch (error) {
+      logger.error(`[updateDualBalance] Error during attempt ${attempt} for user ${user}:`, error);
+      lastError = error;
+    }
+
+    if (attempt < maxRetries) {
+      const jitter = Math.random() * delay * 0.5;
+      await new Promise((resolve) => setTimeout(resolve, delay + jitter));
+      delay = Math.min(delay * 2, 2000);
+    }
+  }
+
+  logger.error(`[updateDualBalance] Failed after ${maxRetries} attempts for user ${user}`);
+  throw lastError || new Error(`Failed to update balance for user ${user}`);
+}
+
+/**
+ * Deducts from user balance with priority: subscription first, then topup
+ * @param {Object} params
+ * @param {string} params.user - User ID
+ * @param {number} params.amount - Amount to deduct (positive number)
+ * @returns {Promise<Object>} Updated balance and deduction details
+ */
+async function deductBalance({ user, amount }) {
+  if (amount <= 0) {
+    throw new Error('Deduction amount must be positive');
+  }
+
+  let maxRetries = 10;
+  let delay = 50;
+  let lastError = null;
+
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      const currentBalanceDoc = await Balance.findOne({ user }).lean();
+      const currentSubBalance = currentBalanceDoc?.subscriptionBalance || 0;
+      const currentTopupBalance = currentBalanceDoc?.topupBalance || 0;
+
+      let remainingToDeduct = amount;
+      let newSubBalance = currentSubBalance;
+      let newTopupBalance = currentTopupBalance;
+      let deductedFromSub = 0;
+      let deductedFromTopup = 0;
+
+      // Priority 1: Deduct from subscription balance
+      if (remainingToDeduct > 0 && currentSubBalance > 0) {
+        deductedFromSub = Math.min(currentSubBalance, remainingToDeduct);
+        newSubBalance = currentSubBalance - deductedFromSub;
+        remainingToDeduct -= deductedFromSub;
+      }
+
+      // Priority 2: Deduct from topup balance
+      if (remainingToDeduct > 0 && currentTopupBalance > 0) {
+        deductedFromTopup = Math.min(currentTopupBalance, remainingToDeduct);
+        newTopupBalance = currentTopupBalance - deductedFromTopup;
+        remainingToDeduct -= deductedFromTopup;
+      }
+
+      // Check if user has sufficient balance
+      if (remainingToDeduct > 0) {
+        throw new Error(`Insufficient balance: requested ${amount}, available ${currentSubBalance + currentTopupBalance}`);
+      }
+
+      const updatePayload = {
+        $set: {
+          subscriptionBalance: newSubBalance,
+          topupBalance: newTopupBalance,
+          tokenCredits: newSubBalance + newTopupBalance,
+        },
+      };
+
+      const updatedBalance = await Balance.findOneAndUpdate(
+        {
+          user: user,
+          subscriptionBalance: currentSubBalance,
+          topupBalance: currentTopupBalance,
+        },
+        updatePayload,
+        { new: true }
+      ).lean();
+
+      if (updatedBalance) {
+        return {
+          balance: updatedBalance,
+          deductedFromSub,
+          deductedFromTopup,
+          totalDeducted: deductedFromSub + deductedFromTopup,
+        };
+      }
+
+      lastError = new Error(`Concurrency conflict for user ${user} on attempt ${attempt}`);
+    } catch (error) {
+      logger.error(`[deductBalance] Error during attempt ${attempt} for user ${user}:`, error);
+      lastError = error;
+    }
+
+    if (attempt < maxRetries) {
+      const jitter = Math.random() * delay * 0.5;
+      await new Promise((resolve) => setTimeout(resolve, delay + jitter));
+      delay = Math.min(delay * 2, 2000);
+    }
+  }
+
+  logger.error(`[deductBalance] Failed after ${maxRetries} attempts for user ${user}`);
+  throw lastError || new Error(`Failed to deduct balance for user ${user}`);
+}
+
+/**
+ * Resets subscription balance to a specific value (for monthly reset)
+ * @param {Object} params
+ * @param {string} params.user - User ID
+ * @param {number} params.newSubscriptionBalance - New subscription balance value
+ * @returns {Promise<Object>} Updated balance document
+ */
+async function resetSubscriptionBalance({ user, newSubscriptionBalance }) {
+  const currentBalance = await Balance.findOne({ user }).lean();
+  const currentSubBalance = currentBalance?.subscriptionBalance || 0;
+
+  const result = await updateDualBalance({
+    user,
+    incrementValue: newSubscriptionBalance - currentSubBalance,
+    balanceType: 'subscription',
+    setValues: { lastSubscriptionReset: new Date() },
+  });
+
+  logger.info(`[resetSubscriptionBalance] Reset subscription balance for user ${user} to ${newSubscriptionBalance}`);
+  return result;
+}
+
 module.exports = {
   checkBalance,
+  updateDualBalance,
+  deductBalance,
+  resetSubscriptionBalance,
 };
