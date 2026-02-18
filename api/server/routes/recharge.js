@@ -1,6 +1,7 @@
 const express = require('express');
 const { requireJwtAuth, checkBan, webhookLimiter } = require('~/server/middleware');
 const { getStripeService } = require('~/server/services/StripeService');
+const { SubscriptionWebhookHandler } = require('~/server/services/SubscriptionWebhookHandler');
 const { logger } = require('~/config');
 const { createTransaction } = require('~/models/Transaction');
 const { Transaction } = require('~/db/models');
@@ -126,85 +127,34 @@ router.post('/create-checkout-session', requireJwtAuth, checkBan, async (req, re
 router.post(
   '/webhook',
   webhookLimiter,
-	  express.raw({ type: 'application/json' }),
-	  async (req, res) => {
-	    const signature = req.headers['stripe-signature'];
+  express.raw({ type: 'application/json' }),
+  async (req, res) => {
+    const signature = req.headers['stripe-signature'];
 
-	    try {
-	      const stripeService = getStripeService();
+    try {
+      const stripeService = getStripeService();
 
-	      if (!stripeService.isEnabled()) {
-	        logger.error('[Recharge Webhook] Stripe service is not enabled');
-	        return res.status(503).send('Stripe service not configured');
-	      }
+      if (!stripeService.isEnabled()) {
+        logger.error('[Recharge Webhook] Stripe service is not enabled');
+        return res.status(503).send('Stripe service not configured');
+      }
 
-	      // Ensure DB-level idempotency under concurrency (multi-instance safe).
-	      await ensureStripeRechargeIndex();
+      // Verify webhook signature
+      const event = stripeService.verifyWebhookSignature(req.body, signature);
 
-	      // 验证 webhook 签名
-	      const event = stripeService.verifyWebhookSignature(req.body, signature);
+      logger.info(`[Recharge Webhook] Received event: ${event.type}`);
 
-	      logger.info(`[Recharge Webhook] Received event: ${event.type}`);
+      // Use webhook handler to process event
+      const webhookHandler = new SubscriptionWebhookHandler();
+      const result = await webhookHandler.handleEvent(event);
 
-	      // 处理 checkout.session.completed 事件
-	      if (event.type === 'checkout.session.completed') {
-	        const session = event.data.object;
-
-	        // 提取并验证支付信息（服务端计算 credits）
-	        const paymentInfo = await stripeService.handlePaymentSuccess(session);
-	        const { userId, credits, sessionId, amountTotal, tierId } = paymentInfo;
-
-	        if (!credits || credits <= 0) {
-	          logger.error(`[Recharge Webhook] Invalid credits value: ${credits}`);
-	          return res.status(400).json({ received: false, error: 'Invalid credits value' });
-	        }
-
-	        logger.info(
-	          `[Recharge Webhook] Processing payment for user ${userId}: ${credits} credits (tier: ${tierId})`,
-	        );
-
-	        try {
-	          // 使用 createTransaction 添加额度并记录交易（会自动更新余额）
-	          const result = await createTransaction({
-	            user: userId,
-	            tokenType: 'credits',
-	            context: 'stripe_recharge',
-	            rawAmount: credits,
-	            balance: { enabled: true },
-	            metadata: {
-	              sessionId,
-	              stripeEventId: event.id,
-	              amountPaid: amountTotal,
-	              currency: 'usd',
-	              tierId: tierId,
-	            },
-	          });
-
-	          if (!result?.balance) {
-	            logger.error(`[Recharge Webhook] Failed to update balance for user ${userId}`);
-	            return res.status(500).json({ received: false, error: 'Failed to update balance' });
-	          }
-
-	          logger.info(
-	            `[Recharge Webhook] Successfully added ${credits} credits to user ${userId}, new balance: ${result.balance}`,
-	          );
-	        } catch (error) {
-	          // DB-level idempotency: treat duplicates as "already processed"
-	          if (error && error.code === 11000) {
-	            logger.warn(`[Recharge Webhook] Session ${session.id} already processed, skipping`);
-	            return res.json({ received: true, message: 'Already processed' });
-	          }
-	          throw error;
-	        }
-	      }
-
-	      res.json({ received: true });
-	    } catch (error) {
-	      logger.error('[Recharge Webhook] Error processing webhook:', error);
-	      res.status(400).send(`Webhook Error: ${error.message}`);
-	    }
-	  },
-	);
+      res.json(result);
+    } catch (error) {
+      logger.error('[Recharge Webhook] Error processing webhook:', error);
+      res.status(400).send(`Webhook Error: ${error.message}`);
+    }
+  }
+);
 
 /**
  * GET /api/recharge/history
