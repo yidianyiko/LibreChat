@@ -35,3 +35,14 @@ export interface VerifySessionResponse {
   tierId: string;
   amountTotal: number;
 }
+
+export interface SubscriptionStatus {
+  subscriptionStatus: string | null;
+  subscriptionTier: string | null;
+  subscriptionId?: string | null;
+  currentPeriodEnd: string | null;
+  cancelAtPeriodEnd: boolean;
+  subscriptionBalance: number;
+  topupBalance: number;
+  totalBalance?: number;
+}
