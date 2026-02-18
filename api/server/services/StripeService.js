@@ -12,7 +12,6 @@ const PRICING_TIERS = [
     price: 499, // $4.99 (cents)
     credits: 5000000, // 500万积分 = $5
     subscriptionPriceId: process.env.STRIPE_PRICE_EXPLORER_MONTHLY,
-    topupPriceId: process.env.STRIPE_PRICE_EXPLORER_TOPUP,
   },
   {
     id: 'artisan',
@@ -21,7 +20,6 @@ const PRICING_TIERS = [
     price: 1499, // $14.99
     credits: 15000000, // 1500万积分 = $15
     subscriptionPriceId: process.env.STRIPE_PRICE_ARTISAN_MONTHLY,
-    topupPriceId: process.env.STRIPE_PRICE_ARTISAN_TOPUP,
   },
   {
     id: 'elite',
@@ -30,7 +28,6 @@ const PRICING_TIERS = [
     price: 3499, // $34.99
     credits: 35000000, // 3500万积分 = $35
     subscriptionPriceId: process.env.STRIPE_PRICE_ELITE_MONTHLY,
-    topupPriceId: process.env.STRIPE_PRICE_ELITE_TOPUP,
   },
 ];
 
@@ -226,16 +223,19 @@ class StripeService {
       throw new Error(`Invalid pricing tier: ${tierId}`);
     }
 
-    if (!pricingTier.topupPriceId) {
-      throw new Error(`Topup price ID not configured for tier: ${tierId}`);
-    }
-
     try {
       const session = await this.stripe.checkout.sessions.create({
         payment_method_types: ['card'],
         line_items: [
           {
-            price: pricingTier.topupPriceId,
+            price_data: {
+              currency: 'usd',
+              product_data: {
+                name: `${pricingTier.name} Topup`,
+                description: pricingTier.description,
+              },
+              unit_amount: pricingTier.price,
+            },
             quantity: 1,
           },
         ],

@@ -53,22 +53,19 @@ Add to `.env`:
 STRIPE_SECRET_KEY=sk_test_...
 STRIPE_WEBHOOK_SECRET=whsec_...
 
-# Subscription price IDs (create in Stripe Dashboard)
+# Subscription price IDs (create in Stripe Dashboard - recurring monthly)
 STRIPE_PRICE_EXPLORER_MONTHLY=price_...
 STRIPE_PRICE_ARTISAN_MONTHLY=price_...
 STRIPE_PRICE_ELITE_MONTHLY=price_...
-
-# Topup price IDs (one-time payment prices)
-STRIPE_PRICE_EXPLORER_TOPUP=price_...
-STRIPE_PRICE_ARTISAN_TOPUP=price_...
-STRIPE_PRICE_ELITE_TOPUP=price_...
 ```
+
+**Note:** Topup purchases use dynamic pricing and do not require pre-created Price IDs.
 
 ## Stripe Product Setup
 
-Create 6 products in the Stripe Dashboard:
+Create 3 subscription products in the Stripe Dashboard:
 
-### Subscription Products (recurring)
+### Subscription Products (recurring monthly)
 
 1. **Explorer Monthly** — $4.99/month
    - Mode: `subscription`
@@ -82,19 +79,7 @@ Create 6 products in the Stripe Dashboard:
    - Mode: `subscription`
    - Price ID → `STRIPE_PRICE_ELITE_MONTHLY`
 
-### Topup Products (one-time)
-
-4. **Explorer Topup** — $4.99 one-time
-   - Mode: `payment`
-   - Price ID → `STRIPE_PRICE_EXPLORER_TOPUP`
-
-5. **Artisan Topup** — $14.99 one-time
-   - Mode: `payment`
-   - Price ID → `STRIPE_PRICE_ARTISAN_TOPUP`
-
-6. **Elite Topup** — $34.99 one-time
-   - Mode: `payment`
-   - Price ID → `STRIPE_PRICE_ELITE_TOPUP`
+**Note:** Topup purchases use `price_data` (dynamic pricing) — no pre-created Price objects needed.
 
 ## Webhook Configuration
 

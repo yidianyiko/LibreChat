@@ -11,15 +11,10 @@ STRIPE_SECRET_KEY=sk_test_...
 # Webhook Secret (get from https://dashboard.stripe.com/test/webhooks)
 STRIPE_WEBHOOK_SECRET=whsec_...
 
-# Subscription Price IDs (recurring monthly)
+# Subscription Price IDs (recurring monthly - must be pre-created in Stripe Dashboard)
 STRIPE_PRICE_EXPLORER_MONTHLY=price_...
 STRIPE_PRICE_ARTISAN_MONTHLY=price_...
 STRIPE_PRICE_ELITE_MONTHLY=price_...
-
-# Topup Price IDs (one-time payment)
-STRIPE_PRICE_EXPLORER_TOPUP=price_...
-STRIPE_PRICE_ARTISAN_TOPUP=price_...
-STRIPE_PRICE_ELITE_TOPUP=price_...
 ```
 
 ## Setup Steps
@@ -32,11 +27,11 @@ STRIPE_PRICE_ELITE_TOPUP=price_...
 - Go to: https://dashboard.stripe.com/test/apikeys
 - Copy "Secret key" → `STRIPE_SECRET_KEY`
 
-### 3. Create Products and Prices
+### 3. Create Subscription Products and Prices
 
-Create 6 products in the Stripe Dashboard (Products → Add product):
+Create 3 subscription products in the Stripe Dashboard (Products → Add product):
 
-**Subscription products (recurring):**
+**Subscription products (recurring monthly):**
 
 | Product | Price | Billing | Env var |
 |---------|-------|---------|---------|
@@ -44,15 +39,9 @@ Create 6 products in the Stripe Dashboard (Products → Add product):
 | Artisan Monthly | $14.99 | Monthly | `STRIPE_PRICE_ARTISAN_MONTHLY` |
 | Elite Monthly | $34.99 | Monthly | `STRIPE_PRICE_ELITE_MONTHLY` |
 
-**Topup products (one-time):**
-
-| Product | Price | Billing | Env var |
-|---------|-------|---------|---------|
-| Explorer Topup | $4.99 | One-time | `STRIPE_PRICE_EXPLORER_TOPUP` |
-| Artisan Topup | $14.99 | One-time | `STRIPE_PRICE_ARTISAN_TOPUP` |
-| Elite Topup | $34.99 | One-time | `STRIPE_PRICE_ELITE_TOPUP` |
-
 Copy each Price ID (starts with `price_`) to the corresponding env var.
+
+**Note:** Topup purchases use dynamic pricing (`price_data`) and do not require pre-created Price objects.
 
 ### 4. Configure Webhook
 

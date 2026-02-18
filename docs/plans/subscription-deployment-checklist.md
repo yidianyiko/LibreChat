@@ -10,9 +10,8 @@
 
 ### Stripe Configuration
 - [ ] Live Stripe account created
-- [ ] Products created in live mode (Explorer, Artisan, Elite)
-- [ ] Prices created (6 total: 3 monthly + 3 topup)
-- [ ] Price IDs documented and added to .env
+- [ ] 3 subscription products created in live mode (Explorer, Artisan, Elite monthly)
+- [ ] 3 monthly Price IDs documented and added to .env
 - [ ] Webhook endpoint added in live mode
 - [ ] Webhook signing secret added to .env
 - [ ] Test mode thoroughly tested with all flows
@@ -26,7 +25,7 @@
 ### Environment Variables
 - [ ] `STRIPE_SECRET_KEY` set to live key (`sk_live_xxx`)
 - [ ] `STRIPE_WEBHOOK_SECRET` set to live webhook secret
-- [ ] All 6 `STRIPE_PRICE_*` variables set to live Price IDs
+- [ ] `STRIPE_PRICE_EXPLORER_MONTHLY`, `STRIPE_PRICE_ARTISAN_MONTHLY`, `STRIPE_PRICE_ELITE_MONTHLY` set to live Price IDs
 - [ ] `DOMAIN_CLIENT` and `DOMAIN_SERVER` set correctly
 - [ ] All variables documented in .env.example
 
