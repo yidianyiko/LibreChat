@@ -1,7 +1,12 @@
 import React from 'react';
 import { renderHook, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { usePricingQuery, useCreateCheckoutSession } from '../useRechargeQueries';
+import {
+  usePricingQuery,
+  useCreateCheckoutSession,
+  useCreateSubscription,
+  useCreateTopup,
+} from '../useRechargeQueries';
 
 const createWrapper = () => {
   const queryClient = new QueryClient({
@@ -79,7 +84,6 @@ describe('useRechargeQueries', () => {
 
 describe('useCreateSubscription', () => {
   it('returns a mutation hook', () => {
-    const { useCreateSubscription } = require('../useRechargeQueries');
     const { result } = renderHook(() => useCreateSubscription(), {
       wrapper: createWrapper(),
     });
@@ -90,7 +94,6 @@ describe('useCreateSubscription', () => {
 
 describe('useCreateTopup', () => {
   it('returns a mutation hook', () => {
-    const { useCreateTopup } = require('../useRechargeQueries');
     const { result } = renderHook(() => useCreateTopup(), {
       wrapper: createWrapper(),
     });

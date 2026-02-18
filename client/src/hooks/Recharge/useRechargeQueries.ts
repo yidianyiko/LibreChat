@@ -60,18 +60,16 @@ export const useVerifySessionQuery = (sessionId: string | null) => {
   });
 };
 
-export const useCreateSubscription = () => {
+const createMutationHook = (endpoint: string) => () => {
   return useMutation<CreateCheckoutSessionResponse, Error, { tierId: string }>({
     mutationFn: async ({ tierId }) => {
-      return request.post(`${BASE_URL}/create-subscription`, { tierId });
+      return request.post(`${BASE_URL}/${endpoint}`, { tierId });
     },
   });
 };
 
-export const useCreateTopup = () => {
-  return useMutation<CreateCheckoutSessionResponse, Error, { tierId: string }>({
-    mutationFn: async ({ tierId }) => {
-      return request.post(`${BASE_URL}/create-topup`, { tierId });
-    },
-  });
-};
+/** Creates a Stripe checkout session for monthly subscription */
+export const useCreateSubscription = createMutationHook('create-subscription');
+
+/** Creates a Stripe checkout session for one-time topup purchase (subscribers only) */
+export const useCreateTopup = createMutationHook('create-topup');
