@@ -4,6 +4,7 @@ import { useToastContext } from '@librechat/client';
 import { useLocalize } from '~/hooks';
 import { PricingCard } from './PricingCard';
 import { usePricingQuery, useCreateCheckoutSession } from '~/hooks/Recharge/useRechargeQueries';
+import { useGetSubscriptionStatus } from '~/hooks/Subscriptions';
 import type { PricingResponse } from '~/types/recharge';
 
 /** Mock data for UI preview when Stripe is not configured. Matches backend PRICING_TIERS. */
@@ -57,6 +58,7 @@ export const RechargePage: React.FC = () => {
   const localize = useLocalize();
   const { data, isLoading, error } = usePricingQuery();
   const createCheckoutMutation = useCreateCheckoutSession();
+  const { data: subscriptionStatus } = useGetSubscriptionStatus();
 
   const useMockForDisplay = (!!error || !data?.enabled) && (uiPreviewParam || isDev);
 
@@ -134,6 +136,30 @@ export const RechargePage: React.FC = () => {
               {localize('com_recharge_preview_disabled')}
             </div>
           )}
+
+          {subscriptionStatus?.subscriptionStatus === 'active' ? (
+            <div className="mb-6 rounded-lg border border-green-500 bg-green-50 p-4 dark:border-green-600 dark:bg-green-900/20">
+              <h3 className="font-semibold text-green-800 dark:text-green-300">
+                Active Subscription: {subscriptionStatus.subscriptionTier}
+              </h3>
+              <p className="text-sm text-green-700 dark:text-green-400">
+                Subscription Balance: {subscriptionStatus.subscriptionBalance?.toLocaleString()} credits
+              </p>
+              <p className="text-sm text-green-700 dark:text-green-400">
+                Topup Balance: {subscriptionStatus.topupBalance?.toLocaleString()} credits
+              </p>
+              {subscriptionStatus.cancelAtPeriodEnd && (
+                <p className="mt-1 text-sm font-medium text-amber-700 dark:text-amber-400">
+                  Cancels at end of billing period: {subscriptionStatus.currentPeriodEnd ? new Date(subscriptionStatus.currentPeriodEnd).toLocaleDateString() : 'N/A'}
+                </p>
+              )}
+            </div>
+          ) : (
+            <div className="mb-6 rounded-lg border border-blue-400 bg-blue-50 p-4 dark:border-blue-600 dark:bg-blue-900/20">
+              <p className="text-blue-800 dark:text-blue-300">Subscribe to unlock monthly credits and topup purchases!</p>
+            </div>
+          )}
+
           <div className="mb-8 text-center sm:mb-12 md:mb-16 lg:mb-24">
             <h1
               className="mb-4 text-2xl font-black text-gray-900 dark:text-white sm:mb-6 sm:text-3xl md:text-4xl lg:text-6xl"

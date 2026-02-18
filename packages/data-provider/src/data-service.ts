@@ -1120,3 +1120,41 @@ export interface TAdminStatsResponse {
 export const getAdminStats = (days?: number): Promise<TAdminStatsResponse> => {
   return request.get(endpoints.adminStats(days));
 };
+
+// Subscription service methods
+export const getRechargePricing = (): Promise<unknown> => {
+  return request.get(endpoints.rechargePricing());
+};
+
+export const createSubscription = (tierId: string): Promise<{ sessionId: string; url: string }> => {
+  return request.post(endpoints.rechargeCreateSubscription(), { tierId });
+};
+
+export const createTopup = (tierId: string): Promise<{ sessionId: string; url: string }> => {
+  return request.post(endpoints.rechargeCreateTopup(), { tierId });
+};
+
+export const getSubscriptionStatus = (): Promise<{
+  subscriptionStatus: string | null;
+  subscriptionTier: string | null;
+  subscriptionId: string | null;
+  currentPeriodEnd: string | null;
+  cancelAtPeriodEnd: boolean;
+  subscriptionBalance: number;
+  topupBalance: number;
+  totalBalance: number;
+}> => {
+  return request.get(endpoints.rechargeSubscriptionStatus());
+};
+
+export const cancelSubscription = (): Promise<{ message: string; currentPeriodEnd: string }> => {
+  return request.post(endpoints.rechargeCancelSubscription(), {});
+};
+
+export const resumeSubscription = (): Promise<{ message: string }> => {
+  return request.post(endpoints.rechargeResumeSubscription(), {});
+};
+
+export const changeSubscriptionTier = (newTierId: string): Promise<{ message: string; newTier: string; currentPeriodEnd: string }> => {
+  return request.post(endpoints.rechargeChangeSubscriptionTier(), { newTierId });
+};

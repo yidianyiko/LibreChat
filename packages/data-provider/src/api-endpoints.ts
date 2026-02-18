@@ -44,6 +44,15 @@ export const user = () => `${BASE_URL}/api/user`;
 
 export const balance = () => `${BASE_URL}/api/balance`;
 
+// Recharge / Subscription endpoints
+export const rechargePricing = () => `${BASE_URL}/api/recharge/pricing`;
+export const rechargeCreateSubscription = () => `${BASE_URL}/api/recharge/create-subscription`;
+export const rechargeCreateTopup = () => `${BASE_URL}/api/recharge/create-topup`;
+export const rechargeSubscriptionStatus = () => `${BASE_URL}/api/recharge/subscription-status`;
+export const rechargeCancelSubscription = () => `${BASE_URL}/api/recharge/cancel-subscription`;
+export const rechargeResumeSubscription = () => `${BASE_URL}/api/recharge/resume-subscription`;
+export const rechargeChangeSubscriptionTier = () => `${BASE_URL}/api/recharge/change-subscription-tier`;
+
 export const userPlugins = () => `${BASE_URL}/api/user/plugins`;
 
 export const deleteUser = () => `${BASE_URL}/api/user/delete`;

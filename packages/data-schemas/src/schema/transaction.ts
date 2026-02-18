@@ -7,6 +7,7 @@ export interface ITransaction extends Document {
   tokenType: 'prompt' | 'completion' | 'credits';
   model?: string;
   context?: string;
+  balanceType?: 'subscription' | 'topup' | 'legacy' | null;
   valueKey?: string;
   metadata?: Record<string, unknown>;
   rate?: number;
@@ -43,6 +44,12 @@ const transactionSchema: Schema<ITransaction> = new Schema(
     },
     context: {
       type: String,
+      // Add new contexts: subscription_charge, subscription_topup, subscription_reset
+    },
+    balanceType: {
+      type: String,
+      enum: ['subscription', 'topup', 'legacy', null],
+      default: null,
     },
     valueKey: {
       type: String,
