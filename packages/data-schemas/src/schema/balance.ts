@@ -9,9 +9,24 @@ const balanceSchema = new Schema<t.IBalance>({
     required: true,
   },
   // 1000 tokenCredits = 1 mill ($0.001 USD)
+  // Deprecated: old unified balance (keep for migration)
   tokenCredits: {
     type: Number,
     default: 0,
+  },
+  // New: Subscription balance (resets monthly)
+  subscriptionBalance: {
+    type: Number,
+    default: 0,
+  },
+  // New: Topup balance (permanent, purchased separately)
+  topupBalance: {
+    type: Number,
+    default: 0,
+  },
+  // Last time subscription balance was reset
+  lastSubscriptionReset: {
+    type: Date,
   },
   // Automatic refill settings
   autoRefillEnabled: {

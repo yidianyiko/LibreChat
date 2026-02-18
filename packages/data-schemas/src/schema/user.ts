@@ -157,6 +157,41 @@ const userSchema = new Schema<IUser>(
       type: String,
       sparse: true,
     },
+    // Stripe subscription fields
+    stripeCustomerId: {
+      type: String,
+      unique: true,
+      sparse: true,
+      index: true,
+    },
+    subscriptionStatus: {
+      type: String,
+      enum: ['active', 'canceled', 'past_due', 'incomplete', 'trialing', 'paused', null],
+      default: null,
+    },
+    subscriptionId: {
+      type: String,
+      unique: true,
+      sparse: true,
+    },
+    subscriptionTier: {
+      type: String,
+      enum: ['explorer', 'artisan', 'elite', null],
+      default: null,
+    },
+    subscriptionStartDate: {
+      type: Date,
+    },
+    currentPeriodStart: {
+      type: Date,
+    },
+    currentPeriodEnd: {
+      type: Date,
+    },
+    cancelAtPeriodEnd: {
+      type: Boolean,
+      default: false,
+    },
   },
   { timestamps: true },
 );
