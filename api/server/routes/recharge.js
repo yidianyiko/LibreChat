@@ -108,7 +108,7 @@ router.post('/create-checkout-session', requireJwtAuth, checkBan, async (req, re
 
     // 构建成功和取消的跳转地址
     const baseUrl = process.env.DOMAIN_CLIENT || 'http://localhost:3080';
-    const successUrl = `${baseUrl}/recharge/success?session_id={CHECKOUT_SESSION_ID}`;
+    const successUrl = `${baseUrl}/recharge/success?session_id={CHECKOUT_SESSION_ID}&type=topup`;
     const cancelUrl = `${baseUrl}/recharge/cancel`;
 
     // 创建 Checkout Session
@@ -178,7 +178,7 @@ router.post('/create-subscription', requireJwtAuth, checkBan, async (req, res) =
 
     // Build redirect URLs
     const baseUrl = process.env.DOMAIN_CLIENT || 'http://localhost:3080';
-    const successUrl = `${baseUrl}/recharge/subscription-success?session_id={CHECKOUT_SESSION_ID}`;
+    const successUrl = `${baseUrl}/recharge/success?session_id={CHECKOUT_SESSION_ID}&type=subscription`;
     const cancelUrl = `${baseUrl}/recharge/cancel`;
 
     // Create subscription checkout session
@@ -254,7 +254,7 @@ router.post('/create-topup', requireJwtAuth, checkBan, async (req, res) => {
 
     // Build redirect URLs
     const baseUrl = process.env.DOMAIN_CLIENT || 'http://localhost:3080';
-    const successUrl = `${baseUrl}/recharge/topup-success?session_id={CHECKOUT_SESSION_ID}`;
+    const successUrl = `${baseUrl}/recharge/success?session_id={CHECKOUT_SESSION_ID}&type=topup`;
     const cancelUrl = `${baseUrl}/recharge/cancel`;
 
     // Create topup checkout session
