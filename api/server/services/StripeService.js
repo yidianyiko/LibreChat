@@ -9,22 +9,28 @@ const PRICING_TIERS = [
     id: 'explorer',
     name: 'Explorer',
     description: 'The Minimalist Alternative - 150 Premium GPT-4o msgs, 2,000 Base 4o-mini msgs',
-    price: 499, // $4.99 (单位：美分)
-    credits: 5000000, // 500万积分
+    price: 499, // $4.99 (cents)
+    credits: 5000000, // 500万积分 = $5
+    subscriptionPriceId: process.env.STRIPE_PRICE_EXPLORER_MONTHLY,
+    topupPriceId: process.env.STRIPE_PRICE_EXPLORER_TOPUP,
   },
   {
     id: 'artisan',
     name: 'Artisan',
     description: 'The Creator\'s Safe Haven - 700 Premium GPT-4o msgs, 15,000 Base 4o-mini msgs',
     price: 1499, // $14.99
-    credits: 15000000, // 1500万积分
+    credits: 15000000, // 1500万积分 = $15
+    subscriptionPriceId: process.env.STRIPE_PRICE_ARTISAN_MONTHLY,
+    topupPriceId: process.env.STRIPE_PRICE_ARTISAN_TOPUP,
   },
   {
     id: 'elite',
     name: 'Elite',
     description: 'The Power Productivity Hub - 2,000 Premium GPT-4o msgs, Unlimited Base 4o-mini msgs',
     price: 3499, // $34.99
-    credits: 35000000, // 3500万积分
+    credits: 35000000, // 3500万积分 = $35
+    subscriptionPriceId: process.env.STRIPE_PRICE_ELITE_MONTHLY,
+    topupPriceId: process.env.STRIPE_PRICE_ELITE_TOPUP,
   },
 ];
 
@@ -127,6 +133,128 @@ class StripeService {
       return session;
     } catch (error) {
       logger.error('[StripeService] Failed to create checkout session:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Create Stripe Checkout Session for subscription
+   * @param {string} userId - User ID
+   * @param {string} userEmail - User email
+   * @param {string} tierId - Tier ID (explorer/artisan/elite)
+   * @param {string} successUrl - Success redirect URL
+   * @param {string} cancelUrl - Cancel redirect URL
+   * @param {string} [stripeCustomerId] - Existing Stripe Customer ID (optional)
+   * @returns {Promise<Object>} Stripe Checkout Session
+   */
+  async createSubscriptionCheckoutSession({ userId, userEmail, tierId, successUrl, cancelUrl, stripeCustomerId }) {
+    if (!this.enabled) {
+      throw new Error('Stripe service is not enabled');
+    }
+
+    const pricingTier = this.getPricingTierById(tierId);
+    if (!pricingTier) {
+      throw new Error(`Invalid pricing tier: ${tierId}`);
+    }
+
+    if (!pricingTier.subscriptionPriceId) {
+      throw new Error(`Subscription price ID not configured for tier: ${tierId}`);
+    }
+
+    try {
+      const sessionParams = {
+        payment_method_types: ['card'],
+        line_items: [
+          {
+            price: pricingTier.subscriptionPriceId,
+            quantity: 1,
+          },
+        ],
+        mode: 'subscription',
+        success_url: successUrl,
+        cancel_url: cancelUrl,
+        client_reference_id: userId,
+        metadata: {
+          userId: userId,
+          tierId: tierId,
+        },
+        subscription_data: {
+          metadata: {
+            userId: userId,
+            tierId: tierId,
+          },
+        },
+      };
+
+      // Use existing customer or create new one
+      if (stripeCustomerId) {
+        sessionParams.customer = stripeCustomerId;
+      } else {
+        sessionParams.customer_email = userEmail;
+      }
+
+      const session = await this.stripe.checkout.sessions.create(sessionParams);
+
+      logger.info(`[StripeService] Created subscription checkout session for user ${userId}, tier ${tierId}`);
+      return session;
+    } catch (error) {
+      logger.error('[StripeService] Failed to create subscription checkout session:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Create Stripe Checkout Session for one-time topup (subscription users only)
+   * @param {string} userId - User ID
+   * @param {string} stripeCustomerId - Stripe Customer ID (required)
+   * @param {string} tierId - Tier ID
+   * @param {string} successUrl - Success redirect URL
+   * @param {string} cancelUrl - Cancel redirect URL
+   * @returns {Promise<Object>} Stripe Checkout Session
+   */
+  async createTopupCheckoutSession({ userId, stripeCustomerId, tierId, successUrl, cancelUrl }) {
+    if (!this.enabled) {
+      throw new Error('Stripe service is not enabled');
+    }
+
+    if (!stripeCustomerId) {
+      throw new Error('Stripe customer ID is required for topup purchases');
+    }
+
+    const pricingTier = this.getPricingTierById(tierId);
+    if (!pricingTier) {
+      throw new Error(`Invalid pricing tier: ${tierId}`);
+    }
+
+    if (!pricingTier.topupPriceId) {
+      throw new Error(`Topup price ID not configured for tier: ${tierId}`);
+    }
+
+    try {
+      const session = await this.stripe.checkout.sessions.create({
+        payment_method_types: ['card'],
+        line_items: [
+          {
+            price: pricingTier.topupPriceId,
+            quantity: 1,
+          },
+        ],
+        mode: 'payment',
+        success_url: successUrl,
+        cancel_url: cancelUrl,
+        customer: stripeCustomerId,
+        client_reference_id: userId,
+        metadata: {
+          userId: userId,
+          tierId: tierId,
+          type: 'topup',
+        },
+      });
+
+      logger.info(`[StripeService] Created topup checkout session for user ${userId}, tier ${tierId}`);
+      return session;
+    } catch (error) {
+      logger.error('[StripeService] Failed to create topup checkout session:', error);
       throw error;
     }
   }
@@ -260,6 +388,114 @@ class StripeService {
       }));
     } catch (error) {
       logger.error('[StripeService] Failed to get payment history:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Cancel subscription at period end
+   * @param {string} subscriptionId - Stripe Subscription ID
+   * @returns {Promise<Object>} Updated subscription
+   */
+  async cancelSubscriptionAtPeriodEnd(subscriptionId) {
+    if (!this.enabled) {
+      throw new Error('Stripe service is not enabled');
+    }
+
+    try {
+      const subscription = await this.stripe.subscriptions.update(subscriptionId, {
+        cancel_at_period_end: true,
+      });
+
+      logger.info(`[StripeService] Scheduled subscription ${subscriptionId} for cancellation at period end`);
+      return subscription;
+    } catch (error) {
+      logger.error('[StripeService] Failed to cancel subscription:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Resume a subscription that was scheduled for cancellation
+   * @param {string} subscriptionId - Stripe Subscription ID
+   * @returns {Promise<Object>} Updated subscription
+   */
+  async resumeSubscription(subscriptionId) {
+    if (!this.enabled) {
+      throw new Error('Stripe service is not enabled');
+    }
+
+    try {
+      const subscription = await this.stripe.subscriptions.update(subscriptionId, {
+        cancel_at_period_end: false,
+      });
+
+      logger.info(`[StripeService] Resumed subscription ${subscriptionId}`);
+      return subscription;
+    } catch (error) {
+      logger.error('[StripeService] Failed to resume subscription:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Update subscription to a different tier (immediate proration)
+   * @param {string} subscriptionId - Stripe Subscription ID
+   * @param {string} newTierId - New tier ID
+   * @returns {Promise<Object>} Updated subscription
+   */
+  async updateSubscriptionTier(subscriptionId, newTierId) {
+    if (!this.enabled) {
+      throw new Error('Stripe service is not enabled');
+    }
+
+    const newTier = this.getPricingTierById(newTierId);
+    if (!newTier || !newTier.subscriptionPriceId) {
+      throw new Error(`Invalid pricing tier: ${newTierId}`);
+    }
+
+    try {
+      // Get current subscription
+      const subscription = await this.stripe.subscriptions.retrieve(subscriptionId);
+
+      // Update the subscription item with new price
+      const updatedSubscription = await this.stripe.subscriptions.update(subscriptionId, {
+        items: [
+          {
+            id: subscription.items.data[0].id,
+            price: newTier.subscriptionPriceId,
+          },
+        ],
+        proration_behavior: 'always_invoice', // Charge/credit immediately
+        metadata: {
+          ...subscription.metadata,
+          tierId: newTierId,
+        },
+      });
+
+      logger.info(`[StripeService] Updated subscription ${subscriptionId} to tier ${newTierId}`);
+      return updatedSubscription;
+    } catch (error) {
+      logger.error('[StripeService] Failed to update subscription tier:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Retrieve subscription details from Stripe
+   * @param {string} subscriptionId - Stripe Subscription ID
+   * @returns {Promise<Object>} Subscription object
+   */
+  async getSubscription(subscriptionId) {
+    if (!this.enabled) {
+      throw new Error('Stripe service is not enabled');
+    }
+
+    try {
+      const subscription = await this.stripe.subscriptions.retrieve(subscriptionId);
+      return subscription;
+    } catch (error) {
+      logger.error('[StripeService] Failed to retrieve subscription:', error);
       throw error;
     }
   }
