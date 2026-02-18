@@ -46,6 +46,8 @@ export const SubscriptionTab: React.FC<SubscriptionTabProps> = ({
       });
       setShowCancelConfirm(false);
     } catch (error) {
+      console.error('[SubscriptionTab] Cancel subscription failed:', error);
+      setShowCancelConfirm(false);
       showToast({
         message: localize('com_recharge_error_occurred'),
         status: 'error',
@@ -61,6 +63,7 @@ export const SubscriptionTab: React.FC<SubscriptionTabProps> = ({
         status: 'success',
       });
     } catch (error) {
+      console.error('[SubscriptionTab] Resume subscription failed:', error);
       showToast({
         message: localize('com_recharge_error_occurred'),
         status: 'error',
@@ -85,6 +88,7 @@ export const SubscriptionTab: React.FC<SubscriptionTabProps> = ({
         status: 'success',
       });
     } catch (error) {
+      console.error('[SubscriptionTab] Change tier failed:', error);
       showToast({
         message: localize('com_recharge_error_occurred'),
         status: 'error',
@@ -113,6 +117,7 @@ export const SubscriptionTab: React.FC<SubscriptionTabProps> = ({
   };
 
   const formatDate = (dateString: string): string => {
+    if (!dateString) return 'N/A';
     return new Date(dateString).toLocaleDateString('en-US', {
       year: 'numeric',
       month: 'long',
