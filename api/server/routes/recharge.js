@@ -457,6 +457,49 @@ router.post('/resume-subscription', requireJwtAuth, checkBan, async (req, res) =
 });
 
 /**
+ * POST /api/recharge/preview-subscription-change
+ * Preview the prorated cost of changing subscription tier
+ * Body: { newTierId: string }
+ */
+router.post('/preview-subscription-change', requireJwtAuth, checkBan, async (req, res) => {
+  try {
+    const { newTierId } = req.body;
+    const userId = req.user.id;
+
+    if (!newTierId) {
+      return res.status(400).json({ message: 'Missing required parameter: newTierId' });
+    }
+
+    const user = await User.findById(userId);
+    if (!user || !user.subscriptionId) {
+      return res.status(400).json({ message: 'No active subscription found' });
+    }
+
+    if (user.subscriptionStatus !== 'active') {
+      return res.status(400).json({ message: 'Subscription is not active' });
+    }
+
+    if (user.subscriptionTier === newTierId) {
+      return res.status(400).json({ message: 'You are already subscribed to this tier' });
+    }
+
+    const stripeService = getStripeService();
+    if (!stripeService.isEnabled()) {
+      return res.status(503).json({ message: 'Stripe service is not configured' });
+    }
+
+    const preview = await stripeService.previewSubscriptionChange(user.subscriptionId, newTierId);
+    res.json(preview);
+  } catch (error) {
+    logger.error('[Recharge API] Error previewing subscription change:', error);
+    res.status(500).json({
+      message: 'Failed to preview subscription change',
+      error: error.message,
+    });
+  }
+});
+
+/**
  * POST /api/recharge/change-subscription-tier
  * Upgrade or downgrade subscription tier
  * Body: { newTierId: string }

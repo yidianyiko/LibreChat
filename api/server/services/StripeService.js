@@ -453,6 +453,53 @@ class StripeService {
   }
 
   /**
+   * Preview the cost of changing subscription tier (proration preview)
+   * @param {string} subscriptionId - Current Stripe Subscription ID
+   * @param {string} newTierId - Target tier ID
+   * @returns {Promise<Object>} Preview with prorated amount
+   */
+  async previewSubscriptionChange(subscriptionId, newTierId) {
+    if (!this.enabled) {
+      throw new Error('Stripe service is not enabled');
+    }
+
+    const newTier = this.getPricingTierById(newTierId);
+    if (!newTier || !newTier.subscriptionPriceId) {
+      throw new Error(`Invalid pricing tier: ${newTierId}`);
+    }
+
+    try {
+      const subscription = await this.stripe.subscriptions.retrieve(subscriptionId);
+
+      // Create a preview invoice to see what would be charged
+      const invoice = await this.stripe.invoices.retrieveUpcoming({
+        customer: subscription.customer,
+        subscription: subscriptionId,
+        subscription_items: [
+          {
+            id: subscription.items.data[0].id,
+            price: newTier.subscriptionPriceId,
+          },
+        ],
+        subscription_proration_behavior: 'always_invoice',
+      });
+
+      return {
+        proratedAmount: invoice.amount_due, // in cents
+        currency: invoice.currency,
+        immediateCharge: invoice.amount_due > 0,
+        newTierPrice: newTier.price,
+        newTierName: newTier.name,
+        newTierCredits: newTier.credits,
+        periodEnd: new Date(subscription.current_period_end * 1000),
+      };
+    } catch (error) {
+      logger.error('[StripeService] Failed to preview subscription change:', error);
+      throw error;
+    }
+  }
+
+  /**
    * Update subscription to a different tier (immediate proration)
    * @param {string} subscriptionId - Stripe Subscription ID
    * @param {string} newTierId - New tier ID
