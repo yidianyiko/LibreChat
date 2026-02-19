@@ -24,7 +24,6 @@ class MockKeyv<T = string> {
     return this.store.get(key);
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   async set(key: string, value: FlowState<T>, _ttl?: number): Promise<true> {
     this.store.set(key, value);
     return true;

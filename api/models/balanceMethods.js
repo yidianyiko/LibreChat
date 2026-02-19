@@ -203,7 +203,7 @@ async function updateDualBalance({ user, incrementValue, balanceType, setValues 
             topupBalance: currentTopupBalance,
           },
           updatePayload,
-          { new: true }
+          { new: true },
         ).lean();
 
         if (updatedBalance) {
@@ -212,11 +212,10 @@ async function updateDualBalance({ user, incrementValue, balanceType, setValues 
         lastError = new Error(`Concurrency conflict for user ${user} on attempt ${attempt}`);
       } else {
         // Upsert for new user
-        updatedBalance = await Balance.findOneAndUpdate(
-          { user: user },
-          updatePayload,
-          { upsert: true, new: true }
-        ).lean();
+        updatedBalance = await Balance.findOneAndUpdate({ user: user }, updatePayload, {
+          upsert: true,
+          new: true,
+        }).lean();
 
         if (updatedBalance) {
           return updatedBalance;
@@ -283,7 +282,9 @@ async function deductBalance({ user, amount }) {
 
       // Check if user has sufficient balance
       if (remainingToDeduct > 0) {
-        throw new Error(`Insufficient balance: requested ${amount}, available ${currentSubBalance + currentTopupBalance}`);
+        throw new Error(
+          `Insufficient balance: requested ${amount}, available ${currentSubBalance + currentTopupBalance}`,
+        );
       }
 
       const updatePayload = {
@@ -301,7 +302,7 @@ async function deductBalance({ user, amount }) {
           topupBalance: currentTopupBalance,
         },
         updatePayload,
-        { new: true }
+        { new: true },
       ).lean();
 
       if (updatedBalance) {
@@ -348,7 +349,9 @@ async function resetSubscriptionBalance({ user, newSubscriptionBalance }) {
     setValues: { lastSubscriptionReset: new Date() },
   });
 
-  logger.info(`[resetSubscriptionBalance] Reset subscription balance for user ${user} to ${newSubscriptionBalance}`);
+  logger.info(
+    `[resetSubscriptionBalance] Reset subscription balance for user ${user} to ${newSubscriptionBalance}`,
+  );
   return result;
 }
 

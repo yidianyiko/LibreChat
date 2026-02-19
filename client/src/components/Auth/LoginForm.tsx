@@ -213,10 +213,7 @@ const LoginForm: React.FC<TLoginFormProps> = ({ onSubmit, startupConfig, error, 
       </form>
 
       {requireTermsAcceptance && (
-        <TermsViewModal
-          open={showTermsModal}
-          onOpenChange={setShowTermsModal}
-        />
+        <TermsViewModal open={showTermsModal} onOpenChange={setShowTermsModal} />
       )}
     </>
   );

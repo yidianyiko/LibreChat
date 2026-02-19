@@ -89,7 +89,11 @@ describe('ImportConversations', () => {
     const mockMutation = useUploadConversationsMutation as jest.Mock;
     mockMutation.mockImplementation((options) => ({
       mutate: () => {
-        options?.onSuccess?.({ message: 'Conversations imported successfully' }, new FormData(), undefined);
+        options?.onSuccess?.(
+          { message: 'Conversations imported successfully' },
+          new FormData(),
+          undefined,
+        );
       },
     }));
 

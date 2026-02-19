@@ -8,10 +8,7 @@ type TermsViewModalProps = {
   onOpenChange: (isOpen: boolean) => void;
 };
 
-const TermsViewModal = ({
-  open,
-  onOpenChange,
-}: TermsViewModalProps) => {
+const TermsViewModal = ({ open, onOpenChange }: TermsViewModalProps) => {
   const localize = useLocalize();
 
   const title = useMemo(() => {

@@ -132,14 +132,15 @@ async function importClaudeConvo(
 ) {
   try {
     // Build source IDs for dedup lookup
-    const sourceIds = jsonData
-      .filter((conv) => conv.uuid)
-      .map((conv) => `claude:${conv.uuid}`);
+    const sourceIds = jsonData.filter((conv) => conv.uuid).map((conv) => `claude:${conv.uuid}`);
     let existingIds;
     try {
       existingIds = await getExistingImportSourceIds(requestUserId, sourceIds);
     } catch (err) {
-      logger.warn(`user: ${requestUserId} | Failed to check for duplicates, proceeding with import`, err);
+      logger.warn(
+        `user: ${requestUserId} | Failed to check for duplicates, proceeding with import`,
+        err,
+      );
       existingIds = new Set();
     }
 
@@ -324,14 +325,15 @@ async function importChatGptConvo(
 ) {
   try {
     // Build source IDs for dedup lookup
-    const sourceIds = jsonData
-      .filter((conv) => conv.id)
-      .map((conv) => `chatgpt:${conv.id}`);
+    const sourceIds = jsonData.filter((conv) => conv.id).map((conv) => `chatgpt:${conv.id}`);
     let existingIds;
     try {
       existingIds = await getExistingImportSourceIds(requestUserId, sourceIds);
     } catch (err) {
-      logger.warn(`user: ${requestUserId} | Failed to check for duplicates, proceeding with import`, err);
+      logger.warn(
+        `user: ${requestUserId} | Failed to check for duplicates, proceeding with import`,
+        err,
+      );
       existingIds = new Set();
     }
 

@@ -20,10 +20,7 @@ async function migrateToSubscriptionBalance() {
 
     // Find all Balance documents that haven't been migrated yet
     const balancesToMigrate = await Balance.find({
-      $or: [
-        { subscriptionBalance: { $exists: false } },
-        { topupBalance: { $exists: false } },
-      ],
+      $or: [{ subscriptionBalance: { $exists: false } }, { topupBalance: { $exists: false } }],
     }).lean();
 
     logger.info(`[Migration] Found ${balancesToMigrate.length} balance records to migrate`);
@@ -40,7 +37,7 @@ async function migrateToSubscriptionBalance() {
             topupBalance: tokenCredits, // Move old credits to topup
             lastSubscriptionReset: null,
           },
-        }
+        },
       );
 
       migratedCount++;

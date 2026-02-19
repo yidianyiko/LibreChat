@@ -1,4 +1,3 @@
-/* eslint-disable i18next/no-literal-string */
 import { Constants } from 'librechat-data-provider';
 import type { TConversation } from 'librechat-data-provider';
 import { shouldBlockChatViewRender } from '../chatRouteUtils';

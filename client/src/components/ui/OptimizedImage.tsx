@@ -69,7 +69,7 @@ export const OptimizedImage = forwardRef<HTMLImageElement, OptimizedImageProps>(
         {...props}
       />
     );
-  }
+  },
 );
 
 OptimizedImage.displayName = 'OptimizedImage';

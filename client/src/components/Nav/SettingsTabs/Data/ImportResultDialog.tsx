@@ -32,12 +32,12 @@ export default function ImportResultDialog({
 
   return (
     <Dialog open={open} onOpenChange={(isOpen) => !isOpen && onClose()}>
-      <DialogContent className="max-w-2xl max-h-[80vh] flex flex-col">
+      <DialogContent className="flex max-h-[80vh] max-w-2xl flex-col">
         <DialogHeader>
           <DialogTitle>导入结果</DialogTitle>
         </DialogHeader>
 
-        <div className="space-y-4 flex-1 overflow-auto">
+        <div className="flex-1 space-y-4 overflow-auto">
           {/* Success Summary */}
           <div className="rounded-lg bg-green-50 p-4 dark:bg-green-900/20">
             <div className="text-green-700 dark:text-green-400">
@@ -48,19 +48,12 @@ export default function ImportResultDialog({
           {/* Failed Items */}
           {failedItems.length > 0 && (
             <div className="space-y-2">
-              <div className="text-sm font-semibold">
-                ❌ 失败 {failedItems.length} 条：
-              </div>
+              <div className="text-sm font-semibold">❌ 失败 {failedItems.length} 条：</div>
               <div className="max-h-96 space-y-2 overflow-auto rounded-lg border border-border-light p-2">
                 {failedItems.map((item) => (
-                  <div
-                    key={item.index}
-                    className="rounded bg-surface-secondary p-3 text-sm"
-                  >
+                  <div key={item.index} className="rounded bg-surface-secondary p-3 text-sm">
                     <div className="font-medium">{item.title}</div>
-                    <div className="text-xs text-text-secondary">
-                      ID: {item.conversationId}
-                    </div>
+                    <div className="text-xs text-text-secondary">ID: {item.conversationId}</div>
                     {item.error && (
                       <div className="mt-1 text-xs text-red-600 dark:text-red-400">
                         错误: {item.error}

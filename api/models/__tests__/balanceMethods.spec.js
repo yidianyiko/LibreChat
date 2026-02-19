@@ -20,7 +20,6 @@ beforeEach(async () => {
 });
 
 describe('balanceMethods', () => {
-
   describe('updateDualBalance', () => {
     it('should add to subscription balance', async () => {
       const userId = new mongoose.Types.ObjectId();
@@ -70,7 +69,7 @@ describe('balanceMethods', () => {
           user: userId,
           incrementValue: 1000,
           balanceType: 'invalid',
-        })
+        }),
       ).rejects.toThrow('Invalid balanceType');
     });
   });
@@ -131,7 +130,7 @@ describe('balanceMethods', () => {
         deductBalance({
           user: userId,
           amount: 200,
-        })
+        }),
       ).rejects.toThrow('Insufficient balance');
     });
   });

@@ -1,14 +1,7 @@
 // client/src/components/Nav/SettingsTabs/Data/SelectiveImportDialog.tsx
 import { useState, useMemo, useRef, useEffect } from 'react';
 import { useVirtualizer } from '@tanstack/react-virtual';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  Input,
-  Button,
-} from '@librechat/client';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, Input, Button } from '@librechat/client';
 import { useLocalize } from '~/hooks';
 import type { ConversationPreview } from '~/utils/conversationParser';
 import ConversationListItem from './ConversationListItem';
@@ -124,7 +117,7 @@ export default function SelectiveImportDialog({
 
   return (
     <Dialog open={open} onOpenChange={(isOpen) => !isOpen && onClose()}>
-      <DialogContent className="max-w-4xl h-[80vh] flex flex-col bg-surface-primary text-text-primary">
+      <DialogContent className="flex h-[80vh] max-w-4xl flex-col bg-surface-primary text-text-primary">
         <DialogHeader>
           <DialogTitle className="text-text-primary">
             精选导入 - 从 {conversations.length.toLocaleString()} 条对话中选择
@@ -154,9 +147,7 @@ export default function SelectiveImportDialog({
 
           <div className="flex items-center justify-between">
             <div className="text-sm">
-              <span className="font-semibold">
-                已选择 {selected.size} / 500 条
-              </span>
+              <span className="font-semibold">已选择 {selected.size} / 500 条</span>
               <span className="ml-2 text-text-secondary">
                 (可用: {availableCount.toLocaleString()})
               </span>
@@ -173,7 +164,7 @@ export default function SelectiveImportDialog({
         </div>
 
         {/* Virtual List */}
-        <div ref={parentRef} className="flex-1 min-h-0 overflow-auto">
+        <div ref={parentRef} className="min-h-0 flex-1 overflow-auto">
           <div
             style={{
               height: `${virtualizer.getTotalSize()}px`,
@@ -220,7 +211,7 @@ export default function SelectiveImportDialog({
         </div>
 
         {/* Footer */}
-        <div className="flex justify-between items-center border-t border-border-light pt-3">
+        <div className="flex items-center justify-between border-t border-border-light pt-3">
           <div className="text-sm text-text-secondary">
             显示 {filteredConversations.length.toLocaleString()} 条对话
           </div>

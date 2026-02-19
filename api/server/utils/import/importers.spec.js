@@ -1,7 +1,10 @@
 const fs = require('fs');
 const path = require('path');
 const { EModelEndpoint, Constants, openAISettings } = require('librechat-data-provider');
-const { bulkSaveConvos: _bulkSaveConvos, getExistingImportSourceIds } = require('~/models/Conversation');
+const {
+  bulkSaveConvos: _bulkSaveConvos,
+  getExistingImportSourceIds,
+} = require('~/models/Conversation');
 const { getImporter, processAssistantMessage } = require('./importers');
 const { ImportBatchBuilder } = require('./importBatchBuilder');
 const { bulkSaveMessages } = require('~/models/Message');
@@ -768,9 +771,7 @@ describe('importChatGptConvo deduplication', () => {
 
     // Simulate that the first conversation already exists
     const firstConvId = jsonData[0].id;
-    getExistingImportSourceIds.mockResolvedValueOnce(
-      new Set([`chatgpt:${firstConvId}`]),
-    );
+    getExistingImportSourceIds.mockResolvedValueOnce(new Set([`chatgpt:${firstConvId}`]));
 
     const importBatchBuilder = new ImportBatchBuilder(requestUserId);
     jest.spyOn(importBatchBuilder, 'startConversation');
@@ -1758,9 +1759,7 @@ describe('importClaudeConvo deduplication', () => {
     const requestUserId = 'user-claude-dedup';
 
     // First conversation already exists
-    getExistingImportSourceIds.mockResolvedValueOnce(
-      new Set(['claude:conv-existing']),
-    );
+    getExistingImportSourceIds.mockResolvedValueOnce(new Set(['claude:conv-existing']));
 
     const importBatchBuilder = new ImportBatchBuilder(requestUserId);
     jest.spyOn(importBatchBuilder, 'startConversation');

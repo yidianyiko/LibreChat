@@ -20,31 +20,35 @@ import dashboardRoutes from './Dashboard';
 import Root from './Root';
 
 const OAuthSuccess = lazy(() =>
-  import('~/components/OAuth').then((m) => ({ default: m.OAuthSuccess }))
+  import('~/components/OAuth').then((m) => ({ default: m.OAuthSuccess })),
 );
 const OAuthError = lazy(() =>
-  import('~/components/OAuth').then((m) => ({ default: m.OAuthError }))
+  import('~/components/OAuth').then((m) => ({ default: m.OAuthError })),
 );
 const RechargePage = lazy(() =>
-  import('~/components/Recharge/RechargePage').then((m) => ({ default: m.RechargePage }))
+  import('~/components/Recharge/RechargePage').then((m) => ({ default: m.RechargePage })),
 );
 const PaymentSuccessPage = lazy(() =>
-  import('~/components/Recharge/PaymentSuccessPage').then((m) => ({ default: m.PaymentSuccessPage }))
+  import('~/components/Recharge/PaymentSuccessPage').then((m) => ({
+    default: m.PaymentSuccessPage,
+  })),
 );
 const PaymentCancelPage = lazy(() =>
-  import('~/components/Recharge/PaymentCancelPage').then((m) => ({ default: m.PaymentCancelPage }))
+  import('~/components/Recharge/PaymentCancelPage').then((m) => ({ default: m.PaymentCancelPage })),
 );
 const RechargeHistoryPage = lazy(() =>
-  import('~/components/Recharge/RechargeHistoryPage').then((m) => ({ default: m.RechargeHistoryPage }))
+  import('~/components/Recharge/RechargeHistoryPage').then((m) => ({
+    default: m.RechargeHistoryPage,
+  })),
 );
 const LandingPage = lazy(() =>
-  import('~/components/LandingPage/LandingPage').then((m) => ({ default: m.default }))
+  import('~/components/LandingPage/LandingPage').then((m) => ({ default: m.default })),
 );
 const MissionPage = lazy(() =>
-  import('~/components/LandingPage/MissionPage').then((m) => ({ default: m.default }))
+  import('~/components/LandingPage/MissionPage').then((m) => ({ default: m.default })),
 );
 const AgentMarketplace = lazy(() =>
-  import('~/components/Agents/Marketplace').then((m) => ({ default: m.default }))
+  import('~/components/Agents/Marketplace').then((m) => ({ default: m.default })),
 );
 const ShareRoute = lazy(() => import('./ShareRoute').then((m) => ({ default: m.default })));
 const ChatRoute = lazy(() => import('./ChatRoute').then((m) => ({ default: m.default })));

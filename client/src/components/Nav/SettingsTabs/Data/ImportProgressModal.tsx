@@ -44,7 +44,13 @@ export default function ImportProgressModal({
 
   // Simulate progress (disabled during chunked upload — chunk-based useEffect handles it)
   useEffect(() => {
-    if (!open || isComplete || isError || (currentChunk != null && totalChunks != null) || isPolling) {
+    if (
+      !open ||
+      isComplete ||
+      isError ||
+      (currentChunk != null && totalChunks != null) ||
+      isPolling
+    ) {
       return;
     }
 

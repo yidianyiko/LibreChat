@@ -12,8 +12,8 @@ const { logger } = require('~/config');
  * If a webhook is rate-limited, Stripe will retry with exponential backoff.
  */
 const {
-  WEBHOOK_WINDOW = 1,  // 1 minute
-  WEBHOOK_MAX = 100,   // 100 requests per minute
+  WEBHOOK_WINDOW = 1, // 1 minute
+  WEBHOOK_MAX = 100, // 100 requests per minute
 } = process.env;
 
 const windowMs = WEBHOOK_WINDOW * 60 * 1000;

@@ -183,18 +183,14 @@ export const useRevokeAllUserKeysMutation = (): UseMutationResult<unknown> => {
 export const useGetModelsQuery = (
   config?: UseQueryOptions<t.TModelsConfig>,
 ): QueryObserverResult<t.TModelsConfig> => {
-  return useQuery<t.TModelsConfig>(
-    [QueryKeys.models],
-    () => dataService.getModels(),
-    {
-      initialData: initialModelsConfig,
-      refetchOnWindowFocus: false,
-      refetchOnReconnect: false,
-      refetchOnMount: false,
-      staleTime: Infinity,
-      ...config,
-    },
-  );
+  return useQuery<t.TModelsConfig>([QueryKeys.models], () => dataService.getModels(), {
+    initialData: initialModelsConfig,
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
+    refetchOnMount: false,
+    staleTime: Infinity,
+    ...config,
+  });
 };
 
 export const useGetModelRatesQuery = (
@@ -210,8 +206,8 @@ export const useGetModelRatesQuery = (
       // Remove initialData to allow proper loading state
       refetchOnWindowFocus: false,
       refetchOnReconnect: false,
-      refetchOnMount: true,        // ← Changed: fetch on component mount
-      staleTime: 5 * 60 * 1000,    // ← Changed: 5 minutes instead of Infinity
+      refetchOnMount: true, // ← Changed: fetch on component mount
+      staleTime: 5 * 60 * 1000, // ← Changed: 5 minutes instead of Infinity
       ...config,
     },
   );

@@ -359,6 +359,31 @@ EOF
     log_success "服务状态检查完成"
 }
 
+pull_node_base_image_fallback() {
+    local target_image="node:20-alpine"
+    local fallback_images=(
+        "${NODE_BASE_IMAGE_FALLBACK:-m.daocloud.io/docker.io/library/node:20-alpine}"
+        "mirror.gcr.io/library/node:20-alpine"
+    )
+
+    log_warning "检测到 Node 基础镜像拉取异常，尝试备用镜像源..."
+
+    local source_image
+    for source_image in "${fallback_images[@]}"; do
+        [ -z "${source_image}" ] && continue
+        log_info "尝试拉取备用镜像: ${source_image}"
+        if docker pull "${source_image}"; then
+            if docker tag "${source_image}" "${target_image}"; then
+                log_success "已缓存并标记基础镜像为 ${target_image}"
+                return 0
+            fi
+        fi
+        log_warning "备用镜像不可用: ${source_image}"
+    done
+
+    return 1
+}
+
 # 构建 Docker 镜像
 build_image() {
     log_info "开始构建 Docker 镜像: ${IMAGE_TAG}"
@@ -372,12 +397,32 @@ build_image() {
 
     log_info "这可能需要几分钟..."
 
-    if docker build ${BUILD_OPTS} -t "${IMAGE_TAG}" .; then
+    local BUILD_LOG
+    BUILD_LOG=$(mktemp)
+
+    docker build ${BUILD_OPTS} -t "${IMAGE_TAG}" . 2>&1 | tee "${BUILD_LOG}"
+    local build_status=${PIPESTATUS[0]}
+
+    if [ ${build_status} -eq 0 ]; then
+        rm -f "${BUILD_LOG}"
         log_success "镜像构建成功"
-    else
-        log_error "镜像构建失败"
-        exit 1
+        return
     fi
+
+    if grep -Eq "failed to resolve source metadata for docker.io/library/node:20-alpine|docker.mirrors.ustc.edu.cn|toomanyrequests" "${BUILD_LOG}"; then
+        if pull_node_base_image_fallback; then
+            log_info "使用本地已缓存基础镜像重试构建（--pull=false）..."
+            if docker build ${BUILD_OPTS} --pull=false -t "${IMAGE_TAG}" .; then
+                rm -f "${BUILD_LOG}"
+                log_success "镜像构建成功（已使用备用镜像源回退）"
+                return
+            fi
+        fi
+    fi
+
+    rm -f "${BUILD_LOG}"
+    log_error "镜像构建失败"
+    exit 1
 }
 
 # 导出镜像

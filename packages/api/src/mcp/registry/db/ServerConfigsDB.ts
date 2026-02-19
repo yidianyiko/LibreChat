@@ -457,7 +457,7 @@ export class ServerConfigsDB implements IServerConfigsRepositoryInterface {
     };
 
     // Remove key field since it's user-provided (destructure to omit, not set to undefined)
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+
     const { key: _removed, ...apiKeyWithoutKey } = result.apiKey!;
     result.apiKey = apiKeyWithoutKey;
 
@@ -521,7 +521,7 @@ export class ServerConfigsDB implements IServerConfigsRepositoryInterface {
           '[ServerConfigsDB.decryptConfig] Failed to decrypt apiKey.key, returning config without key',
           error,
         );
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+
         const { key: _removedKey, ...apiKeyWithoutKey } = result.apiKey;
         result.apiKey = apiKeyWithoutKey;
       }
@@ -542,7 +542,7 @@ export class ServerConfigsDB implements IServerConfigsRepositoryInterface {
           '[ServerConfigsDB.decryptConfig] Failed to decrypt client_secret, returning config without secret',
           error,
         );
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+
         const { client_secret: _removed, ...oauthWithoutSecret } = oauthConfig;
         result = {
           ...result,

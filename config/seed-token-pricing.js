@@ -280,30 +280,30 @@ const premiumTokenValues = {
 // Provider mapping based on model name patterns
 const providerMapping = {
   'gpt-': 'openai',
-  'o1': 'openai',
-  'o3': 'openai',
-  'o4': 'openai',
+  o1: 'openai',
+  o3: 'openai',
+  o4: 'openai',
   'claude-': 'anthropic',
   'gemini-': 'google',
   'gemma-': 'google',
-  'grok': 'xai',
-  'mistral': 'mistral',
-  'mixtral': 'mistral',
-  'codestral': 'mistral',
-  'ministral': 'mistral',
-  'pixtral': 'mistral',
-  'deepseek': 'deepseek',
-  'kimi': 'moonshot',
-  'moonshot': 'moonshot',
-  'command': 'cohere',
-  'qwen': 'alibaba',
-  'qwq': 'alibaba',
-  'glm': 'zhipu',
-  'llama': 'meta',
+  grok: 'xai',
+  mistral: 'mistral',
+  mixtral: 'mistral',
+  codestral: 'mistral',
+  ministral: 'mistral',
+  pixtral: 'mistral',
+  deepseek: 'deepseek',
+  kimi: 'moonshot',
+  moonshot: 'moonshot',
+  command: 'cohere',
+  qwen: 'alibaba',
+  qwq: 'alibaba',
+  glm: 'zhipu',
+  llama: 'meta',
   'nova-': 'aws',
   'titan-': 'aws',
   'j2-': 'ai21',
-  'jamba': 'ai21',
+  jamba: 'ai21',
   'gpt-oss': 'openai-compatible',
 };
 
@@ -359,7 +359,7 @@ async function seedTokenPricing() {
       const premium = premiumTokenValues[modelPattern];
 
       // Apply 20% markup to all rates
-      const MARKUP = 1.20;
+      const MARKUP = 1.2;
 
       const record = {
         modelPattern,
@@ -418,7 +418,9 @@ async function seedTokenPricing() {
           }
           inserted++;
           const longCtx = record.longContextThreshold ? ' [Long Context]' : '';
-          console.log(`  ✓ ${isDryRun ? 'Would insert' : 'Inserted'}: ${record.modelPattern} (${record.provider})${longCtx}`);
+          console.log(
+            `  ✓ ${isDryRun ? 'Would insert' : 'Inserted'}: ${record.modelPattern} (${record.provider})${longCtx}`,
+          );
         }
       } catch (error) {
         errors++;
@@ -448,7 +450,6 @@ async function seedTokenPricing() {
     } else if (skipped > 0 && !isForce) {
       console.log('\n💡 To update existing records, run with --force flag.');
     }
-
   } catch (error) {
     console.error('\n✗ Fatal error:', error);
     process.exit(1);

@@ -46,10 +46,9 @@ jest.mock('../SettingsTabs/Data/ImportConversations', () => (props) => (
     })}
   </div>
 ));
-jest.mock(
-  '../SettingsTabs/Data/ImportConversationDialog',
-  () => ({ open }) => <div data-testid="outer-import-dialog" data-open={String(open)} />,
-);
+jest.mock('../SettingsTabs/Data/ImportConversationDialog', () => ({ open }) => (
+  <div data-testid="outer-import-dialog" data-open={String(open)} />
+));
 
 jest.mock('~/hooks', () => ({
   useLocalize: jest.fn(),

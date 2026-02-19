@@ -20,7 +20,10 @@ export function loadGoogleAnalytics(measurementId?: string): boolean {
     return false;
   }
 
-  if (document.querySelector(ANALYTICS_SCRIPT_SELECTOR) != null || typeof window.gtag === 'function') {
+  if (
+    document.querySelector(ANALYTICS_SCRIPT_SELECTOR) != null ||
+    typeof window.gtag === 'function'
+  ) {
     return false;
   }
 

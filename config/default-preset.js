@@ -34,11 +34,11 @@ const DEFAULT_PRESET_CONFIG = {
 
   // Official ChatGPT parameters (based on OpenAI API defaults)
   // Source: https://platform.openai.com/docs/api-reference/chat
-  temperature: 1.0,           // Default: 1.0
-  top_p: 1.0,                 // Default: 1.0
-  frequency_penalty: 0,       // Default: 0
-  presence_penalty: 0,        // Default: 0
-  maxTokens: 4096,            // Recommended: 4096 (balance length and cost)
+  temperature: 1.0, // Default: 1.0
+  top_p: 1.0, // Default: 1.0
+  frequency_penalty: 0, // Default: 0
+  presence_penalty: 0, // Default: 0
+  maxTokens: 4096, // Recommended: 4096 (balance length and cost)
 
   // System prompt
   system: GPT4O_SYSTEM_PROMPT,

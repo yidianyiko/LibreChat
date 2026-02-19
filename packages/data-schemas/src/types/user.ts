@@ -44,7 +44,14 @@ export interface IUser extends Document {
   /** Field for external source identification (for consistency with TPrincipal schema) */
   idOnTheSource?: string;
   stripeCustomerId?: string;
-  subscriptionStatus?: 'active' | 'canceled' | 'past_due' | 'incomplete' | 'trialing' | 'paused' | null;
+  subscriptionStatus?:
+    | 'active'
+    | 'canceled'
+    | 'past_due'
+    | 'incomplete'
+    | 'trialing'
+    | 'paused'
+    | null;
   subscriptionId?: string;
   subscriptionTier?: 'explorer' | 'artisan' | 'elite' | null;
   subscriptionStartDate?: Date;

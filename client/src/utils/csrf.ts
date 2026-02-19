@@ -87,10 +87,7 @@ export function initCSRFProtection(): () => void {
     (response) => response,
     async (error) => {
       // If we get a 403 with CSRF error, try to refresh the token
-      if (
-        error.response?.status === 403 &&
-        error.response?.data?.message?.includes('CSRF')
-      ) {
+      if (error.response?.status === 403 && error.response?.data?.message?.includes('CSRF')) {
         console.warn('[CSRF] Token validation failed, fetching new token...');
 
         // Fetch a new token

@@ -8,9 +8,7 @@ const loadHeicToModule = () => {
 };
 
 export const isLikelyHeicFile = (file: File): boolean =>
-  file.type === 'image/heic' ||
-  file.type === 'image/heif' ||
-  /\.(heic|heif)$/i.test(file.name);
+  file.type === 'image/heic' || file.type === 'image/heif' || /\.(heic|heif)$/i.test(file.name);
 
 /**
  * Check if a file is in HEIC format

@@ -125,10 +125,10 @@ export default function ImportModeDialog({
                 aria-label="全部导入"
               />
               <div className="flex-1">
-                <div className="font-semibold">全部导入 ({newConversations.toLocaleString()} 条)</div>
-                <div className="text-xs text-text-secondary">
-                  使用后端批量处理，约需 5-10 分钟
+                <div className="font-semibold">
+                  全部导入 ({newConversations.toLocaleString()} 条)
                 </div>
+                <div className="text-xs text-text-secondary">使用后端批量处理，约需 5-10 分钟</div>
               </div>
             </label>
 

@@ -48,8 +48,7 @@ export default function ImportConversationDialog({
   );
 
   const acceptFile = useCallback((file: File) => {
-    const isJson =
-      file.name.toLowerCase().endsWith('.json') || file.type === 'application/json';
+    const isJson = file.name.toLowerCase().endsWith('.json') || file.type === 'application/json';
     if (isJson) {
       setSelectedFile(file);
     }

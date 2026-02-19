@@ -43,7 +43,6 @@ async function testEmail() {
     console.log('  - From: keep4o <yidianyiko123@gmail.com>');
     console.log('  - App Name: keep4oforever');
     console.log('='.repeat(60));
-
   } catch (error) {
     console.error('\n❌ Email sending failed!');
     console.error('\nError details:');

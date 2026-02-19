@@ -16,15 +16,16 @@ describe('TokenPricingCache', () => {
 
   it('should load pricing from database', async () => {
     mockFind.mockReturnValue({
-      lean: () => Promise.resolve([
-        {
-          modelPattern: 'gpt-4o',
-          provider: 'openai',
-          inputRate: 2.5,
-          outputRate: 10,
-          isActive: true,
-        },
-      ]),
+      lean: () =>
+        Promise.resolve([
+          {
+            modelPattern: 'gpt-4o',
+            provider: 'openai',
+            inputRate: 2.5,
+            outputRate: 10,
+            isActive: true,
+          },
+        ]),
     });
 
     await cache.load();
@@ -43,15 +44,16 @@ describe('TokenPricingCache', () => {
 
   it('should match by pattern inclusion (like tx.js)', async () => {
     mockFind.mockReturnValue({
-      lean: () => Promise.resolve([
-        {
-          modelPattern: 'gpt-4o',
-          provider: 'openai',
-          inputRate: 2.5,
-          outputRate: 10,
-          isActive: true,
-        },
-      ]),
+      lean: () =>
+        Promise.resolve([
+          {
+            modelPattern: 'gpt-4o',
+            provider: 'openai',
+            inputRate: 2.5,
+            outputRate: 10,
+            isActive: true,
+          },
+        ]),
     });
 
     await cache.load();
@@ -62,18 +64,19 @@ describe('TokenPricingCache', () => {
 
   it('should return long context rates when threshold exceeded', async () => {
     mockFind.mockReturnValue({
-      lean: () => Promise.resolve([
-        {
-          modelPattern: 'claude-opus-4-6',
-          provider: 'anthropic',
-          inputRate: 5,
-          outputRate: 25,
-          longContextThreshold: 200000,
-          longContextInputRate: 10,
-          longContextOutputRate: 37.5,
-          isActive: true,
-        },
-      ]),
+      lean: () =>
+        Promise.resolve([
+          {
+            modelPattern: 'claude-opus-4-6',
+            provider: 'anthropic',
+            inputRate: 5,
+            outputRate: 25,
+            longContextThreshold: 200000,
+            longContextInputRate: 10,
+            longContextOutputRate: 37.5,
+            isActive: true,
+          },
+        ]),
     });
 
     await cache.load();
@@ -90,18 +93,19 @@ describe('TokenPricingCache', () => {
 
   it('should return null premium rate when below threshold', async () => {
     mockFind.mockReturnValue({
-      lean: () => Promise.resolve([
-        {
-          modelPattern: 'claude-opus-4-6',
-          provider: 'anthropic',
-          inputRate: 5,
-          outputRate: 25,
-          longContextThreshold: 200000,
-          longContextInputRate: 10,
-          longContextOutputRate: 37.5,
-          isActive: true,
-        },
-      ]),
+      lean: () =>
+        Promise.resolve([
+          {
+            modelPattern: 'claude-opus-4-6',
+            provider: 'anthropic',
+            inputRate: 5,
+            outputRate: 25,
+            longContextThreshold: 200000,
+            longContextInputRate: 10,
+            longContextOutputRate: 37.5,
+            isActive: true,
+          },
+        ]),
     });
 
     await cache.load();
@@ -110,15 +114,16 @@ describe('TokenPricingCache', () => {
 
   it('should clear cache on invalidate', async () => {
     mockFind.mockReturnValue({
-      lean: () => Promise.resolve([
-        {
-          modelPattern: 'gpt-4o',
-          provider: 'openai',
-          inputRate: 2.5,
-          outputRate: 10,
-          isActive: true,
-        },
-      ]),
+      lean: () =>
+        Promise.resolve([
+          {
+            modelPattern: 'gpt-4o',
+            provider: 'openai',
+            inputRate: 2.5,
+            outputRate: 10,
+            isActive: true,
+          },
+        ]),
     });
 
     await cache.load();
@@ -130,15 +135,16 @@ describe('TokenPricingCache', () => {
 
   it('should auto-load on getRate if not loaded', async () => {
     mockFind.mockReturnValue({
-      lean: () => Promise.resolve([
-        {
-          modelPattern: 'gpt-4o',
-          provider: 'openai',
-          inputRate: 2.5,
-          outputRate: 10,
-          isActive: true,
-        },
-      ]),
+      lean: () =>
+        Promise.resolve([
+          {
+            modelPattern: 'gpt-4o',
+            provider: 'openai',
+            inputRate: 2.5,
+            outputRate: 10,
+            isActive: true,
+          },
+        ]),
     });
 
     // Don't call load() — getRateAsync should trigger it

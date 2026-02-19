@@ -93,7 +93,9 @@ export const getLanguageLoadOrder = (language?: string): string[] => {
     candidates.splice(1, 0, base);
   }
 
-  return Array.from(new Set(candidates)).filter((lng) => lng === 'en' || languageLoaders[lng] != null);
+  return Array.from(new Set(candidates)).filter(
+    (lng) => lng === 'en' || languageLoaders[lng] != null,
+  );
 };
 
 const loadedLanguages = new Set<string>(['en']);
@@ -140,24 +142,27 @@ export const initializeI18n = async (): Promise<typeof i18n> => {
 
   i18nInitPromise = (async () => {
     if (!i18n.isInitialized) {
-      await i18n.use(LanguageDetector).use(initReactI18next).init({
-        fallbackLng: {
-          'zh-TW': ['zh-Hant', 'en'],
-          'zh-HK': ['zh-Hant', 'en'],
-          zh: ['zh-Hans', 'en'],
-          default: ['en'],
-        },
-        fallbackNS: defaultNS,
-        ns: [defaultNS],
-        debug: false,
-        defaultNS,
-        resources,
-        partialBundledLanguages: true,
-        interpolation: { escapeValue: false },
-        react: {
-          useSuspense: false,
-        },
-      });
+      await i18n
+        .use(LanguageDetector)
+        .use(initReactI18next)
+        .init({
+          fallbackLng: {
+            'zh-TW': ['zh-Hant', 'en'],
+            'zh-HK': ['zh-Hant', 'en'],
+            zh: ['zh-Hans', 'en'],
+            default: ['en'],
+          },
+          fallbackNS: defaultNS,
+          ns: [defaultNS],
+          debug: false,
+          defaultNS,
+          resources,
+          partialBundledLanguages: true,
+          interpolation: { escapeValue: false },
+          react: {
+            useSuspense: false,
+          },
+        });
     }
 
     const targetLanguage = await ensureLanguageResources(i18n.resolvedLanguage ?? i18n.language);

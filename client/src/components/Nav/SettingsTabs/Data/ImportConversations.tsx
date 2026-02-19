@@ -165,9 +165,7 @@ function ImportConversations({
       } else if (selection.mode === 'batch') {
         // Extract range and upload
         const { start = 1, end = 500 } = selection;
-        const selected = conversations
-          .filter((c) => !c.isDuplicate)
-          .slice(start - 1, end);
+        const selected = conversations.filter((c) => !c.isDuplicate).slice(start - 1, end);
         uploadSelectedConversations(selected);
       } else if (selection.mode === 'selective') {
         // Show selective import dialog
@@ -261,7 +259,9 @@ function ImportConversations({
         })
       ) : (
         <div className="flex items-center justify-between">
-          <Label id="import-conversation-label">{localize('com_ui_import_conversation_info')}</Label>
+          <Label id="import-conversation-label">
+            {localize('com_ui_import_conversation_info')}
+          </Label>
           <Button
             variant="outline"
             onClick={handleImportClick}

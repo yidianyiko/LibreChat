@@ -1,0 +1,13 @@
+# NPM 并行构建优化
+# 使用所有 CPU 核心
+max-jobs=20
+
+# 提高网络并发
+maxsockets=20
+
+# 构建性能优化
+prefer-offline=true
+engine-strict=false
+
+# 日志级别
+loglevel=error

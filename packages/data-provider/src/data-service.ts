@@ -637,9 +637,9 @@ export const importConversationsFile = (
   return request.postMultiPart(endpoints.importConversation(), data, options);
 };
 
-export const importSelectiveConversations = (
-  payload: { conversations: unknown[] },
-): Promise<{
+export const importSelectiveConversations = (payload: {
+  conversations: unknown[];
+}): Promise<{
   message: string;
   success: Array<{ index: number; conversationId: string; title: string }>;
   failed: Array<{ index: number; conversationId: string; title: string; error: string }>;
@@ -1155,6 +1155,8 @@ export const resumeSubscription = (): Promise<{ message: string }> => {
   return request.post(endpoints.rechargeResumeSubscription(), {});
 };
 
-export const changeSubscriptionTier = (newTierId: string): Promise<{ message: string; newTier: string; currentPeriodEnd: string }> => {
+export const changeSubscriptionTier = (
+  newTierId: string,
+): Promise<{ message: string; newTier: string; currentPeriodEnd: string }> => {
   return request.post(endpoints.rechargeChangeSubscriptionTier(), { newTierId });
 };

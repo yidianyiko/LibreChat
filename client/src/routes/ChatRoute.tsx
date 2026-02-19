@@ -33,7 +33,8 @@ export default function ChatRoute() {
   const index = 0;
   const { conversationId = '' } = useParams();
   useIdChangeEffect(conversationId);
-  const { hasSetConversation, conversation, setConversation } = store.useCreateConversationAtom(index);
+  const { hasSetConversation, conversation, setConversation } =
+    store.useCreateConversationAtom(index);
   const { newConversation } = useNewConvo();
 
   const modelsQuery = useGetModelsQuery({

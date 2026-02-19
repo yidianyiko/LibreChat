@@ -79,7 +79,9 @@ const getNormalizedPathname = (): string => {
   }
   let pathname = window.location?.pathname ?? '/';
   const baseEl =
-    typeof document !== 'undefined' ? (document.querySelector('base') as HTMLBaseElement | null) : null;
+    typeof document !== 'undefined'
+      ? (document.querySelector('base') as HTMLBaseElement | null)
+      : null;
   const baseHref = baseEl?.getAttribute('href') || '/';
 
   if (baseHref !== '/' && pathname.startsWith(baseHref)) {

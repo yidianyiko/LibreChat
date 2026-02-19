@@ -24,7 +24,9 @@ const bootstrap = async () => {
   );
 
   if (import.meta.env.PROD) {
-    scheduleGoogleAnalyticsLoad(import.meta.env.VITE_GA_MEASUREMENT_ID ?? DEFAULT_GA_MEASUREMENT_ID);
+    scheduleGoogleAnalyticsLoad(
+      import.meta.env.VITE_GA_MEASUREMENT_ID ?? DEFAULT_GA_MEASUREMENT_ID,
+    );
   }
 
   // Service Worker 自动刷新逻辑：当检测到新版本时自动刷新页面

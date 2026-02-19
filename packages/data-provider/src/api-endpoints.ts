@@ -51,7 +51,8 @@ export const rechargeCreateTopup = () => `${BASE_URL}/api/recharge/create-topup`
 export const rechargeSubscriptionStatus = () => `${BASE_URL}/api/recharge/subscription-status`;
 export const rechargeCancelSubscription = () => `${BASE_URL}/api/recharge/cancel-subscription`;
 export const rechargeResumeSubscription = () => `${BASE_URL}/api/recharge/resume-subscription`;
-export const rechargeChangeSubscriptionTier = () => `${BASE_URL}/api/recharge/change-subscription-tier`;
+export const rechargeChangeSubscriptionTier = () =>
+  `${BASE_URL}/api/recharge/change-subscription-tier`;
 
 export const userPlugins = () => `${BASE_URL}/api/user/plugins`;
 

@@ -85,66 +85,67 @@ function AccountSettings() {
             {user?.name ?? user?.username ?? localize('com_nav_user')}
           </div>
         </Select.Select>
-      <Select.SelectPopover
-        className="account-settings-popover popover-ui z-[125] w-[305px] rounded-lg md:w-[244px]"
-        style={{
-          transformOrigin: 'bottom',
-          translate: '0 -4px',
-        }}
-      >
-        {/* User info block: email, balance, Add Credits — unified visual block */}
-        <div
-          className="rounded-lg border border-border-medium bg-surface-secondary/50 px-3 py-3 dark:bg-surface-secondary/30"
-          role="group"
-          aria-label="Account info"
+        <Select.SelectPopover
+          className="account-settings-popover popover-ui z-[125] w-[305px] rounded-lg md:w-[244px]"
+          style={{
+            transformOrigin: 'bottom',
+            translate: '0 -4px',
+          }}
         >
-          <div className="text-token-text-secondary text-sm" role="note">
-            {user?.email ?? localize('com_nav_user')}
-          </div>
-          {startupConfig?.balance?.enabled === true && balanceQuery.data != null && (
-            <div
-              className="text-token-text-secondary mt-1.5 flex items-center justify-between gap-2 text-sm"
-              role="note"
-            >
-              <span>
-                {localize('com_nav_balance')}: {new Intl.NumberFormat().format(Math.round(tokenCredits))}
-              </span>
-              <span className="text-xs">≈ ${approxUsd.toFixed(2)}</span>
+          {/* User info block: email, balance, Add Credits — unified visual block */}
+          <div
+            className="bg-surface-secondary/50 dark:bg-surface-secondary/30 rounded-lg border border-border-medium px-3 py-3"
+            role="group"
+            aria-label="Account info"
+          >
+            <div className="text-token-text-secondary text-sm" role="note">
+              {user?.email ?? localize('com_nav_user')}
             </div>
-          )}
-          <div className="mt-3 flex items-center justify-center">
-            <button
-              type="button"
-              onClick={() => navigate('/recharge')}
-              className="rounded-md bg-green-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-green-700"
-              title="Add Credits"
-            >
-              + Add Credits
-            </button>
+            {startupConfig?.balance?.enabled === true && balanceQuery.data != null && (
+              <div
+                className="text-token-text-secondary mt-1.5 flex items-center justify-between gap-2 text-sm"
+                role="note"
+              >
+                <span>
+                  {localize('com_nav_balance')}:{' '}
+                  {new Intl.NumberFormat().format(Math.round(tokenCredits))}
+                </span>
+                <span className="text-xs">≈ ${approxUsd.toFixed(2)}</span>
+              </div>
+            )}
+            <div className="mt-3 flex items-center justify-center">
+              <button
+                type="button"
+                onClick={() => navigate('/recharge')}
+                className="rounded-md bg-green-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-green-700"
+                title="Add Credits"
+              >
+                + Add Credits
+              </button>
+            </div>
           </div>
-        </div>
 
-        {/* Action list: Settings, Log out (Migrate History is in sidebar above avatar) */}
-        <div className="account-settings-actions mt-2 flex flex-col gap-1">
-          <Select.SelectItem
-            value=""
-            onClick={() => setShowSettings(true)}
-            className="select-item account-settings-item text-sm"
-          >
-            <GearIcon className="icon-md flex-shrink-0" aria-hidden="true" />
-            {localize('com_nav_settings')}
-          </Select.SelectItem>
-          <Select.SelectItem
-            aria-selected={true}
-            onClick={() => logout()}
-            value="logout"
-            className="select-item account-settings-item text-sm"
-          >
-            <LogOut className="icon-md flex-shrink-0" aria-hidden="true" />
-            {localize('com_nav_log_out')}
-          </Select.SelectItem>
-        </div>
-      </Select.SelectPopover>
+          {/* Action list: Settings, Log out (Migrate History is in sidebar above avatar) */}
+          <div className="account-settings-actions mt-2 flex flex-col gap-1">
+            <Select.SelectItem
+              value=""
+              onClick={() => setShowSettings(true)}
+              className="select-item account-settings-item text-sm"
+            >
+              <GearIcon className="icon-md flex-shrink-0" aria-hidden="true" />
+              {localize('com_nav_settings')}
+            </Select.SelectItem>
+            <Select.SelectItem
+              aria-selected={true}
+              onClick={() => logout()}
+              value="logout"
+              className="select-item account-settings-item text-sm"
+            >
+              <LogOut className="icon-md flex-shrink-0" aria-hidden="true" />
+              {localize('com_nav_log_out')}
+            </Select.SelectItem>
+          </div>
+        </Select.SelectPopover>
         {showSettings && <Settings open={showSettings} onOpenChange={setShowSettings} />}
       </Select.SelectProvider>
     </div>

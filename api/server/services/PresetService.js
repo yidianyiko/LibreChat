@@ -2,10 +2,9 @@ const crypto = require('crypto');
 const path = require('path');
 const { logger } = require('@librechat/data-schemas');
 const { savePreset, getPresets } = require('~/models');
-const {
-  DEFAULT_PRESET_CONFIG,
-  DEFAULT_PRESET_ID,
-} = require(path.resolve(__dirname, '..', '..', '..', 'config', 'default-preset'));
+const { DEFAULT_PRESET_CONFIG, DEFAULT_PRESET_ID } = require(
+  path.resolve(__dirname, '..', '..', '..', 'config', 'default-preset'),
+);
 
 /**
  * 为用户创建默认预设
@@ -21,9 +20,7 @@ const createDefaultPresetForUser = async (userId) => {
     );
 
     if (hasDefaultPreset) {
-      logger.info(
-        `[PresetService] User ${userId} already has a default preset, skipping creation`,
-      );
+      logger.info(`[PresetService] User ${userId} already has a default preset, skipping creation`);
       return null;
     }
 

@@ -18,14 +18,14 @@ const CSRF_TOKEN_LENGTH = 32;
 
 // Paths that should be exempt from CSRF protection
 const EXEMPT_PATHS = [
-  '/api/recharge/webhook',  // Stripe webhook - verified by Stripe signature
-  '/health',                // Health check endpoint
-  '/oauth',                 // OAuth callbacks
+  '/api/recharge/webhook', // Stripe webhook - verified by Stripe signature
+  '/health', // Health check endpoint
+  '/oauth', // OAuth callbacks
 ];
 
 // Path prefixes that should be exempt
 const EXEMPT_PATH_PREFIXES = [
-  '/oauth/',                // All OAuth routes
+  '/oauth/', // All OAuth routes
 ];
 
 /**

@@ -11,10 +11,7 @@ export const DEFAULT_CHUNK_THRESHOLD = 30 * 1024 * 1024;
  * If a single conversation exceeds the threshold, it gets its own chunk
  * (we can't split individual conversations).
  */
-export function splitJsonArrayIntoChunks<T>(
-  items: T[],
-  maxBytesPerChunk: number,
-): T[][] {
+export function splitJsonArrayIntoChunks<T>(items: T[], maxBytesPerChunk: number): T[][] {
   if (items.length === 0) {
     return [];
   }

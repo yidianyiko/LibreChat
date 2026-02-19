@@ -35,9 +35,7 @@ describe('Admin Stats API Routes', () => {
 
   describe('GET /api/admin/stats', () => {
     it('should return 403 when user is not admin', async () => {
-      const response = await request(app)
-        .get('/api/admin/stats')
-        .expect(403);
+      const response = await request(app).get('/api/admin/stats').expect(403);
 
       expect(response.body.error).toBe('Admin privileges required');
     });
