@@ -196,11 +196,20 @@ async function updateDualBalance({ user, incrementValue, balanceType, setValues 
       let updatedBalance = null;
       if (currentBalanceDoc) {
         // Conditional update with optimistic locking
+        // Use $in: [value, null] when value is 0 to match documents where the field
+        // is missing (legacy docs created before dual-balance fields were added)
+        const subQuery = currentSubBalance === 0
+          ? { $in: [0, null] }
+          : currentSubBalance;
+        const topupQuery = currentTopupBalance === 0
+          ? { $in: [0, null] }
+          : currentTopupBalance;
+
         updatedBalance = await Balance.findOneAndUpdate(
           {
             user: user,
-            subscriptionBalance: currentSubBalance,
-            topupBalance: currentTopupBalance,
+            subscriptionBalance: subQuery,
+            topupBalance: topupQuery,
           },
           updatePayload,
           { new: true },
@@ -295,11 +304,18 @@ async function deductBalance({ user, amount }) {
         },
       };
 
+      const subQuery = currentSubBalance === 0
+        ? { $in: [0, null] }
+        : currentSubBalance;
+      const topupQuery = currentTopupBalance === 0
+        ? { $in: [0, null] }
+        : currentTopupBalance;
+
       const updatedBalance = await Balance.findOneAndUpdate(
         {
           user: user,
-          subscriptionBalance: currentSubBalance,
-          topupBalance: currentTopupBalance,
+          subscriptionBalance: subQuery,
+          topupBalance: topupQuery,
         },
         updatePayload,
         { new: true },

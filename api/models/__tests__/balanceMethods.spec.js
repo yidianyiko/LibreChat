@@ -61,6 +61,26 @@ describe('balanceMethods', () => {
       expect(result.tokenCredits).toBe(2500);
     });
 
+    it('should handle balance documents missing subscriptionBalance and topupBalance fields', async () => {
+      const userId = new mongoose.Types.ObjectId();
+      // Simulate a legacy balance document created before dual-balance fields were added
+      await Balance.collection.insertOne({
+        user: userId,
+        tokenCredits: 10,
+        // Note: no subscriptionBalance or topupBalance fields
+      });
+
+      const result = await updateDualBalance({
+        user: userId,
+        incrementValue: 5000000,
+        balanceType: 'subscription',
+      });
+
+      expect(result.subscriptionBalance).toBe(5000000);
+      expect(result.topupBalance).toBe(0);
+      expect(result.tokenCredits).toBe(5000000);
+    });
+
     it('should reject invalid balanceType', async () => {
       const userId = new mongoose.Types.ObjectId();
 
@@ -115,6 +135,23 @@ describe('balanceMethods', () => {
       expect(result.totalDeducted).toBe(500);
       expect(result.balance.subscriptionBalance).toBe(0);
       expect(result.balance.topupBalance).toBe(800);
+    });
+
+    it('should handle balance documents missing subscriptionBalance and topupBalance fields', async () => {
+      const userId = new mongoose.Types.ObjectId();
+      // Legacy document: only has tokenCredits, no sub/topup fields
+      await Balance.collection.insertOne({
+        user: userId,
+        tokenCredits: 100,
+      });
+
+      // Deducting should fail with insufficient balance since both pools are 0/missing
+      await expect(
+        deductBalance({
+          user: userId,
+          amount: 50,
+        }),
+      ).rejects.toThrow('Insufficient balance');
     });
 
     it('should throw error when insufficient balance', async () => {
