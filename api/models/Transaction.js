@@ -16,7 +16,7 @@ const cancelRate = 1.15;
  * @returns {Promise<Object>} Returns the updated balance document (lean).
  * @throws {Error} Throws an error if the update fails after multiple retries.
  */
-const updateBalance = async ({ user, incrementValue, setValues }) => {
+const updateBalance = async ({ user, incrementValue, setValues, deductFromPools = false }) => {
   let maxRetries = 10; // Number of times to retry on conflict
   let delay = 50; // Initial retry delay in ms
   let lastError = null;
@@ -32,24 +32,48 @@ const updateBalance = async ({ user, incrementValue, setValues }) => {
       const potentialNewCredits = currentCredits + incrementValue;
       const newCredits = Math.max(0, potentialNewCredits); // Ensure balance doesn't go below zero
 
+      // 2b. Calculate pool deductions when spending tokens
+      const actualDecrement = currentCredits - newCredits;
+      let setPayload = {
+        tokenCredits: newCredits,
+        ...(setValues || {}),
+      };
+
+      if (deductFromPools && actualDecrement > 0) {
+        const currentSubBalance = currentBalanceDoc?.subscriptionBalance || 0;
+        const currentTopupBalance = currentBalanceDoc?.topupBalance || 0;
+        let remaining = actualDecrement;
+
+        const deductFromSub = Math.min(currentSubBalance, remaining);
+        remaining -= deductFromSub;
+        const deductFromTopup = Math.min(currentTopupBalance, remaining);
+
+        setPayload.subscriptionBalance = currentSubBalance - deductFromSub;
+        setPayload.topupBalance = currentTopupBalance - deductFromTopup;
+      }
+
       // 3. Prepare the update payload
       const updatePayload = {
-        $set: {
-          tokenCredits: newCredits,
-          ...(setValues || {}), // Merge other values to set
-        },
+        $set: setPayload,
       };
 
       // 4. Attempt the conditional update or upsert
       let updatedBalance = null;
       if (currentBalanceDoc) {
         // --- Document Exists: Perform Conditional Update ---
-        // Try to update only if the tokenCredits match the value we read (currentCredits)
+        // Build filter with optimistic lock on tokenCredits (and pools when deducting)
+        const filter = {
+          user: user,
+          tokenCredits: currentCredits, // Optimistic lock: condition based on the read value
+        };
+
+        if (deductFromPools && actualDecrement > 0) {
+          filter.subscriptionBalance = currentBalanceDoc?.subscriptionBalance || 0;
+          filter.topupBalance = currentBalanceDoc?.topupBalance || 0;
+        }
+
         updatedBalance = await Balance.findOneAndUpdate(
-          {
-            user: user,
-            tokenCredits: currentCredits, // Optimistic lock: condition based on the read value
-          },
+          filter,
           updatePayload,
           {
             new: true, // Return the modified document
@@ -212,6 +236,7 @@ async function createTransaction(_txData) {
   const balanceResponse = await updateBalance({
     user: transaction.user,
     incrementValue,
+    deductFromPools: true,
   });
 
   return {
@@ -249,6 +274,7 @@ async function createStructuredTransaction(_txData) {
   const balanceResponse = await updateBalance({
     user: transaction.user,
     incrementValue,
+    deductFromPools: true,
   });
 
   return {
