@@ -228,6 +228,7 @@ class SubscriptionWebhookHandler {
     }
 
     // Idempotency: skip if credits already granted for this invoice or subscription period
+    // Third clause catches checkout-fallback transactions (which have subscriptionId but no periodStart)
     const existingTx = await Transaction.findOne({
       user: userId,
       context: 'subscription_charge',
@@ -235,6 +236,8 @@ class SubscriptionWebhookHandler {
         { 'metadata.invoiceId': invoice.id },
         { 'metadata.subscriptionId': subscription.id,
           'metadata.periodStart': toSafeDate(subscription.current_period_start) },
+        { 'metadata.subscriptionId': subscription.id,
+          'metadata.source': 'checkout_session' },
       ],
     }).lean();
 
@@ -351,11 +354,16 @@ class SubscriptionWebhookHandler {
       throw new Error(`Invalid pricing tier: ${tierId}`);
     }
 
-    // Idempotency: skip if credits already granted for this subscription period
+    // Idempotency: skip if credits already granted for this session or subscription
     const existingTx = await Transaction.findOne({
       user: userId,
       context: 'subscription_charge',
-      'metadata.sessionId': session.id,
+      $or: [
+        { 'metadata.sessionId': session.id },
+        ...(session.subscription
+          ? [{ 'metadata.subscriptionId': session.subscription }]
+          : []),
+      ],
     }).lean();
 
     if (existingTx) {
