@@ -195,7 +195,7 @@ export const RechargePage: React.FC = () => {
                     : 'text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-200'
                 }`}
               >
-                {localize('com_recharge_subscription')}
+                {localize('com_recharge_tab_subscription')}
               </button>
               <button
                 type="button"
@@ -206,7 +206,7 @@ export const RechargePage: React.FC = () => {
                     : 'text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-200'
                 }`}
               >
-                {localize('com_recharge_topup')}
+                {localize('com_recharge_tab_topup')}
               </button>
             </div>
           </div>
