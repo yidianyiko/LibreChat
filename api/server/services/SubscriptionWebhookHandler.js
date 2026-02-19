@@ -227,6 +227,22 @@ class SubscriptionWebhookHandler {
       throw new Error(`Invalid pricing tier: ${tierId}`);
     }
 
+    // Idempotency: skip if credits already granted for this invoice or subscription period
+    const existingTx = await Transaction.findOne({
+      user: userId,
+      context: 'subscription_charge',
+      $or: [
+        { 'metadata.invoiceId': invoice.id },
+        { 'metadata.subscriptionId': subscription.id,
+          'metadata.periodStart': toSafeDate(subscription.current_period_start) },
+      ],
+    }).lean();
+
+    if (existingTx) {
+      logger.info(`[SubscriptionWebhook] Credits already granted for invoice ${invoice.id}, skipping`);
+      return { received: true, message: 'Already processed' };
+    }
+
     // Reset subscription balance to monthly allowance
     await resetSubscriptionBalance({
       user: userId,
@@ -249,6 +265,7 @@ class SubscriptionWebhookHandler {
         currency: invoice.currency,
         periodStart: toSafeDate(subscription.current_period_start),
         periodEnd: toSafeDate(subscription.current_period_end),
+        source: 'invoice_payment',
       },
     });
 

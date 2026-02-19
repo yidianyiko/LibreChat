@@ -29,6 +29,30 @@ async function ensureStripeRechargeIndex() {
   return ensureStripeRechargeIndexPromise;
 }
 
+let ensureSubscriptionDedupIndexPromise;
+async function ensureSubscriptionDedupIndex() {
+  if (!ensureSubscriptionDedupIndexPromise) {
+    ensureSubscriptionDedupIndexPromise = Transaction.collection
+      .createIndex(
+        { context: 1, 'metadata.subscriptionId': 1, 'metadata.periodStart': 1 },
+        {
+          name: 'uniq_subscription_charge_period',
+          unique: true,
+          partialFilterExpression: {
+            context: 'subscription_charge',
+            'metadata.subscriptionId': { $exists: true },
+            'metadata.periodStart': { $exists: true },
+          },
+        },
+      )
+      .catch((err) => {
+        ensureSubscriptionDedupIndexPromise = null;
+        throw err;
+      });
+  }
+  return ensureSubscriptionDedupIndexPromise;
+}
+
 /**
  * GET /api/recharge/pricing
  * 获取所有价格套餐
@@ -533,11 +557,16 @@ router.post(
       logger.info(`[Recharge Webhook] Received event: ${event.type}`);
 
       // Use webhook handler to process event
+      await Promise.all([ensureStripeRechargeIndex(), ensureSubscriptionDedupIndex()]);
       const webhookHandler = new SubscriptionWebhookHandler();
       const result = await webhookHandler.handleEvent(event);
 
       res.json(result);
     } catch (error) {
+      if (error.code === 11000) {
+        logger.info('[Recharge Webhook] Duplicate transaction detected (idempotent)');
+        return res.json({ received: true, message: 'Already processed' });
+      }
       logger.error('[Recharge Webhook] Error processing webhook:', error);
       res.status(400).send(`Webhook Error: ${error.message}`);
     }
