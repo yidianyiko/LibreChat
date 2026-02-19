@@ -4,6 +4,18 @@ const { User } = require('~/db/models');
 const { createTransaction } = require('~/models/Transaction');
 const { updateDualBalance, resetSubscriptionBalance } = require('~/models/balanceMethods');
 
+/**
+ * Safely convert a Unix timestamp to a Date object.
+ * Returns undefined (rather than Invalid Date) if the value is missing or NaN.
+ * @param {number|null|undefined} unixTs
+ * @returns {Date|undefined}
+ */
+function toSafeDate(unixTs) {
+  if (!unixTs && unixTs !== 0) return undefined;
+  const d = new Date(unixTs * 1000);
+  return isNaN(d.getTime()) ? undefined : d;
+}
+
 class SubscriptionWebhookHandler {
   constructor() {
     this.stripeService = getStripeService();
@@ -90,9 +102,9 @@ class SubscriptionWebhookHandler {
       subscriptionId: subscription.id,
       subscriptionStatus: subscription.status,
       subscriptionTier: tierId,
-      subscriptionStartDate: new Date(subscription.created * 1000),
-      currentPeriodStart: new Date(subscription.current_period_start * 1000),
-      currentPeriodEnd: new Date(subscription.current_period_end * 1000),
+      subscriptionStartDate: toSafeDate(subscription.created),
+      currentPeriodStart: toSafeDate(subscription.current_period_start),
+      currentPeriodEnd: toSafeDate(subscription.current_period_end),
       cancelAtPeriodEnd: subscription.cancel_at_period_end,
       stripeCustomerId: subscription.customer,
     });
@@ -114,8 +126,8 @@ class SubscriptionWebhookHandler {
 
     const updateData = {
       subscriptionStatus: subscription.status,
-      currentPeriodStart: new Date(subscription.current_period_start * 1000),
-      currentPeriodEnd: new Date(subscription.current_period_end * 1000),
+      currentPeriodStart: toSafeDate(subscription.current_period_start),
+      currentPeriodEnd: toSafeDate(subscription.current_period_end),
       cancelAtPeriodEnd: subscription.cancel_at_period_end,
     };
 
@@ -158,6 +170,9 @@ class SubscriptionWebhookHandler {
   async handleInvoicePaymentSucceeded(invoice) {
     // Skip if not a subscription invoice
     if (!invoice.subscription) {
+      logger.info(
+        `[SubscriptionWebhook] invoice.payment_succeeded skipped - no subscription linked (invoiceId: ${invoice.id}, billing_reason: ${invoice.billing_reason})`,
+      );
       return { received: true, message: 'Not a subscription invoice' };
     }
 
@@ -197,8 +212,8 @@ class SubscriptionWebhookHandler {
         tierId: tierId,
         amountPaid: invoice.amount_paid,
         currency: invoice.currency,
-        periodStart: new Date(subscription.current_period_start * 1000),
-        periodEnd: new Date(subscription.current_period_end * 1000),
+        periodStart: toSafeDate(subscription.current_period_start),
+        periodEnd: toSafeDate(subscription.current_period_end),
       },
     });
 
