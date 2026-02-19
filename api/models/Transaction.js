@@ -50,6 +50,8 @@ const updateBalance = async ({ user, incrementValue, setValues, deductFromPools 
 
         setPayload.subscriptionBalance = currentSubBalance - deductFromSub;
         setPayload.topupBalance = currentTopupBalance - deductFromTopup;
+        // Enforce invariant: tokenCredits = subscriptionBalance + topupBalance
+        setPayload.tokenCredits = setPayload.subscriptionBalance + setPayload.topupBalance;
       }
 
       // 3. Prepare the update payload
