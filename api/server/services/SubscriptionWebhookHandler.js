@@ -1,6 +1,6 @@
 const { logger } = require('~/config');
 const { getStripeService } = require('./StripeService');
-const { User } = require('~/db/models');
+const { User, Transaction } = require('~/db/models');
 const { createTransaction } = require('~/models/Transaction');
 const { updateDualBalance, resetSubscriptionBalance } = require('~/models/balanceMethods');
 
@@ -26,7 +26,16 @@ class SubscriptionWebhookHandler {
    * @param {Object} event - Stripe webhook event
    */
   async handleEvent(event) {
-    logger.info(`[SubscriptionWebhook] Processing event: ${event.type}`);
+    logger.info(`[SubscriptionWebhook] Processing event: ${event.type}`, {
+      eventId: event.id,
+      ...(event.type === 'invoice.payment_succeeded' && {
+        invoiceId: event.data.object?.id,
+        subscription: event.data.object?.subscription,
+        billing_reason: event.data.object?.billing_reason,
+        linesCount: event.data.object?.lines?.data?.length,
+        firstLineSubscription: event.data.object?.lines?.data?.[0]?.subscription,
+      }),
+    });
 
     try {
       switch (event.type) {
@@ -82,6 +91,12 @@ class SubscriptionWebhookHandler {
     // For topups, grant credits immediately
     if (isTopup && session.payment_status === 'paid') {
       return await this.grantTopupCredits(userId, tierId, session.id, session.amount_total);
+    }
+
+    // For subscriptions: grant first-month credits as fallback
+    // (invoice.payment_succeeded should also fire, but sometimes invoice.subscription is null)
+    if (!isTopup && session.mode === 'subscription' && session.payment_status === 'paid') {
+      return await this.grantSubscriptionCreditsFromCheckout(userId, tierId, session);
     }
 
     return { received: true, message: 'Checkout session processed' };
@@ -168,8 +183,28 @@ class SubscriptionWebhookHandler {
    * This is where we grant monthly subscription credits
    */
   async handleInvoicePaymentSucceeded(invoice) {
-    // Skip if not a subscription invoice
-    if (!invoice.subscription) {
+    // Resolve subscription ID from invoice.subscription or from line items
+    let subscriptionId = invoice.subscription;
+
+    if (!subscriptionId) {
+      // Stripe may not populate invoice.subscription for initial subscription invoices.
+      // Try extracting from line items or retrieving full invoice from Stripe.
+      const lineItem = invoice.lines?.data?.[0];
+      subscriptionId = lineItem?.subscription || lineItem?.parent?.subscription;
+    }
+
+    if (!subscriptionId && (invoice.billing_reason === 'subscription_create' || invoice.billing_reason === 'subscription_cycle')) {
+      // Last resort: retrieve the full invoice from Stripe to get the subscription link
+      try {
+        const fullInvoice = await this.stripeService.stripe.invoices.retrieve(invoice.id);
+        subscriptionId = fullInvoice.subscription;
+        logger.info(`[SubscriptionWebhook] Retrieved subscription ${subscriptionId} from full invoice ${invoice.id}`);
+      } catch (err) {
+        logger.error(`[SubscriptionWebhook] Failed to retrieve full invoice ${invoice.id}:`, err);
+      }
+    }
+
+    if (!subscriptionId) {
       logger.info(
         `[SubscriptionWebhook] invoice.payment_succeeded skipped - no subscription linked (invoiceId: ${invoice.id}, billing_reason: ${invoice.billing_reason})`,
       );
@@ -177,7 +212,7 @@ class SubscriptionWebhookHandler {
     }
 
     const subscription = await this.stripeService.stripe.subscriptions.retrieve(
-      invoice.subscription,
+      subscriptionId,
     );
     const userId = subscription.metadata?.userId;
     const tierId = subscription.metadata?.tierId;
@@ -287,6 +322,51 @@ class SubscriptionWebhookHandler {
       `[SubscriptionWebhook] Granted ${pricingTier.credits} topup credits to user ${userId}`,
     );
     return { received: true, message: 'Topup credits granted' };
+  }
+
+  /**
+   * Grant subscription credits from checkout.session.completed as a fallback
+   * when invoice.payment_succeeded has a null subscription field.
+   */
+  async grantSubscriptionCreditsFromCheckout(userId, tierId, session) {
+    const pricingTier = this.stripeService.getPricingTierById(tierId);
+    if (!pricingTier) {
+      throw new Error(`Invalid pricing tier: ${tierId}`);
+    }
+
+    // Idempotency: skip if credits already granted for this subscription period
+    const existingTx = await Transaction.findOne({
+      user: userId,
+      context: 'subscription_charge',
+      'metadata.sessionId': session.id,
+    }).lean();
+
+    if (existingTx) {
+      logger.info(`[SubscriptionWebhook] Credits already granted for session ${session.id}, skipping`);
+      return { received: true, message: 'Already processed' };
+    }
+
+    await resetSubscriptionBalance({ user: userId, newSubscriptionBalance: pricingTier.credits });
+
+    await createTransaction({
+      user: userId,
+      tokenType: 'credits',
+      context: 'subscription_charge',
+      rawAmount: pricingTier.credits,
+      balanceType: 'subscription',
+      balance: { enabled: false },
+      metadata: {
+        sessionId: session.id,
+        subscriptionId: session.subscription,
+        tierId,
+        amountPaid: session.amount_total,
+        currency: 'usd',
+        source: 'checkout_session',
+      },
+    });
+
+    logger.info(`[SubscriptionWebhook] Granted ${pricingTier.credits} subscription credits to user ${userId} (checkout fallback)`);
+    return { received: true, message: 'Subscription credits granted' };
   }
 }
 
