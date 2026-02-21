@@ -4,6 +4,7 @@ import {
   useCancelSubscription,
   useResumeSubscription,
   useChangeSubscriptionTier,
+  usePreviewSubscriptionChange,
 } from '~/hooks/Subscriptions';
 import { useToastContext } from '@librechat/client';
 import { useLocalize } from '~/hooks';
@@ -31,6 +32,17 @@ export const SubscriptionTab: React.FC<SubscriptionTabProps> = ({
   const cancelMutation = useCancelSubscription();
   const resumeMutation = useResumeSubscription();
   const changeTierMutation = useChangeSubscriptionTier();
+  const previewMutation = usePreviewSubscriptionChange();
+
+  const [confirmDialog, setConfirmDialog] = useState<{
+    tierId: string;
+    proratedAmount: number;
+    currency: string;
+    newTierName: string;
+    newTierPrice: number;
+    newTierCredits: number;
+    isUpgrade: boolean;
+  } | null>(null);
 
   const hasActiveSubscription = subscriptionStatus?.subscriptionStatus === 'active';
   const currentTier = subscriptionStatus?.subscriptionTier;
@@ -86,17 +98,43 @@ export const SubscriptionTab: React.FC<SubscriptionTabProps> = ({
     }
 
     try {
-      await changeTierMutation.mutateAsync(tierId);
+      const preview = await previewMutation.mutateAsync(tierId);
+      setConfirmDialog({
+        tierId,
+        proratedAmount: preview.proratedAmount,
+        currency: preview.currency,
+        newTierName: preview.newTierName,
+        newTierPrice: preview.newTierPrice,
+        newTierCredits: preview.newTierCredits,
+        isUpgrade: TIER_ORDER.indexOf(tierId) > TIER_ORDER.indexOf(currentTier!),
+      });
+    } catch (error) {
+      console.error('[SubscriptionTab] Preview failed:', error);
+      showToast({
+        message: localize('com_recharge_error_occurred'),
+        status: 'error',
+      });
+    }
+  };
+
+  const handleConfirmChange = async () => {
+    if (!confirmDialog) {
+      return;
+    }
+    try {
+      await changeTierMutation.mutateAsync(confirmDialog.tierId);
       showToast({
         message: localize('com_recharge_tier_changed'),
         status: 'success',
       });
+      setConfirmDialog(null);
     } catch (error) {
       console.error('[SubscriptionTab] Change tier failed:', error);
       showToast({
         message: localize('com_recharge_error_occurred'),
         status: 'error',
       });
+      // Keep dialog open so user can retry
     }
   };
 
@@ -214,7 +252,7 @@ export const SubscriptionTab: React.FC<SubscriptionTabProps> = ({
               key={tier.id}
               tier={tier}
               onSelect={handleCardClick}
-              isLoading={isLoading || changeTierMutation.isPending}
+              isLoading={isLoading || changeTierMutation.isPending || previewMutation.isPending}
               recommended={isRecommended}
               mode="subscription"
               isCurrentPlan={isCurrentPlan}
@@ -223,6 +261,59 @@ export const SubscriptionTab: React.FC<SubscriptionTabProps> = ({
           );
         })}
       </div>
+
+      {confirmDialog && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+          <div className="mx-4 w-full max-w-md rounded-2xl bg-white p-6 shadow-xl dark:bg-gray-800">
+            <h3 className="mb-4 text-lg font-bold text-gray-900 dark:text-white">
+              {confirmDialog.isUpgrade ? 'Confirm Upgrade' : 'Confirm Downgrade'}
+            </h3>
+            <div className="mb-6 space-y-2 text-sm text-gray-600 dark:text-gray-400">
+              <p>
+                {confirmDialog.isUpgrade ? 'Upgrading' : 'Downgrading'} to{' '}
+                <strong>{confirmDialog.newTierName}</strong>
+              </p>
+              {confirmDialog.proratedAmount > 0 && (
+                <p>
+                  Immediate charge:{' '}
+                  <strong>${(confirmDialog.proratedAmount / 100).toFixed(2)}</strong>
+                </p>
+              )}
+              {confirmDialog.proratedAmount <= 0 && (
+                <p>
+                  Credit applied:{' '}
+                  <strong>${(Math.abs(confirmDialog.proratedAmount) / 100).toFixed(2)}</strong>
+                </p>
+              )}
+              <p>
+                New monthly rate:{' '}
+                <strong>${(confirmDialog.newTierPrice / 100).toFixed(2)}/mo</strong>
+              </p>
+              <p>
+                Monthly credits:{' '}
+                <strong>${(confirmDialog.newTierCredits / 1000000).toFixed(2)}</strong>
+              </p>
+            </div>
+            <div className="flex gap-3">
+              <button
+                type="button"
+                onClick={() => setConfirmDialog(null)}
+                className="flex-1 rounded-xl bg-gray-200 px-4 py-2 text-sm font-bold text-gray-700 transition-all hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmChange}
+                disabled={changeTierMutation.isPending}
+                className="flex-1 rounded-xl bg-[#10a37f] px-4 py-2 text-sm font-bold text-white transition-all hover:bg-[#0d8a6a] disabled:opacity-50"
+              >
+                {changeTierMutation.isPending ? 'Processing...' : 'Confirm'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

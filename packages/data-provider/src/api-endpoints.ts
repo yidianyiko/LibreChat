@@ -53,6 +53,8 @@ export const rechargeCancelSubscription = () => `${BASE_URL}/api/recharge/cancel
 export const rechargeResumeSubscription = () => `${BASE_URL}/api/recharge/resume-subscription`;
 export const rechargeChangeSubscriptionTier = () =>
   `${BASE_URL}/api/recharge/change-subscription-tier`;
+export const rechargePreviewSubscriptionChange = () =>
+  `${BASE_URL}/api/recharge/preview-subscription-change`;
 
 export const userPlugins = () => `${BASE_URL}/api/user/plugins`;
 

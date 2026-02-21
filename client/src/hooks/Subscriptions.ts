@@ -6,6 +6,7 @@ import {
   cancelSubscription,
   resumeSubscription,
   changeSubscriptionTier,
+  previewSubscriptionChange,
 } from 'librechat-data-provider';
 
 export const useGetSubscriptionStatus = () => {
@@ -63,5 +64,11 @@ export const useChangeSubscriptionTier = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['subscriptionStatus'] });
     },
+  });
+};
+
+export const usePreviewSubscriptionChange = () => {
+  return useMutation({
+    mutationFn: (newTierId: string) => previewSubscriptionChange(newTierId),
   });
 };

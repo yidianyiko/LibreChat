@@ -50,6 +50,7 @@ const mockCancelingSubscription: SubscriptionStatus = {
 const mockCancelMutation = jest.fn();
 const mockResumeMutation = jest.fn();
 const mockChangeTierMutation = jest.fn();
+const mockPreviewMutation = jest.fn();
 const mockShowToast = jest.fn();
 
 jest.mock('~/hooks/Subscriptions', () => ({
@@ -63,6 +64,10 @@ jest.mock('~/hooks/Subscriptions', () => ({
   }),
   useChangeSubscriptionTier: () => ({
     mutateAsync: mockChangeTierMutation,
+    isPending: false,
+  }),
+  usePreviewSubscriptionChange: () => ({
+    mutateAsync: mockPreviewMutation,
     isPending: false,
   }),
 }));
@@ -363,7 +368,43 @@ describe('SubscriptionTab', () => {
   });
 
   describe('Tier changes', () => {
-    it('should call changeSubscriptionTier when upgrading', async () => {
+    const mockPreviewResponse = {
+      proratedAmount: 1500,
+      currency: 'usd',
+      immediateCharge: true,
+      newTierPrice: 2999,
+      newTierName: 'Elite',
+      newTierCredits: 30000000,
+      periodEnd: '2026-03-18T10:00:00.000Z',
+    };
+
+    it('should show confirmation dialog with preview when upgrading', async () => {
+      mockPreviewMutation.mockResolvedValue(mockPreviewResponse);
+      render(
+        <SubscriptionTab
+          tiers={mockTiers}
+          subscriptionStatus={mockActiveSubscription}
+          onSubscribe={jest.fn()}
+          isLoading={false}
+        />,
+      );
+
+      // Click upgrade button for elite tier
+      const upgradeButton = screen.getByText('UPGRADE');
+      fireEvent.click(upgradeButton);
+
+      await waitFor(() => {
+        expect(mockPreviewMutation).toHaveBeenCalledWith('elite');
+      });
+
+      // Confirmation dialog should appear
+      expect(screen.getByText('Confirm Upgrade')).toBeInTheDocument();
+      expect(screen.getByText(/Immediate charge/)).toBeInTheDocument();
+      expect(screen.getByText(/\$29\.99\/mo/)).toBeInTheDocument(); // monthly rate
+    });
+
+    it('should call changeSubscriptionTier after confirming upgrade', async () => {
+      mockPreviewMutation.mockResolvedValue(mockPreviewResponse);
       mockChangeTierMutation.mockResolvedValue({});
       render(
         <SubscriptionTab
@@ -379,6 +420,14 @@ describe('SubscriptionTab', () => {
       fireEvent.click(upgradeButton);
 
       await waitFor(() => {
+        expect(screen.getByText('Confirm Upgrade')).toBeInTheDocument();
+      });
+
+      // Click confirm
+      const confirmButton = screen.getByText('Confirm');
+      fireEvent.click(confirmButton);
+
+      await waitFor(() => {
         expect(mockChangeTierMutation).toHaveBeenCalledWith('elite');
         expect(mockShowToast).toHaveBeenCalledWith({
           message: 'Tier changed successfully',
@@ -387,8 +436,8 @@ describe('SubscriptionTab', () => {
       });
     });
 
-    it('should call changeSubscriptionTier when downgrading', async () => {
-      mockChangeTierMutation.mockResolvedValue({});
+    it('should close dialog when clicking cancel', async () => {
+      mockPreviewMutation.mockResolvedValue(mockPreviewResponse);
       render(
         <SubscriptionTab
           tiers={mockTiers}
@@ -398,15 +447,70 @@ describe('SubscriptionTab', () => {
         />,
       );
 
-      // Click downgrade button for explorer tier
+      const upgradeButton = screen.getByText('UPGRADE');
+      fireEvent.click(upgradeButton);
+
+      await waitFor(() => {
+        expect(screen.getByText('Confirm Upgrade')).toBeInTheDocument();
+      });
+
+      // Click cancel in dialog
+      const cancelDialogButton = screen.getByText('Cancel', { selector: '.fixed button' });
+      fireEvent.click(cancelDialogButton);
+
+      await waitFor(() => {
+        expect(screen.queryByText('Confirm Upgrade')).not.toBeInTheDocument();
+      });
+      expect(mockChangeTierMutation).not.toHaveBeenCalled();
+    });
+
+    it('should show confirmation dialog with credit when downgrading', async () => {
+      const downgradePreview = {
+        ...mockPreviewResponse,
+        proratedAmount: -500,
+        newTierPrice: 999,
+        newTierName: 'Explorer',
+        newTierCredits: 10000000,
+      };
+      mockPreviewMutation.mockResolvedValue(downgradePreview);
+      render(
+        <SubscriptionTab
+          tiers={mockTiers}
+          subscriptionStatus={mockActiveSubscription}
+          onSubscribe={jest.fn()}
+          isLoading={false}
+        />,
+      );
+
       const downgradeButton = screen.getByText('DOWNGRADE');
       fireEvent.click(downgradeButton);
 
       await waitFor(() => {
-        expect(mockChangeTierMutation).toHaveBeenCalledWith('explorer');
+        expect(mockPreviewMutation).toHaveBeenCalledWith('explorer');
+      });
+
+      expect(screen.getByText('Confirm Downgrade')).toBeInTheDocument();
+      expect(screen.getByText(/Credit applied/)).toBeInTheDocument();
+    });
+
+    it('should show error toast when preview fails', async () => {
+      mockPreviewMutation.mockRejectedValue(new Error('Network error'));
+      render(
+        <SubscriptionTab
+          tiers={mockTiers}
+          subscriptionStatus={mockActiveSubscription}
+          onSubscribe={jest.fn()}
+          isLoading={false}
+        />,
+      );
+
+      const upgradeButton = screen.getByText('UPGRADE');
+      fireEvent.click(upgradeButton);
+
+      await waitFor(() => {
         expect(mockShowToast).toHaveBeenCalledWith({
-          message: 'Tier changed successfully',
-          status: 'success',
+          message: 'An error occurred',
+          status: 'error',
         });
       });
     });

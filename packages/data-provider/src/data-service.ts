@@ -1160,3 +1160,17 @@ export const changeSubscriptionTier = (
 ): Promise<{ message: string; newTier: string; currentPeriodEnd: string }> => {
   return request.post(endpoints.rechargeChangeSubscriptionTier(), { newTierId });
 };
+
+export const previewSubscriptionChange = (
+  newTierId: string,
+): Promise<{
+  proratedAmount: number;
+  currency: string;
+  immediateCharge: boolean;
+  newTierPrice: number;
+  newTierName: string;
+  newTierCredits: number;
+  periodEnd: string;
+}> => {
+  return request.post(endpoints.rechargePreviewSubscriptionChange(), { newTierId });
+};
