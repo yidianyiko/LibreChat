@@ -6,6 +6,9 @@ jest.mock('~/db/models', () => ({
     findByIdAndUpdate: jest.fn(),
   },
   Balance: {},
+  Transaction: {
+    findOne: jest.fn(() => ({ lean: jest.fn().mockResolvedValue(null) })),
+  },
 }));
 
 jest.mock('~/models/Transaction', () => ({
@@ -172,6 +175,46 @@ describe('SubscriptionWebhookHandler', () => {
         subscriptionId: null,
         subscriptionTier: null,
         cancelAtPeriodEnd: false,
+      });
+    });
+  });
+
+  describe('handleInvoicePaymentSucceeded - subscription ID resolution', () => {
+    it('should resolve subscription from line items when invoice.subscription is null', async () => {
+      const invoice = {
+        id: 'in_123',
+        subscription: null, // Bug A: null subscription field
+        billing_reason: 'subscription_create',
+        amount_paid: 499,
+        currency: 'usd',
+        lines: {
+          data: [
+            {
+              subscription: 'sub_123', // Available in line items
+              parent: { subscription: 'sub_123' },
+            },
+          ],
+        },
+      };
+
+      const subscription = {
+        id: 'sub_123',
+        metadata: { userId: 'user123', tierId: 'explorer' },
+        current_period_start: 1234567890,
+        current_period_end: 1237159890,
+      };
+
+      handler.stripeService.stripe.subscriptions.retrieve.mockResolvedValue(subscription);
+      resetSubscriptionBalance.mockResolvedValue({});
+      createTransaction.mockResolvedValue({});
+
+      const result = await handler.handleInvoicePaymentSucceeded(invoice);
+
+      expect(result.message).toBe('Subscription credits granted');
+      expect(handler.stripeService.stripe.subscriptions.retrieve).toHaveBeenCalledWith('sub_123');
+      expect(resetSubscriptionBalance).toHaveBeenCalledWith({
+        user: 'user123',
+        newSubscriptionBalance: 5000000,
       });
     });
   });
