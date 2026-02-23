@@ -629,7 +629,7 @@ router.get('/history', requireJwtAuth, checkBan, async (req, res) => {
     const transactions = await Transaction.find({
       user: userId,
       tokenType: 'credits',
-      context: 'stripe_recharge',
+      context: { $in: ['stripe_recharge', 'subscription_charge', 'subscription_topup'] },
     })
       .sort({ createdAt: -1 })
       .limit(limit)
