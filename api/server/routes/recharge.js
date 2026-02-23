@@ -676,7 +676,8 @@ router.get('/verify-session/:sessionId', requireJwtAuth, checkBan, async (req, r
     const session = await stripeService.stripe.checkout.sessions.retrieve(sessionId);
 
     // 验证会话是否属于当前用户
-    if (session.metadata?.userId !== userId) {
+    const sessionUserId = session.metadata?.userId || session.client_reference_id;
+    if (sessionUserId !== userId) {
       return res.status(403).json({
         message: 'Session does not belong to current user',
       });

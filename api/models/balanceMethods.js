@@ -348,7 +348,8 @@ async function deductBalance({ user, amount }) {
 }
 
 /**
- * Resets subscription balance to a specific value (for monthly reset)
+ * Resets subscription balance to a specific value (for monthly reset).
+ * Uses $set directly to avoid delta-calculation race conditions.
  * @param {Object} params
  * @param {string} params.user - User ID
  * @param {number} params.newSubscriptionBalance - New subscription balance value
@@ -356,14 +357,19 @@ async function deductBalance({ user, amount }) {
  */
 async function resetSubscriptionBalance({ user, newSubscriptionBalance }) {
   const currentBalance = await Balance.findOne({ user }).lean();
-  const currentSubBalance = currentBalance?.subscriptionBalance || 0;
+  const currentTopupBalance = currentBalance?.topupBalance || 0;
 
-  const result = await updateDualBalance({
-    user,
-    incrementValue: newSubscriptionBalance - currentSubBalance,
-    balanceType: 'subscription',
-    setValues: { lastSubscriptionReset: new Date() },
-  });
+  const result = await Balance.findOneAndUpdate(
+    { user },
+    {
+      $set: {
+        subscriptionBalance: newSubscriptionBalance,
+        tokenCredits: newSubscriptionBalance + currentTopupBalance,
+        lastSubscriptionReset: new Date(),
+      },
+    },
+    { upsert: true, new: true },
+  ).lean();
 
   logger.info(
     `[resetSubscriptionBalance] Reset subscription balance for user ${user} to ${newSubscriptionBalance}`,
