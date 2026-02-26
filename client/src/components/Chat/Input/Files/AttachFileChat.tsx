@@ -22,8 +22,6 @@ function AttachFileChat({
   disableInputs: boolean;
   conversation: TConversation | null;
 }) {
-  // File upload UI is disabled
-  return null;
   const conversationId = conversation?.conversationId ?? Constants.NEW_CONVO;
   const { endpoint } = conversation ?? { endpoint: null };
   const isAgents = useMemo(() => isAgentsEndpoint(endpoint), [endpoint]);
