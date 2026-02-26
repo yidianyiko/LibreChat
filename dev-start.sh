@@ -182,7 +182,7 @@ main() {
 
     # 启动后端（后台）
     echo -e "${BLUE}启动后端 API (端口 $API_PORT)...${NC}"
-    npm run backend:dev &
+    PORT=3080 npm run backend:dev &
     BACKEND_PID=$!
 
     # 等待后端启动
