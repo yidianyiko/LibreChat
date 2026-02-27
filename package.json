@@ -1,6 +1,6 @@
 {
   "name": "LibreChat",
-  "version": "v0.8.2",
+  "version": "v0.8.3-rc1",
   "description": "",
   "packageManager": "npm@11.10.0",
   "workspaces": [
@@ -29,7 +29,6 @@
     "stop:deployed": "docker compose -f ./deploy-compose.yml down || docker-compose -f ./deploy-compose.yml down",
     "upgrade": "node config/upgrade.js",
     "create-user": "node config/create-user.js",
-    "create-default-presets": "node api/server/scripts/create-default-presets.js",
     "invite-user": "node config/invite-user.js",
     "list-users": "node config/list-users.js",
     "reset-password": "node config/reset-password.js",
@@ -39,7 +38,7 @@
     "update-banner": "node config/update-banner.js",
     "delete-banner": "node config/delete-banner.js",
     "backend": "cross-env NODE_ENV=production node api/server/index.js",
-    "backend:inspect": "cross-env NODE_ENV=production node --inspect api/server/index.js",
+    "backend:inspect": "cross-env NODE_ENV=production node --inspect --expose-gc api/server/index.js",
     "backend:dev": "cross-env NODE_ENV=development npx nodemon api/server/index.js",
     "backend:experimental": "cross-env NODE_ENV=production node api/server/experimental.js",
     "backend:stop": "node config/stop-backend.js",
@@ -48,10 +47,9 @@
     "build:data-schemas": "cd packages/data-schemas && npm run build",
     "build:client": "cd client && npm run build",
     "build:client-package": "cd packages/client && npm run build",
-    "build:packages": "npm-run-all --parallel build:data-provider build:data-schemas build:api build:client-package",
-    "build:packages:sequential": "npm run build:data-provider && npm run build:data-schemas && npm run build:api && npm run build:client-package",
-    "frontend": "npm run build:packages && cd client && npm run build",
-    "frontend:sequential": "npm run build:packages:sequential && cd client && npm run build",
+    "build:packages": "npm run build:data-provider && npm run build:data-schemas && npm run build:api && npm run build:client-package",
+    "build": "npx turbo run build",
+    "frontend": "npm run build:data-provider && npm run build:data-schemas && npm run build:api && npm run build:client-package && cd client && npm run build",
     "frontend:ci": "npm run build:data-provider && npm run build:client-package && cd client && npm run build:ci",
     "frontend:dev": "cd client && npm run dev",
     "e2e": "playwright test --config=e2e/playwright.config.local.ts",
@@ -109,7 +107,7 @@
   "devDependencies": {
     "@axe-core/playwright": "^4.10.1",
     "@eslint/compat": "^1.2.6",
-    "@eslint/eslintrc": "^3.3.1",
+    "@eslint/eslintrc": "^3.3.4",
     "@eslint/js": "^9.20.0",
     "@playwright/test": "^1.56.1",
     "@types/react-virtualized": "^9.22.0",
@@ -131,7 +129,6 @@
     "husky": "^9.1.7",
     "jest": "^30.2.0",
     "lint-staged": "^15.4.3",
-    "npm-run-all": "^4.1.5",
     "prettier": "^3.5.0",
     "prettier-plugin-tailwindcss": "^0.6.11",
     "turbo": "^2.8.7",
@@ -142,14 +139,14 @@
     "@librechat/agents": {
       "@langchain/anthropic": {
         "@anthropic-ai/sdk": "0.73.0",
-        "fast-xml-parser": "5.3.4"
+        "fast-xml-parser": "5.3.6"
       },
       "@anthropic-ai/sdk": "0.73.0",
-      "fast-xml-parser": "5.3.4"
+      "fast-xml-parser": "5.3.6"
     },
     "axios": "1.12.1",
     "elliptic": "^6.6.1",
-    "fast-xml-parser": "5.3.4",
+    "fast-xml-parser": "5.3.6",
     "form-data": "^4.0.4",
     "tslib": "^2.8.1",
     "mdast-util-gfm-autolink-literal": "2.0.0",
@@ -167,23 +164,19 @@
       "micromark-extension-math": {
         "katex": "^0.16.21"
       }
+    },
+    "langsmith": "0.4.12",
+    "eslint": {
+      "ajv": "6.14.0"
     }
   },
   "nodemonConfig": {
-    "delay": "2500",
     "ignore": [
-      ".env",
-      "logs/",
-      "api/logs/",
       "api/data/",
       "data/",
-      "uploads/",
       "client/",
       "admin/",
       "packages/"
     ]
-  },
-  "dependencies": {
-    "stripe": "^20.3.0"
   }
 }

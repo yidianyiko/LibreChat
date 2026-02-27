@@ -4,6 +4,7 @@ const { logger } = require('@librechat/data-schemas');
 const {
   countTokens,
   getBalanceConfig,
+  buildMessageFiles,
   extractFileContext,
   encodeAndFormatAudios,
   encodeAndFormatVideos,
@@ -20,6 +21,7 @@ const {
   isAgentsEndpoint,
   isEphemeralAgentId,
   supportsBalanceCheck,
+  isBedrockDocumentType,
 } = require('librechat-data-provider');
 const {
   updateMessage,
@@ -669,6 +671,14 @@ class BaseClient {
     }
 
     if (!isEdited && !this.skipSaveUserMessage) {
+      const reqFiles = this.options.req?.body?.files;
+      if (reqFiles && Array.isArray(this.options.attachments)) {
+        const files = buildMessageFiles(reqFiles, this.options.attachments);
+        if (files.length > 0) {
+          userMessage.files = files;
+        }
+        delete userMessage.image_urls;
+      }
       userMessagePromise = this.saveMessageToDatabase(userMessage, saveOptions, user);
       this.savedMessageIds.add(userMessage.messageId);
       if (typeof opts?.getReqData === 'function') {
@@ -1300,6 +1310,9 @@ class BaseClient {
 
     const allFiles = [];
 
+    const provider = this.options.agent?.provider ?? this.options.endpoint;
+    const isBedrock = provider === EModelEndpoint.bedrock;
+
     for (const file of attachments) {
       /** @type {FileSources} */
       const source = file.source ?? FileSources.local;
@@ -1315,6 +1328,9 @@ class BaseClient {
       if (file.type.startsWith('image/')) {
         categorizedAttachments.images.push(file);
       } else if (file.type === 'application/pdf') {
+        categorizedAttachments.documents.push(file);
+        allFiles.push(file);
+      } else if (isBedrock && isBedrockDocumentType(file.type)) {
         categorizedAttachments.documents.push(file);
         allFiles.push(file);
       } else if (file.type.startsWith('video/')) {
