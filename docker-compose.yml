@@ -31,6 +31,7 @@ services:
       - ./uploads:/app/uploads
       - ./logs:/app/logs
       - ./data:/app/data
+      - ./data:/app/api/data
   mongodb:
     container_name: chat-mongodb
     image: mongo:8.0.17

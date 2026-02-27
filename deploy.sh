@@ -321,6 +321,14 @@ EOF
         fi
     fi
 
+    # 每次部署都同步 docker-compose.yml
+    if [ -f "docker-compose.yml" ]; then
+        scp docker-compose.yml "${SERVER_HOST}:${PROJECT_DIR}/docker-compose.yml"
+        log_success "已同步 docker-compose.yml"
+    else
+        log_warning "本地 docker-compose.yml 不存在，跳过同步"
+    fi
+
     # 每次部署都同步 librechat.yaml
     if [ -f "librechat.yaml" ]; then
         scp librechat.yaml "${SERVER_HOST}:${PROJECT_DIR}/librechat.yaml"
