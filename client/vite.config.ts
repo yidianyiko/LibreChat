@@ -6,8 +6,6 @@ import { defineConfig } from 'vite';
 import { compression } from 'vite-plugin-compression2';
 import { nodePolyfills } from 'vite-plugin-node-polyfills';
 import { VitePWA } from 'vite-plugin-pwa';
-import { visualizer } from 'rollup-plugin-visualizer';
-import viteImagemin from 'vite-plugin-imagemin';
 
 // https://vitejs.dev/config/
 const backendPort = (process.env.BACKEND_PORT && Number(process.env.BACKEND_PORT)) || 3080;
@@ -152,27 +150,6 @@ export default defineConfig(({ command }) => ({
     sourcemapExclude({ excludeNodeModules: true }),
     compression({
       threshold: 10240,
-    }),
-    visualizer({
-      filename: './dist/stats.html',
-      gzipSize: true,
-      brotliSize: true,
-      open: false,
-      template: 'treemap',
-    }),
-    viteImagemin({
-      gifsicle: { optimizationLevel: 7 },
-      optipng: { optimizationLevel: 7 },
-      mozjpeg: { quality: 80 },
-      pngquant: { quality: [0.8, 0.9] },
-      svgo: {
-        plugins: [
-          { name: 'removeViewBox', active: false },
-          { name: 'removeEmptyAttrs', active: true },
-          { name: 'removeEmptyContainers', active: true },
-          { name: 'cleanupIDs', active: true },
-        ],
-      },
     }),
   ],
   publicDir: './public',

@@ -1076,12 +1076,8 @@
   "com_ui_latest_footer": "Én KI for alle.",
   "com_ui_latest_production_version": "Siste produksjonsversjon",
   "com_ui_latest_version": "Siste versjon",
-<<<<<<< HEAD
-  "com_ui_librechat_code_api_key": "Få din keep4oforever Kodetolk API-nøkkel",
-=======
   "com_ui_leave_blank_to_keep": "La stå tomt for å beholde eksisterende",
-  "com_ui_librechat_code_api_key": "Få din LibreChat Kodetolk API-nøkkel",
->>>>>>> upstream/main
+  "com_ui_librechat_code_api_key": "Få din keep4oforever Kodetolk API-nøkkel",
   "com_ui_librechat_code_api_subtitle": "Sikker. Flerspråklig. Fil-input/output.",
   "com_ui_librechat_code_api_title": "Kjør KI-kode",
   "com_ui_light_theme_enabled": "Lyst tema aktivert",
