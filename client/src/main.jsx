@@ -39,4 +39,10 @@ const bootstrap = async () => {
   }
 };
 
+window.addEventListener('unhandledrejection', (event) => {
+  if (event.reason?.message?.includes('Failed to fetch dynamically imported module')) {
+    window.location.reload();
+  }
+});
+
 void bootstrap();

@@ -15,7 +15,8 @@
 #   ./deploy.sh --server 54.64.181.104    # 指定服务器 IP
 #   ./deploy.sh --no-cache               # 强制重新构建（忽略 Docker 缓存）
 #   ./deploy.sh --init-only              # 仅初始化远程目录，不构建
-#   ./deploy.sh --rollback                # 回滚到上一版本
+#   ./deploy.sh --rollback               # 回滚到上一版本
+#   ./deploy.sh --local-test             # 本地构建并用 prod-test profile 启动
 ################################################################################
 
 set -e  # 遇到错误立即退出
@@ -43,6 +44,7 @@ LAST_DEPLOYED_COMMIT_FILE="${DEPLOY_DIR}/last_deployed_commit.txt"
 
 # 标志变量
 INIT_ONLY=false
+LOCAL_TEST=false
 NO_CACHE=false  # 默认使用 Docker 缓存，加速构建（可用 --no-cache 强制重建）
 DEPLOY_MODE="full-build"  # full-build | config-only | no-change
 CHANGED_FILES=""
@@ -275,17 +277,6 @@ transfer_config_files() {
             exit 1
         fi
 
-        # 检查 .env 文件
-        if [ ! -f "${PROJECT_DIR}/.env" ]; then
-            if [ -f "${PROJECT_DIR}/.env.example" ]; then
-                echo "警告: .env 文件不存在，将从 .env.example 创建"
-                cp "${PROJECT_DIR}/.env.example" "${PROJECT_DIR}/.env"
-                echo "请编辑 .env 文件配置必要的环境变量"
-            else
-                echo "警告: .env 文件不存在"
-            fi
-        fi
-
         # 检查 librechat.yaml 文件
         if [ ! -f "${PROJECT_DIR}/librechat.yaml" ]; then
             if [ -f "${PROJECT_DIR}/librechat.example.yaml" ]; then
@@ -310,11 +301,6 @@ EOF
             log_success "已传输 docker-compose.yml"
         fi
 
-        if [ -f ".env.example" ] && ! ssh "${SERVER_HOST}" "[ -f ${PROJECT_DIR}/.env ]"; then
-            scp .env.example "${SERVER_HOST}:${PROJECT_DIR}/.env"
-            log_warning "已创建 .env 从 .env.example，请手动配置"
-        fi
-
         if [ -f "librechat.example.yaml" ] && ! ssh "${SERVER_HOST}" "[ -f ${PROJECT_DIR}/librechat.yaml ]"; then
             scp librechat.example.yaml "${SERVER_HOST}:${PROJECT_DIR}/librechat.yaml"
             log_success "已创建 librechat.yaml"
@@ -327,6 +313,16 @@ EOF
         log_success "已同步 docker-compose.yml"
     else
         log_warning "本地 docker-compose.yml 不存在，跳过同步"
+    fi
+
+    # 每次部署都同步 .env
+    # 安全：docker-compose.yml environment: 节会覆盖所有环境特定变量
+    # (DOMAIN, LOG_DIR, PROXY, CORS)，所以本地的 localhost 值不会影响生产
+    if [ -f ".env" ]; then
+        scp .env "${SERVER_HOST}:${PROJECT_DIR}/.env"
+        log_success "已同步 .env"
+    else
+        log_warning "本地 .env 不存在，跳过同步"
     fi
 
     # 每次部署都同步 librechat.yaml
@@ -574,6 +570,58 @@ save_deployed_commit() {
     log_success "已记录部署提交: ${current_commit}"
 }
 
+# 本地生产镜像测试
+local_test() {
+    local LOCAL_TAG="librechat-local:test"
+
+    echo "======================================"
+    echo "  LibreChat 本地生产镜像测试"
+    echo "======================================"
+    echo ""
+
+    if ! check_command docker; then
+        log_error "Docker 未安装或未运行"
+        exit 1
+    fi
+
+    local BUILD_OPTS="-f Dockerfile.multi --target api-build"
+    if [ "${NO_CACHE}" = "true" ]; then
+        log_warning "使用 --no-cache 强制重新构建所有层"
+        BUILD_OPTS="${BUILD_OPTS} --no-cache"
+    fi
+
+    log_info "构建镜像: ${LOCAL_TAG}..."
+    if docker build ${BUILD_OPTS} -t "${LOCAL_TAG}" .; then
+        log_success "镜像构建成功: ${LOCAL_TAG}"
+    else
+        log_error "镜像构建失败"
+        exit 1
+    fi
+
+    # 清理上次可能遗留的孤儿进程和容器
+    local vite_pids
+    vite_pids=$(lsof -ti :3090 2>/dev/null || true)
+    if [ -n "${vite_pids}" ]; then
+        log_warning "端口 3090 被占用，清理遗留进程 (PID: ${vite_pids})..."
+        kill ${vite_pids} 2>/dev/null || true
+        sleep 1
+    fi
+
+    log_info "清理遗留 prod-test 容器..."
+    docker compose -f docker-compose.dev.yml --profile prod-test down 2>/dev/null || true
+
+    log_info "后台启动 prod-test 后端容器（端口 3080）..."
+    docker compose -f docker-compose.dev.yml --profile prod-test up -d
+
+    trap 'log_info "停止 prod-test 容器..."; docker compose -f docker-compose.dev.yml --profile prod-test down; exit 0' INT TERM
+
+    log_info "等待后端就绪..."
+    sleep 5
+
+    log_info "启动 Vite 前端（端口 3090，Ctrl+C 停止所有服务）..."
+    npm run frontend:dev
+}
+
 # 回滚功能
 rollback() {
     log_warning "开始回滚..."
@@ -700,6 +748,10 @@ while [[ $# -gt 0 ]]; do
             SERVER_HOST="${SERVER_USER}@${SERVER_IP}"
             shift 2
             ;;
+        --local-test|-l)
+            LOCAL_TEST=true
+            shift
+            ;;
         --init-only)
             INIT_ONLY=true
             shift
@@ -723,6 +775,7 @@ while [[ $# -gt 0 ]]; do
             echo "选项:"
             echo "  --server, -s <IP>    服务器 IP 地址 (默认: 54.64.181.104)"
             echo "  --user, -u <USER>    SSH 用户名 (默认: ubuntu)"
+            echo "  --local-test, -l     本地构建并用 prod-test profile 启动（不部署远程）"
             echo "  --init-only          仅初始化远程目录，不构建镜像"
             echo "  --no-cache           强制重新构建所有 Docker 层（忽略缓存）"
             echo "  --use-cache          允许复用 Docker 缓存层（推荐日常部署）"
@@ -735,6 +788,8 @@ while [[ $# -gt 0 ]]; do
             echo ""
             echo "示例:"
             echo "  $0                           # 完整部署流程"
+            echo "  $0 --local-test              # 本地生产镜像测试"
+            echo "  $0 --local-test --no-cache   # 强制重建后本地测试"
             echo "  $0 --no-cache                # 强制重新构建并部署"
             echo "  $0 --init-only               # 仅初始化目录"
             echo "  $0 --server 1.2.3.4          # 指定服务器"
@@ -752,6 +807,8 @@ done
 # 执行
 if [ "${ROLLBACK}" = "true" ]; then
     rollback
+elif [ "${LOCAL_TEST}" = "true" ]; then
+    local_test
 else
     main
 fi

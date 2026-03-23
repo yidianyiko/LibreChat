@@ -9,7 +9,7 @@ services:
     depends_on:
       - mongodb
       - rag_api
-    image: ghcr.io/danny-avila/librechat-dev:latest
+    image: registry.librechat.ai/danny-avila/librechat-dev:latest
     restart: always
     user: "${UID}:${GID}"
     extra_hosts:
@@ -22,6 +22,12 @@ services:
       - MEILI_HOST=http://meilisearch:7700
       - RAG_PORT=${RAG_PORT:-8000}
       - RAG_API_URL=http://rag_api:${RAG_PORT:-8000}
+      - DOMAIN_CLIENT=https://keep4oforever.com
+      - DOMAIN_SERVER=https://keep4oforever.com
+      - LIBRECHAT_LOG_DIR=/app/logs
+      - PROXY=
+      - CORS_ALLOWED_ORIGINS=https://keep4oforever.com
+      - SSE_ALLOWED_ORIGINS=https://keep4oforever.com
     volumes:
       - type: bind
         source: ./.env
@@ -63,7 +69,7 @@ services:
       - pgdata2:/var/lib/postgresql/data
   rag_api:
     container_name: rag_api
-    image: ghcr.io/danny-avila/librechat-rag-api-dev-lite:latest
+    image: registry.librechat.ai/danny-avila/librechat-rag-api-dev-lite:latest
     environment:
       - DB_HOST=vectordb
       - RAG_PORT=${RAG_PORT:-8000}

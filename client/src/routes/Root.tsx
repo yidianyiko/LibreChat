@@ -84,6 +84,7 @@ export default function Root() {
                           }
                         : undefined
                     }
+                    {...{ inert: navVisible && isSmallScreen ? '' : undefined }}
                   >
                     <MobileNav navVisible={navVisible} setNavVisible={setNavVisible} />
                     <Outlet context={{ navVisible, setNavVisible } satisfies ContextType} />
