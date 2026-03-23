@@ -1,4 +1,5 @@
 import type { AxiosResponse } from 'axios';
+import type { TAdminStatsResponse } from './admin-stats';
 import type * as t from './types';
 import * as endpoints from './api-endpoints';
 import * as a from './types/assistants';
@@ -1102,22 +1103,6 @@ export interface ActiveJobsResponse {
 export const getActiveJobs = (): Promise<ActiveJobsResponse> => {
   return request.get(endpoints.activeJobs());
 };
-
-/* Admin Stats */
-export interface TAdminStatsResponse {
-  totalUsers: number;
-  recentNewUsers: number;
-  dailyRegistrations: Array<{
-    date: string;
-    count: number;
-    [key: string]: number | string;
-  }>;
-  registrationByProvider: Record<string, number>;
-  activeUsers: {
-    last7Days: number;
-    last30Days: number;
-  };
-}
 
 export const getAdminStats = (days?: number): Promise<TAdminStatsResponse> => {
   return request.get(endpoints.adminStats(days));
