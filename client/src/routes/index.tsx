@@ -108,7 +108,9 @@ export const router = createBrowserRouter(
       index: true,
       element: (
         <Suspense fallback={<LoadingFallback />}>
-          <AuthContextProvider>
+          <AuthContextProvider
+            authConfig={{ loginRedirect: '/login', redirectOnSilentRefreshFailure: false }}
+          >
             <LandingPageGuard />
           </AuthContextProvider>
         </Suspense>

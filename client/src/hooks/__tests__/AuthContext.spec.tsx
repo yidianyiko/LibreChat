@@ -23,6 +23,12 @@ let mockCapturedLoginOptions: {
   onSuccess: (...args: unknown[]) => void;
   onError: (...args: unknown[]) => void;
 };
+let mockCapturedRefreshOptions:
+  | {
+      onSuccess: (...args: unknown[]) => void;
+      onError: (...args: unknown[]) => void;
+    }
+  | undefined;
 
 jest.mock('~/data-provider', () => ({
   useLoginUserMutation: jest.fn(
@@ -35,7 +41,11 @@ jest.mock('~/data-provider', () => ({
     },
   ),
   useLogoutUserMutation: jest.fn(() => ({ mutate: jest.fn() })),
-  useRefreshTokenMutation: jest.fn(() => ({ mutate: jest.fn() })),
+  useRefreshTokenMutation: jest.fn(() => ({
+    mutate: jest.fn((_variables, options) => {
+      mockCapturedRefreshOptions = options;
+    }),
+  })),
   useGetUserQuery: jest.fn(() => ({
     data: undefined,
     isError: false,
@@ -51,7 +61,7 @@ function TestConsumer() {
   return <div data-testid="consumer" data-authenticated={ctx.isAuthenticated} />;
 }
 
-function renderProvider() {
+function renderProvider(customAuthConfig: TAuthConfig = authConfig) {
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
   });
@@ -60,7 +70,7 @@ function renderProvider() {
     <QueryClientProvider client={queryClient}>
       <RecoilRoot>
         <MemoryRouter>
-          <AuthContextProvider authConfig={authConfig}>
+          <AuthContextProvider authConfig={customAuthConfig}>
             <TestConsumer />
           </AuthContextProvider>
         </MemoryRouter>
@@ -74,6 +84,7 @@ describe('AuthContextProvider — login onError redirect handling', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+    mockCapturedRefreshOptions = undefined;
     Object.defineProperty(window, 'location', {
       value: { ...originalLocation, pathname: '/login', search: '', hash: '' },
       writable: true,
@@ -170,5 +181,24 @@ describe('AuthContextProvider — login onError redirect handling', () => {
     const navigatedUrl = mockNavigate.mock.calls[0][0] as string;
     const params = new URLSearchParams(navigatedUrl.split('?')[1]);
     expect(decodeURIComponent(params.get('redirect_to')!)).toBe(target);
+  });
+
+  it('does not redirect when silent refresh fails and redirects are disabled for anonymous routes', () => {
+    Object.defineProperty(window, 'location', {
+      value: { pathname: '/', search: '', hash: '' },
+      writable: true,
+      configurable: true,
+    });
+
+    renderProvider({
+      loginRedirect: '/login',
+      redirectOnSilentRefreshFailure: false,
+    });
+
+    act(() => {
+      mockCapturedRefreshOptions?.onError(new Error('refresh failed'));
+    });
+
+    expect(mockNavigate).not.toHaveBeenCalled();
   });
 });

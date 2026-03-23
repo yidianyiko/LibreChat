@@ -48,6 +48,8 @@ const AuthContextProvider = ({
   });
 
   const navigate = useNavigate();
+  const shouldRedirectOnSilentRefreshFailure =
+    authConfig?.redirectOnSilentRefreshFailure !== false;
 
   const setUserContext = useMemo(
     () =>
@@ -157,18 +159,31 @@ const AuthContextProvider = ({
         if (authConfig?.test === true) {
           return;
         }
-        navigate(buildLoginRedirectUrl());
+        if (shouldRedirectOnSilentRefreshFailure) {
+          navigate(buildLoginRedirectUrl());
+          return;
+        }
+        setUserContext({ token: undefined, isAuthenticated: false, user: undefined });
       },
       onError: (error) => {
         console.log('refreshToken mutation error:', error);
         if (authConfig?.test === true) {
           return;
         }
-        navigate(buildLoginRedirectUrl());
+        if (shouldRedirectOnSilentRefreshFailure) {
+          navigate(buildLoginRedirectUrl());
+          return;
+        }
+        setUserContext({ token: undefined, isAuthenticated: false, user: undefined });
       },
     });
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- deps are stable at mount; adding refreshToken causes infinite re-fire
-  }, []);
+  }, [
+    authConfig?.test,
+    navigate,
+    setUserContext,
+    shouldRedirectOnSilentRefreshFailure,
+    refreshToken,
+  ]);
 
   useEffect(() => {
     if (userQuery.data) {

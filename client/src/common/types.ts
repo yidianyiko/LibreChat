@@ -470,6 +470,7 @@ export type TUserContext = {
 export type TAuthConfig = {
   loginRedirect: string;
   test?: boolean;
+  redirectOnSilentRefreshFailure?: boolean;
 };
 
 export type IconProps = Pick<t.TMessage, 'isCreatedByUser' | 'model'> &
