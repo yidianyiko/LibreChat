@@ -3,10 +3,10 @@ import { useRecoilState } from 'recoil';
 import TagManager from 'react-gtm-module';
 import { LocalStorageKeys, PermissionTypes, Permissions } from 'librechat-data-provider';
 import type { TStartupConfig, TUser } from 'librechat-data-provider';
-import { cleanupTimestampedStorage } from '~/utils/timestamps';
-import useSpeechSettingsInit from './useSpeechSettingsInit';
 import { useMCPToolsQuery, useMCPServersQuery } from '~/data-provider';
-import useHasAccess from '~/hooks/Roles/useHasAccess';
+import { cleanupTimestampedStorage } from '~/utils/timestamps';
+import { useHasAccess } from '~/hooks';
+import useSpeechSettingsInit from './useSpeechSettingsInit';
 import store from '~/store';
 
 export default function useAppStartup({
@@ -17,20 +17,19 @@ export default function useAppStartup({
   user?: TUser;
 }) {
   const [defaultPreset, setDefaultPreset] = useRecoilState(store.defaultPreset);
-
-  const hasMcpAccess = useHasAccess({
+  const canUseMcp = useHasAccess({
     permissionType: PermissionTypes.MCP_SERVERS,
     permission: Permissions.USE,
   });
 
   useSpeechSettingsInit(!!user);
   const { data: loadedServers, isLoading: serversLoading } = useMCPServersQuery({
-    enabled: hasMcpAccess && !!user,
+    enabled: canUseMcp && !!user,
   });
 
   useMCPToolsQuery({
     enabled:
-      hasMcpAccess &&
+      canUseMcp &&
       !serversLoading &&
       !!loadedServers &&
       Object.keys(loadedServers).length > 0 &&

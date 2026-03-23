@@ -1,23 +1,25 @@
-import { useState, memo, useRef } from 'react';
+import { memo, useRef, useState } from 'react';
 import * as Select from '@ariakit/react/select';
+import { BarChart3, FileText, Import, LogOut } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { LogOut, Import, BarChart3 } from 'lucide-react';
-import { GearIcon, Avatar } from '@librechat/client';
+import { Avatar, DropdownMenuSeparator, GearIcon, LinkIcon } from '@librechat/client';
 import { useGetStartupConfig, useGetUserBalance, SystemRoles } from '~/data-provider';
-import ImportConversations from './SettingsTabs/Data/ImportConversations';
-import ImportConversationDialog from './SettingsTabs/Data/ImportConversationDialog';
-import { useAuthContext } from '~/hooks/AuthContext';
+import { MyFilesModal } from '~/components/Chat/Input/Files/MyFilesModal';
 import { useLocalize } from '~/hooks';
+import { useAuthContext } from '~/hooks/AuthContext';
+import ImportConversationDialog from './SettingsTabs/Data/ImportConversationDialog';
+import ImportConversations from './SettingsTabs/Data/ImportConversations';
 import Settings from './Settings';
 
 function AccountSettings() {
   const localize = useLocalize();
-  const { user, isAuthenticated, logout } = useAuthContext();
   const navigate = useNavigate();
+  const { user, isAuthenticated, logout } = useAuthContext();
   const { data: startupConfig } = useGetStartupConfig();
   const balanceQuery = useGetUserBalance({
     enabled: !!isAuthenticated && startupConfig?.balance?.enabled,
   });
+  const [showFiles, setShowFiles] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [showImportDialog, setShowImportDialog] = useState(false);
   const [pendingImportFile, setPendingImportFile] = useState<File | null>(null);
@@ -28,7 +30,6 @@ function AccountSettings() {
 
   return (
     <div className="mt-1 flex flex-col gap-1">
-      {/* Migrate History: above user avatar in sidebar — opens import dialog */}
       <ImportConversations
         importFile={pendingImportFile}
         onImportFileHandled={() => setPendingImportFile(null)}
@@ -54,7 +55,6 @@ function AccountSettings() {
         onStartImport={(file) => setPendingImportFile(file)}
         isUploading={isImportUploading}
       />
-      {/* Admin Stats Link - only visible to admins */}
       {user?.role === SystemRoles.ADMIN && (
         <button
           type="button"
@@ -85,66 +85,91 @@ function AccountSettings() {
             {user?.name ?? user?.username ?? localize('com_nav_user')}
           </div>
         </Select.Select>
-      <Select.SelectPopover
-        className="account-settings-popover popover-ui z-[125] w-[305px] rounded-lg md:w-[244px]"
-        style={{
-          transformOrigin: 'bottom',
-          translate: '0 -4px',
-        }}
-      >
-        {/* User info block: email, balance, Add Credits — unified visual block */}
-        <div
-          className="rounded-lg border border-border-medium bg-surface-secondary/50 px-3 py-3 dark:bg-surface-secondary/30"
-          role="group"
-          aria-label="Account info"
+        <Select.SelectPopover
+          className="account-settings-popover popover-ui z-[125] w-[305px] rounded-lg md:w-[244px]"
+          style={{
+            transformOrigin: 'bottom',
+            translate: '0 -4px',
+          }}
         >
-          <div className="text-token-text-secondary text-sm" role="note">
-            {user?.email ?? localize('com_nav_user')}
-          </div>
-          {startupConfig?.balance?.enabled === true && balanceQuery.data != null && (
-            <div
-              className="text-token-text-secondary mt-1.5 flex items-center justify-between gap-2 text-sm"
-              role="note"
-            >
-              <span>
-                {localize('com_nav_balance')}: {new Intl.NumberFormat().format(Math.round(tokenCredits))}
-              </span>
-              <span className="text-xs">≈ ${approxUsd.toFixed(2)}</span>
+          <div
+            className="rounded-lg border border-border-medium bg-surface-secondary/50 px-3 py-3 dark:bg-surface-secondary/30"
+            role="group"
+            aria-label="Account info"
+          >
+            <div className="text-token-text-secondary text-sm" role="note">
+              {user?.email ?? localize('com_nav_user')}
             </div>
-          )}
-          <div className="mt-3 flex items-center justify-center">
-            <button
-              type="button"
-              onClick={() => navigate('/recharge')}
-              className="rounded-md bg-green-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-green-700"
-              title="Add Credits"
-            >
-              + Add Credits
-            </button>
+            {startupConfig?.balance?.enabled === true && balanceQuery.data != null && (
+              <div
+                className="text-token-text-secondary mt-1.5 flex items-center justify-between gap-2 text-sm"
+                role="note"
+              >
+                <span>
+                  {localize('com_nav_balance')}:{' '}
+                  {new Intl.NumberFormat().format(Math.round(tokenCredits))}
+                </span>
+                <span className="text-xs">≈ ${approxUsd.toFixed(2)}</span>
+              </div>
+            )}
+            <div className="mt-3 flex items-center justify-center">
+              <button
+                type="button"
+                onClick={() => navigate('/recharge')}
+                className="rounded-md bg-green-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-green-700"
+                title="Add Credits"
+              >
+                + Add Credits
+              </button>
+            </div>
           </div>
-        </div>
 
-        {/* Action list: Settings, Log out (Migrate History is in sidebar above avatar) */}
-        <div className="account-settings-actions mt-2 flex flex-col gap-1">
-          <Select.SelectItem
-            value=""
-            onClick={() => setShowSettings(true)}
-            className="select-item account-settings-item text-sm"
-          >
-            <GearIcon className="icon-md flex-shrink-0" aria-hidden="true" />
-            {localize('com_nav_settings')}
-          </Select.SelectItem>
-          <Select.SelectItem
-            aria-selected={true}
-            onClick={() => logout()}
-            value="logout"
-            className="select-item account-settings-item text-sm"
-          >
-            <LogOut className="icon-md flex-shrink-0" aria-hidden="true" />
-            {localize('com_nav_log_out')}
-          </Select.SelectItem>
-        </div>
-      </Select.SelectPopover>
+          <div className="account-settings-actions mt-2 flex flex-col gap-1">
+            <Select.SelectItem
+              value="my-files"
+              onClick={() => setShowFiles(true)}
+              className="select-item account-settings-item text-sm"
+            >
+              <FileText className="icon-md flex-shrink-0" aria-hidden="true" />
+              {localize('com_nav_my_files')}
+            </Select.SelectItem>
+            {startupConfig?.helpAndFaqURL !== '/' && (
+              <Select.SelectItem
+                value="help-faq"
+                onClick={() => window.open(startupConfig?.helpAndFaqURL, '_blank')}
+                className="select-item account-settings-item text-sm"
+              >
+                <LinkIcon className="icon-md flex-shrink-0" aria-hidden="true" />
+                {localize('com_nav_help_faq')}
+              </Select.SelectItem>
+            )}
+            <DropdownMenuSeparator />
+            <Select.SelectItem
+              value="settings"
+              onClick={() => setShowSettings(true)}
+              className="select-item account-settings-item text-sm"
+            >
+              <GearIcon className="icon-md flex-shrink-0" aria-hidden="true" />
+              {localize('com_nav_settings')}
+            </Select.SelectItem>
+            <Select.SelectItem
+              aria-selected={true}
+              onClick={() => logout()}
+              value="logout"
+              className="select-item account-settings-item text-sm"
+            >
+              <LogOut className="icon-md flex-shrink-0" aria-hidden="true" />
+              {localize('com_nav_log_out')}
+            </Select.SelectItem>
+          </div>
+        </Select.SelectPopover>
+        {showFiles && (
+          <MyFilesModal
+            open={showFiles}
+            onOpenChange={setShowFiles}
+            triggerRef={accountSettingsButtonRef}
+          />
+        )}
         {showSettings && <Settings open={showSettings} onOpenChange={setShowSettings} />}
       </Select.SelectProvider>
     </div>

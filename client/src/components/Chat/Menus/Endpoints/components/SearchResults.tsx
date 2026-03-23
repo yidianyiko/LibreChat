@@ -162,7 +162,9 @@ export function SearchResults({ results, localize, searchValue }: SearchResultsP
                   }
 
                   const isModelSelected =
-                    selectedEndpoint === endpoint.value && selectedModel === modelId;
+                    !selectedSpec &&
+                    selectedEndpoint === endpoint.value &&
+                    selectedModel === modelId;
                   const rateText =
                     typeof promptRate === 'number' && typeof completionRate === 'number'
                       ? `Input $${promptRate.toFixed(2)}/M | Output $${completionRate.toFixed(2)}/M`
@@ -212,7 +214,7 @@ export function SearchResults({ results, localize, searchValue }: SearchResultsP
             );
           } else {
             // Endpoints with no models
-            const isEndpointSelected = selectedEndpoint === endpoint.value;
+            const isEndpointSelected = !selectedSpec && selectedEndpoint === endpoint.value;
             return (
               <MenuItem
                 key={`endpoint-${endpoint.value}-search-item`}

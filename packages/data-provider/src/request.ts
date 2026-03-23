@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import axios, { AxiosError, AxiosRequestConfig } from 'axios';
-import * as endpoints from './api-endpoints';
 import { setTokenHeader } from './headers-helpers';
+import * as endpoints from './api-endpoints';
 import type * as t from './types';
 
 async function _get<T>(url: string, options?: AxiosRequestConfig): Promise<T> {
@@ -92,7 +92,7 @@ const getNormalizedPathname = (): string => {
 
 const isGuestAllowedPath = (): boolean => {
   const pathname = getNormalizedPathname();
-  return pathname === '/' || pathname === '/c' || pathname.startsWith('/c/');
+  return pathname === '/' || pathname === '/c/new';
 };
 
 const processQueue = (error: AxiosError | null, token: string | null = null) => {
@@ -119,6 +119,15 @@ if (typeof window !== 'undefined') {
         return Promise.reject(error);
       }
       if (originalRequest.url?.includes('/api/auth/logout') === true) {
+        return Promise.reject(error);
+      }
+
+      /** Skip refresh when the Authorization header has been cleared (e.g. during logout),
+       *  but allow shared link requests to proceed so auth recovery/redirect can happen */
+      if (
+        !axios.defaults.headers.common['Authorization'] &&
+        !window.location.pathname.startsWith('/share/')
+      ) {
         return Promise.reject(error);
       }
 
@@ -153,14 +162,11 @@ if (typeof window !== 'undefined') {
             dispatchTokenUpdatedEvent(token);
             processQueue(null, token);
             return await axios(originalRequest);
-          } else if (window.location.href.includes('share/')) {
-            console.log(
-              `Refresh token failed from shared link, attempting request to ${originalRequest.url}`,
-            );
           } else if (isGuestAllowedPath()) {
             console.log('Guest mode: suppressing login redirect on 401.');
           } else {
-            window.location.href = endpoints.loginPage();
+            processQueue(error, null);
+            window.location.href = endpoints.apiBaseUrl() + endpoints.buildLoginRedirectUrl();
           }
         } catch (err) {
           processQueue(err as AxiosError, null);

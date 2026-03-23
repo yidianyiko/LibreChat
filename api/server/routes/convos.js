@@ -1,7 +1,7 @@
 const multer = require('multer');
 const express = require('express');
 const { sleep } = require('@librechat/agents');
-const { isEnabled } = require('@librechat/api');
+const { isEnabled, resolveImportMaxFileSize } = require('@librechat/api');
 const { logger } = require('@librechat/data-schemas');
 const { CacheKeys, EModelEndpoint } = require('librechat-data-provider');
 const {
@@ -224,12 +224,27 @@ router.post('/update', validateConvoAccess, async (req, res) => {
 });
 
 const { importIpLimiter, importUserLimiter } = createImportLimiters();
+/** Fork and duplicate share one rate-limit budget (same "clone" operation class) */
 const { forkIpLimiter, forkUserLimiter } = createForkLimiters();
+const importMaxFileSize = resolveImportMaxFileSize();
 const upload = multer({
-  storage: storage,
+  storage,
   fileFilter: importFileFilter,
-  limits: { fileSize: 512 * 1024 * 1024 }, // 512MB
+  limits: { fileSize: importMaxFileSize },
 });
+const uploadSingle = upload.single('file');
+
+function handleUpload(req, res, next) {
+  uploadSingle(req, res, (err) => {
+    if (err && err.code === 'LIMIT_FILE_SIZE') {
+      return res.status(413).json({ message: 'File exceeds the maximum allowed size' });
+    }
+    if (err) {
+      return next(err);
+    }
+    next();
+  });
+}
 
 /**
  * Imports a conversation from a JSON file and saves it to the database.
@@ -242,7 +257,7 @@ router.post(
   importIpLimiter,
   importUserLimiter,
   configMiddleware,
-  upload.single('file'),
+  handleUpload,
   async (req, res) => {
     const timeoutEnv = Number.parseInt(process.env.CONVERSATION_IMPORT_ASYNC_TIMEOUT_MS, 10);
     const asyncTimeoutMs = Number.isFinite(timeoutEnv) && timeoutEnv > 0 ? timeoutEnv : 60000;
@@ -386,7 +401,7 @@ router.post('/fork', forkIpLimiter, forkUserLimiter, async (req, res) => {
   }
 });
 
-router.post('/duplicate', async (req, res) => {
+router.post('/duplicate', forkIpLimiter, forkUserLimiter, async (req, res) => {
   const { conversationId, title } = req.body;
 
   try {
