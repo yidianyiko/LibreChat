@@ -537,11 +537,14 @@ export const useUserTermsQuery = (
 };
 
 export const useGetAdminStats = (
+  params: { days?: number } = {},
   config?: UseQueryOptions<t.TAdminStatsResponse>,
 ): QueryObserverResult<t.TAdminStatsResponse> => {
+  const days = params.days ?? 30;
+
   return useQuery<t.TAdminStatsResponse>(
-    [QueryKeys.adminStats],
-    () => dataService.getAdminStats(),
+    [QueryKeys.adminStats, days],
+    () => dataService.getAdminStats(days),
     {
       refetchOnWindowFocus: false,
       refetchOnReconnect: false,

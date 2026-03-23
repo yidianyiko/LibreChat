@@ -1,15 +1,16 @@
+import type { TDistributionBucket } from 'librechat-data-provider';
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recharts';
 import { useLocalize } from '~/hooks';
 
 interface ProviderPieChartProps {
-  data: Record<string, number>;
+  data: TDistributionBucket[];
 }
 
 export default function ProviderPieChart({ data }: ProviderPieChartProps) {
   const localize = useLocalize();
-  const chartData = Object.entries(data).map(([provider, count]) => ({
-    name: provider.charAt(0).toUpperCase() + provider.slice(1),
-    value: count,
+  const chartData = data.map((item) => ({
+    name: item.label.charAt(0).toUpperCase() + item.label.slice(1),
+    value: item.count,
   }));
 
   const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#ef4444'];

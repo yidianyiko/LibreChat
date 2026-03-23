@@ -9,6 +9,22 @@ jest.mock('@librechat/api', () => ({
   },
 }));
 
+jest.mock('@librechat/data-schemas', () => ({
+  logger: {
+    error: jest.fn(),
+  },
+}));
+
+jest.mock('@librechat/data-schemas', () => ({
+  logger: {
+    error: jest.fn(),
+  },
+}));
+
+jest.mock('~/server/middleware', () => ({
+  requireJwtAuth: (_req, _res, next) => next(),
+}));
+
 jest.mock('~/db/models', () => ({
   User: {
     countDocuments: jest.fn(),
@@ -43,7 +59,21 @@ describe('Admin Stats API Routes', () => {
 
     const now = Date.now();
     const diffMs = now - date.getTime();
-    return Math.round(diffMs / (1000 * 60 * 60 * 24));
+    const rawDays = Math.round(diffMs / (1000 * 60 * 60 * 24));
+
+    if (rawDays <= 2) {
+      return 1;
+    }
+
+    if (rawDays <= 8) {
+      return 7;
+    }
+
+    if (rawDays <= 31) {
+      return 30;
+    }
+
+    return rawDays;
   };
 
   beforeEach(() => {
