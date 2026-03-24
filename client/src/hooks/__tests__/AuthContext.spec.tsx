@@ -120,6 +120,24 @@ function renderProviderLive() {
   );
 }
 
+function renderProviderLiveWithConfig(authConfig?: TAuthConfig) {
+  const queryClient = new QueryClient({
+    defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+  });
+
+  return render(
+    <QueryClientProvider client={queryClient}>
+      <RecoilRoot>
+        <MemoryRouter>
+          <AuthContextProvider authConfig={authConfig}>
+            <TestConsumer />
+          </AuthContextProvider>
+        </MemoryRouter>
+      </RecoilRoot>
+    </QueryClientProvider>,
+  );
+}
+
 describe('AuthContextProvider — login onError redirect handling', () => {
   beforeEach(() => {
     jest.clearAllMocks();
@@ -378,6 +396,32 @@ describe('AuthContextProvider — silentRefresh post-login redirect', () => {
     expect(mockNavigate).not.toHaveBeenCalledWith('https://evil.com/steal', expect.anything());
     expect(sessionStorage.getItem(SESSION_KEY)).toBeNull();
     jest.useRealTimers();
+  });
+
+  it('attempts silent refresh only once across rerenders while unauthenticated', () => {
+    const view = renderProviderLiveWithConfig({ loginRedirect: '/login' });
+
+    expect(mockRefreshMutate).toHaveBeenCalledTimes(1);
+
+    view.rerender(
+      <QueryClientProvider
+        client={
+          new QueryClient({
+            defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+          })
+        }
+      >
+        <RecoilRoot>
+          <MemoryRouter>
+            <AuthContextProvider authConfig={{ loginRedirect: '/login' }}>
+              <TestConsumer />
+            </AuthContextProvider>
+          </MemoryRouter>
+        </RecoilRoot>
+      </QueryClientProvider>,
+    );
+
+    expect(mockRefreshMutate).toHaveBeenCalledTimes(1);
   });
 });
 

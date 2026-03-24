@@ -40,6 +40,7 @@ const AuthContextProvider = ({
   children: ReactNode;
 }) => {
   const isExternalRedirectRef = useRef(false);
+  const silentRefreshAttemptedRef = useRef(false);
   const [user, setUser] = useRecoilState(store.user);
   const logoutRedirectRef = useRef<string | undefined>(undefined);
   const [token, setToken] = useState<string | undefined>(undefined);
@@ -140,7 +141,7 @@ const AuthContextProvider = ({
       });
     },
   });
-  const refreshToken = useRefreshTokenMutation();
+  const { mutate: mutateRefreshToken } = useRefreshTokenMutation();
 
   const logout = useCallback(
     (redirect?: string) => {
@@ -166,7 +167,13 @@ const AuthContextProvider = ({
     if (isExternalRedirectRef.current) {
       return;
     }
-    refreshToken.mutate(undefined, {
+    if (silentRefreshAttemptedRef.current) {
+      return;
+    }
+
+    silentRefreshAttemptedRef.current = true;
+
+    mutateRefreshToken(undefined, {
       onSuccess: (data: t.TRefreshTokenResponse | undefined) => {
         if (isExternalRedirectRef.current) {
           return;
@@ -218,8 +225,14 @@ const AuthContextProvider = ({
     navigate,
     setUserContext,
     shouldRedirectOnSilentRefreshFailure,
-    refreshToken,
+    mutateRefreshToken,
   ]);
+
+  useEffect(() => {
+    if (token != null && token && isAuthenticated) {
+      silentRefreshAttemptedRef.current = false;
+    }
+  }, [token, isAuthenticated]);
 
   useEffect(() => {
     if (isExternalRedirectRef.current) {
