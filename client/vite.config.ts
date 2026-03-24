@@ -71,13 +71,13 @@ export default defineConfig(({ command }) => ({
       devOptions: {
         enabled: false, // disable service worker registration in development mode
       },
-      selfDestroying: false,  // 保持 SW 激活
-      cleanupOutdatedCaches: true,  // 自动清理旧缓存
+      selfDestroying: true,
+      cleanupOutdatedCaches: true,
       useCredentials: true,
       includeManifestIcons: false,
       workbox: {
         globPatterns: [
-          '**/*.{css,html}',  // 恢复 HTML precache 以实现快速加载和离线支持
+          '**/*.css',
           'assets/favicon*.png',
           'assets/icon-*.png',
           'assets/apple-touch-icon*.png',
