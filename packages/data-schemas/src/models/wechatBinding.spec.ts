@@ -76,4 +76,33 @@ describe('WeChatBinding model', () => {
       }),
     ).rejects.toThrow(/duplicate key/i);
   });
+
+  it('allows multiple bindings when ilinkUserId is omitted', async () => {
+    const WeChatBinding = mongoose.models.WeChatBinding;
+
+    await WeChatBinding.create({
+      userId: 'user-3',
+      ilinkBotId: 'bot-3',
+      botToken: 'enc-token-3',
+      baseUrl: 'https://ilink.example',
+      status: 'unbound',
+      boundAt: new Date('2026-04-11T10:05:00.000Z'),
+    });
+
+    await WeChatBinding.create({
+      userId: 'user-4',
+      ilinkBotId: 'bot-4',
+      botToken: 'enc-token-4',
+      baseUrl: 'https://ilink.example',
+      status: 'unbound',
+      boundAt: new Date('2026-04-11T10:06:00.000Z'),
+    });
+
+    const omittedBindings = await WeChatBinding.find({
+      userId: { $in: ['user-3', 'user-4'] },
+      ilinkUserId: { $exists: false },
+    });
+
+    expect(omittedBindings).toHaveLength(2);
+  });
 });

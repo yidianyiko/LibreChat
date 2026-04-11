@@ -16,7 +16,7 @@ export interface IWeChatBinding extends Document {
   ilinkBotId?: string | null;
   botToken?: string | null;
   baseUrl?: string | null;
-  ilinkUserId?: string | null;
+  ilinkUserId?: string;
   status: WeChatBindingStatus;
   boundAt?: Date | null;
   unhealthyAt?: Date | null;
