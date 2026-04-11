@@ -217,6 +217,13 @@ export const actionOAuthBind = (actionId: string) =>
 
 export const config = () => `${BASE_URL}/api/config`;
 
+const wechatRoot = `${BASE_URL}/api/wechat`;
+export const wechatStatus = () => `${wechatRoot}/status`;
+export const wechatBindStart = () => `${wechatRoot}/bind/start`;
+export const wechatBindStatus = (bindSessionId: string) =>
+  `${wechatRoot}/bind/status/${encodeURIComponent(bindSessionId)}`;
+export const wechatBindDelete = () => `${wechatRoot}/bind`;
+
 export const prompts = () => `${BASE_URL}/api/prompts`;
 
 export const addPromptToGroup = (groupId: string) =>

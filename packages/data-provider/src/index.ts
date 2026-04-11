@@ -49,3 +49,4 @@ export * from './feedback';
 export * from './parameterSettings';
 /* admin stats */
 export * from './admin-stats';
+export * from './wechat';
