@@ -1469,6 +1469,10 @@ export enum CacheKeys {
    * Key for admin panel OAuth exchange codes (one-time-use, short TTL).
    */
   ADMIN_OAUTH_EXCHANGE = 'ADMIN_OAUTH_EXCHANGE',
+  /**
+   * Key for WeChat `/list` snapshots used by `/switch`.
+   */
+  WECHAT_LIST_SNAPSHOT = 'WECHAT_LIST_SNAPSHOT',
 }
 
 /**
