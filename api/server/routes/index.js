@@ -28,9 +28,11 @@ const auth = require('./auth');
 const keys = require('./keys');
 const user = require('./user');
 const mcp = require('./mcp');
+const wechat = require('./wechat');
 
 module.exports = {
   mcp,
+  wechat,
   auth,
   adminAuth,
   adminStats,

@@ -46,8 +46,7 @@ export * from './web';
 export * from './cache';
 /* Stream */
 export * from './stream';
-export * from './wechat/orchestrator';
-export * from './wechat/output';
+export * from './wechat';
 /* Diagnostics */
 export { memoryDiagnostics } from './utils/memory';
 /* types */
