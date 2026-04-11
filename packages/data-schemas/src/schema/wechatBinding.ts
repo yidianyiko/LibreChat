@@ -18,7 +18,7 @@ const weChatBindingSchema: Schema<IWeChatBinding> = new Schema(
     ilinkBotId: { type: String, default: null },
     botToken: { type: String, default: null, select: false },
     baseUrl: { type: String, default: null },
-    ilinkUserId: { type: String, default: null, sparse: true, unique: true },
+    ilinkUserId: { type: String, sparse: true, unique: true },
     status: {
       type: String,
       enum: ['healthy', 'reauth_required', 'unbound'],

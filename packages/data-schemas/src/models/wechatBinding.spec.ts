@@ -41,6 +41,17 @@ describe('WeChatBinding model', () => {
       },
     });
 
+    const stored = await WeChatBinding.findOne({ userId: 'user-1' });
+    expect(stored?.currentConversation).toMatchObject({
+      conversationId: 'convo-1',
+      parentMessageId: 'msg-1',
+      source: 'switch',
+    });
+    expect(stored?.currentConversation?.selectedAt).toEqual(new Date('2026-04-11T10:01:00.000Z'));
+    expect(stored?.currentConversation?.lastAdvancedAt).toEqual(
+      new Date('2026-04-11T10:02:00.000Z'),
+    );
+
     await expect(
       WeChatBinding.create({
         userId: 'user-2',
@@ -50,6 +61,18 @@ describe('WeChatBinding model', () => {
         ilinkUserId: 'wechat-1',
         status: 'healthy',
         boundAt: new Date('2026-04-11T10:03:00.000Z'),
+      }),
+    ).rejects.toThrow(/duplicate key/i);
+
+    await expect(
+      WeChatBinding.create({
+        userId: 'user-1',
+        ilinkBotId: 'bot-3',
+        botToken: 'enc-token-3',
+        baseUrl: 'https://ilink.example',
+        ilinkUserId: 'wechat-2',
+        status: 'healthy',
+        boundAt: new Date('2026-04-11T10:04:00.000Z'),
       }),
     ).rejects.toThrow(/duplicate key/i);
   });
