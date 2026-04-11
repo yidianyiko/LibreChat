@@ -126,7 +126,6 @@ export class WeChatService {
       ilinkBotId: null,
       botToken: null,
       baseUrl: null,
-      ilinkUserId: null,
       status: 'unbound',
       boundAt: null,
       unhealthyAt: null,

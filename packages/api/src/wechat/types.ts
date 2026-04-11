@@ -44,7 +44,7 @@ export interface WeChatListSnapshot {
 
 export interface WeChatBindingRecord {
   userId: string;
-  ilinkUserId?: string | null;
+  ilinkUserId?: string;
   status: WeChatBindingStatus;
   currentConversation?: ICurrentConversationBinding | null;
 }
@@ -53,7 +53,7 @@ export interface WeChatBindingUpdate {
   ilinkBotId?: string | null;
   botToken?: string | null;
   baseUrl?: string | null;
-  ilinkUserId?: string | null;
+  ilinkUserId?: string;
   status?: WeChatBindingStatus;
   boundAt?: Date | null;
   unhealthyAt?: Date | null;
