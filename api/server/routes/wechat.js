@@ -25,6 +25,19 @@ const getWeChatBindingModel = () => {
 const removeUndefinedFields = (value) =>
   Object.fromEntries(Object.entries(value).filter(([, current]) => current !== undefined));
 
+const shouldUnsetIlinkUserId = (update) =>
+  update.status === 'unbound' && !Object.prototype.hasOwnProperty.call(update, 'ilinkUserId');
+
+const buildBindingUpdateDocument = (userId, update) => {
+  const $set = removeUndefinedFields(update);
+
+  return {
+    ...(Object.keys($set).length > 0 ? { $set } : {}),
+    ...(shouldUnsetIlinkUserId(update) ? { $unset: { ilinkUserId: 1 } } : {}),
+    $setOnInsert: { userId },
+  };
+};
+
 const getBridgeBaseUrl = () => process.env.WECHAT_BRIDGE_URL || 'http://localhost:3091';
 const getBridgeToken = () => process.env.WECHAT_BRIDGE_INTERNAL_TOKEN || '';
 
@@ -80,10 +93,7 @@ const service = new WeChatService({
     return getWeChatBindingModel()
       .findOneAndUpdate(
         { userId },
-        {
-          $set: removeUndefinedFields(update),
-          $setOnInsert: { userId },
-        },
+        buildBindingUpdateDocument(userId, update),
         { new: true, upsert: true },
       )
       .lean();

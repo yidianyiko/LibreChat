@@ -1,5 +1,8 @@
 const express = require('express');
+const mongoose = require('mongoose');
 const request = require('supertest');
+
+let capturedWeChatServiceDeps;
 
 const mockWeChatService = {
   getStatus: jest.fn(),
@@ -21,7 +24,10 @@ const mockWeChatOrchestrator = {
 };
 
 jest.mock('@librechat/api', () => ({
-  WeChatService: jest.fn(() => mockWeChatService),
+  WeChatService: jest.fn((deps) => {
+    capturedWeChatServiceDeps = deps;
+    return mockWeChatService;
+  }),
   WeChatBridgeClient: jest.fn(() => mockWeChatBridgeClient),
   WeChatMessageOrchestrator: jest.fn(() => mockWeChatOrchestrator),
   startResumableGeneration: jest.fn(),
@@ -111,6 +117,10 @@ describe('/api/wechat routes', () => {
     jest.clearAllMocks();
   });
 
+  afterEach(() => {
+    delete mongoose.models.WeChatBinding;
+  });
+
   it('rejects internal bridge routes without the shared bearer token', async () => {
     await request(app).get('/api/wechat/internal/bindings/active').expect(401);
   });
@@ -125,5 +135,31 @@ describe('/api/wechat routes', () => {
 
     expect(response.status).toBe(409);
     expect(response.body.message).toBe('请先执行 /list');
+  });
+
+  it('unsets ilinkUserId when unbind persistence omits it', async () => {
+    const lean = jest.fn().mockResolvedValue({});
+    const findOneAndUpdate = jest.fn(() => ({ lean }));
+    mongoose.models.WeChatBinding = { findOneAndUpdate };
+
+    await capturedWeChatServiceDeps.upsertBinding('user-1', {
+      ilinkBotId: null,
+      botToken: null,
+      baseUrl: null,
+      status: 'unbound',
+      boundAt: null,
+      unhealthyAt: null,
+      unboundAt: new Date('2026-04-11T12:00:00.000Z'),
+      currentConversation: null,
+    });
+
+    expect(findOneAndUpdate).toHaveBeenCalledWith(
+      { userId: 'user-1' },
+      expect.objectContaining({
+        $unset: { ilinkUserId: 1 },
+        $setOnInsert: { userId: 'user-1' },
+      }),
+      { new: true, upsert: true },
+    );
   });
 });
