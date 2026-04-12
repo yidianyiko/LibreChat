@@ -54,6 +54,7 @@ services:
       - NODE_ENV=production
       - WECHAT_BRIDGE_PORT=3091
       - WECHAT_BRIDGE_LIBRECHAT_URL=http://api:${PORT}
+      - LIBRECHAT_LOG_DIR=/app/logs
     expose:
       - "3091"
     command:

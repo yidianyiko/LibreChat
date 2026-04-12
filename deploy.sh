@@ -528,10 +528,34 @@ deploy_service() {
         fi
 
         echo "等待服务启动..."
-        sleep 5
+        sleep 10
 
         echo "检查服务状态..."
         sudo docker-compose ps
+
+        verify_container() {
+            local container_name=$1
+            local status
+            local restart_count
+            status=$(sudo docker inspect -f '{{.State.Status}}' "${container_name}" 2>/dev/null || echo "missing")
+            restart_count=$(sudo docker inspect -f '{{.RestartCount}}' "${container_name}" 2>/dev/null || echo "999")
+            echo "${container_name}: status=${status}, restarts=${restart_count}"
+
+            if [ "${status}" != "running" ]; then
+                echo "容器未处于 running 状态: ${container_name}"
+                return 1
+            fi
+
+            if [ "${restart_count}" -ne 0 ]; then
+                echo "容器发生了重启: ${container_name}"
+                return 1
+            fi
+
+            return 0
+        }
+
+        verify_container LibreChat
+        verify_container LibreChat-WeChat-Bridge
 
         # 显示最近日志
         echo ""
@@ -565,7 +589,10 @@ save_deployed_commit() {
     mkdir -p "${DEPLOY_DIR}"
 
     local current_commit
-    current_commit=$(git rev-parse HEAD)
+    current_commit=$(git rev-parse HEAD 2>/dev/null || true)
+    if [ -z "${current_commit}" ]; then
+        return
+    fi
     echo "${current_commit}" > "${LAST_DEPLOYED_COMMIT_FILE}"
     log_success "已记录部署提交: ${current_commit}"
 }
