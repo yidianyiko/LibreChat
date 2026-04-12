@@ -56,6 +56,10 @@ const namespaces = {
     CacheKeys.ADMIN_OAUTH_EXCHANGE,
     Time.THIRTY_SECONDS,
   ),
+  [CacheKeys.WECHAT_LIST_SNAPSHOT]: standardCache(
+    CacheKeys.WECHAT_LIST_SNAPSHOT,
+    Time.TEN_MINUTES + Time.FIVE_MINUTES,
+  ),
 };
 
 /**

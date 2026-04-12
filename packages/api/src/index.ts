@@ -31,6 +31,7 @@ export * from './middleware';
 export * from './memory';
 /* Agents */
 export * from './agents';
+export * from './agents/startResumableGeneration';
 /* Prompts */
 export * from './prompts';
 /* Endpoints */
@@ -45,6 +46,7 @@ export * from './web';
 export * from './cache';
 /* Stream */
 export * from './stream';
+export * from './wechat';
 /* Diagnostics */
 export { memoryDiagnostics } from './utils/memory';
 /* types */

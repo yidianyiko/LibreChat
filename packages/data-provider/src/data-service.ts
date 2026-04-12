@@ -1,5 +1,10 @@
 import type { AxiosResponse } from 'axios';
 import type { TAdminStatsResponse } from './admin-stats';
+import type {
+  TWeChatBindStartResponse,
+  TWeChatBindStatusResponse,
+  TWeChatStatusResponse,
+} from './wechat';
 import type * as t from './types';
 import * as endpoints from './api-endpoints';
 import * as a from './types/assistants';
@@ -110,6 +115,22 @@ export function updatePreset(payload: s.TPreset): Promise<s.TPreset> {
 
 export function deletePreset(arg: s.TPreset | undefined): Promise<m.PresetDeleteResponse> {
   return request.post(endpoints.deletePreset(), arg);
+}
+
+export function getWeChatStatus(): Promise<TWeChatStatusResponse> {
+  return request.get(endpoints.wechatStatus());
+}
+
+export function startWeChatBind(): Promise<TWeChatBindStartResponse> {
+  return request.post(endpoints.wechatBindStart(), {});
+}
+
+export function getWeChatBindStatus(bindSessionId: string): Promise<TWeChatBindStatusResponse> {
+  return request.get(endpoints.wechatBindStatus(bindSessionId));
+}
+
+export function unbindWeChat(): Promise<void> {
+  return request.delete(endpoints.wechatBindDelete());
 }
 
 export function getSearchEnabled(): Promise<boolean> {

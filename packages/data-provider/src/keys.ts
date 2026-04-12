@@ -51,6 +51,7 @@ export enum QueryKeys {
   health = 'health',
   userTerms = 'userTerms',
   banner = 'banner',
+  wechatStatus = 'wechatStatus',
   /* Memories */
   memories = 'memories',
   principalSearch = 'principalSearch',
@@ -98,5 +99,7 @@ export enum MutationKeys {
   updateRole = 'updateRole',
   enableTwoFactor = 'enableTwoFactor',
   verifyTwoFactor = 'verifyTwoFactor',
+  bindWeChat = 'bindWeChat',
+  unbindWeChat = 'unbindWeChat',
   updateMemoryPreferences = 'updateMemoryPreferences',
 }
