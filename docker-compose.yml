@@ -22,6 +22,7 @@ services:
       - MEILI_HOST=http://meilisearch:7700
       - RAG_PORT=${RAG_PORT:-8000}
       - RAG_API_URL=http://rag_api:${RAG_PORT:-8000}
+      - WECHAT_BRIDGE_URL=http://wechat-bridge:3091
       - DOMAIN_CLIENT=https://keep4oforever.com
       - DOMAIN_SERVER=https://keep4oforever.com
       - LIBRECHAT_LOG_DIR=/app/logs
@@ -38,6 +39,32 @@ services:
       - ./logs:/app/logs
       - ./data:/app/data
       - ./data:/app/api/data
+  wechat-bridge:
+    container_name: LibreChat-WeChat-Bridge
+    image: registry.librechat.ai/danny-avila/librechat-dev:latest
+    restart: always
+    user: "${UID}:${GID}"
+    depends_on:
+      - api
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    env_file:
+      - .env
+    environment:
+      - NODE_ENV=production
+      - WECHAT_BRIDGE_PORT=3091
+      - WECHAT_BRIDGE_LIBRECHAT_URL=http://api:${PORT}
+    expose:
+      - "3091"
+    command:
+      - node
+      - -e
+      - require('/app/packages/api/dist/index.js').startWeChatBridge().catch((error) => { console.error(error); process.exit(1); })
+    volumes:
+      - type: bind
+        source: ./.env
+        target: /app/.env
+      - ./logs:/app/logs
   mongodb:
     container_name: chat-mongodb
     image: mongo:8.0.17

@@ -57,7 +57,7 @@ const shouldRebase = process.argv.includes('--rebase');
   });
 
   console.purple('Pulling latest LibreChat images...');
-  const pullCommand = 'sudo docker compose -f ./deploy-compose.yml pull api';
+  const pullCommand = 'sudo docker compose -f ./deploy-compose.yml pull api wechat-bridge';
   console.orange(pullCommand);
   execSync(pullCommand, { stdio: 'inherit' });
 

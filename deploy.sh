@@ -509,9 +509,9 @@ deploy_service() {
     local mode="${1:-normal}"
 
     if [ "${mode}" = "restart-only" ]; then
-        log_info "仅重启 LibreChat API 服务（跳过镜像构建）..."
+        log_info "仅重启 LibreChat API / WeChat Bridge 服务（跳过镜像构建）..."
     else
-        log_info "部署 LibreChat API 服务..."
+        log_info "部署 LibreChat API / WeChat Bridge 服务..."
     fi
 
     ssh "${SERVER_HOST}" bash -s -- "${PROJECT_DIR}" << 'EOF'
@@ -519,12 +519,12 @@ deploy_service() {
         PROJECT_DIR=$1
         cd "${PROJECT_DIR}"
 
-        echo "使用 docker-compose 重启 api 服务..."
+        echo "使用 docker-compose 重启 api / wechat-bridge 服务..."
         if [ -f ".deploy/override.yml" ]; then
-            sudo docker-compose -f docker-compose.yml -f .deploy/override.yml up -d api
+            sudo docker-compose -f docker-compose.yml -f .deploy/override.yml up -d api wechat-bridge
         else
             echo "未找到 .deploy/override.yml，使用默认 docker-compose.yml"
-            sudo docker-compose -f docker-compose.yml up -d api
+            sudo docker-compose -f docker-compose.yml up -d api wechat-bridge
         fi
 
         echo "等待服务启动..."
@@ -536,7 +536,7 @@ deploy_service() {
         # 显示最近日志
         echo ""
         echo "=== 最近的日志 ==="
-        sudo docker-compose logs --tail=20 api
+        sudo docker-compose logs --tail=20 api wechat-bridge
 EOF
 
     if [ $? -ne 0 ]; then
