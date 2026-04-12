@@ -5,10 +5,11 @@ import { fileURLToPath } from 'node:url';
 import { createWeChatBridgeApi } from './api';
 import { WeChatBindSessions } from './bindSessions';
 import { getWeChatBridgeConfig } from './config';
-import { pollOpenClawQrLogin, startOpenClawQrLogin } from './openclawClient';
+import { startOpenClawQrLogin } from './openclawClient';
+import { createBindSessionStatusResolver } from './bindStatus';
 import { WeChatBridgeRuntime } from './poller';
 
-const QR_STATUS_TIMEOUT_MS = 1500;
+const QR_STATUS_TIMEOUT_MS = 5000;
 
 export interface WeChatBridgeServer {
   app: Express;
@@ -40,6 +41,17 @@ export async function startWeChatBridge(): Promise<WeChatBridgeServer> {
 
   await runtime.start();
 
+  const getBindSession = createBindSessionStatusResolver({
+    bindSessions,
+    internalToken: config.internalToken,
+    librechatBaseUrl: config.librechatBaseUrl,
+    runtime,
+    statusTimeoutMs: QR_STATUS_TIMEOUT_MS,
+    logError: (message, error) => {
+      console.error(message, error);
+    },
+  });
+
   const app = createWeChatBridgeApi({
     internalToken: config.internalToken,
     createBindSession: async (userId) => {
@@ -54,68 +66,7 @@ export async function startWeChatBridge(): Promise<WeChatBridgeServer> {
         currentApiBaseUrl: qrLogin.currentApiBaseUrl,
       });
     },
-    getBindSession: async (bindSessionId) => {
-      const session = bindSessions.getInternalSession(bindSessionId);
-      if (session == null) {
-        return null;
-      }
-
-      if (session.status !== 'pending') {
-        return bindSessions.getSession(bindSessionId);
-      }
-
-      const status = await pollOpenClawQrLogin({
-        qrcode: session.qrcode,
-        baseUrl: session.currentApiBaseUrl,
-        timeoutMs: QR_STATUS_TIMEOUT_MS,
-      });
-
-      if (status.status === 'scaned_but_redirect' && status.redirectHost != null) {
-        bindSessions.updatePendingSession(bindSessionId, {
-          currentApiBaseUrl: `https://${status.redirectHost}`,
-        });
-      } else if (status.status === 'expired') {
-        bindSessions.markExpired(bindSessionId);
-      } else if (
-        status.status === 'confirmed' &&
-        status.botToken != null &&
-        status.ilinkBotId != null &&
-        status.ilinkUserId != null
-      ) {
-        const updatedBaseUrl = status.baseUrl ?? session.currentApiBaseUrl;
-        const response = await fetch(
-          new URL('/api/wechat/internal/bindings/complete', config.librechatBaseUrl).toString(),
-          {
-            method: 'POST',
-            headers: {
-              Authorization: `Bearer ${config.internalToken}`,
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              userId: session.userId,
-              ilinkUserId: status.ilinkUserId,
-              ilinkBotId: status.ilinkBotId,
-              botToken: status.botToken,
-              baseUrl: updatedBaseUrl,
-            }),
-          },
-        );
-
-        if (!response.ok) {
-          throw new Error(`Failed to complete binding: ${response.status}`);
-        }
-
-        bindSessions.markHealthy(bindSessionId, {
-          ilinkBotId: status.ilinkBotId,
-          botToken: status.botToken,
-          baseUrl: updatedBaseUrl,
-          ilinkUserId: status.ilinkUserId,
-        });
-        await runtime.refreshBindings();
-      }
-
-      return bindSessions.getSession(bindSessionId);
-    },
+    getBindSession,
     cancelBindSession: async (bindSessionId) => bindSessions.cancelSession(bindSessionId) != null,
   });
 

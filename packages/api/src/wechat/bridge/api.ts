@@ -48,5 +48,14 @@ export function createWeChatBridgeApi(params: CreateWeChatBridgeApiParams) {
     res.json({ ok: true });
   });
 
+  app.use((error: unknown, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
+    console.error('WeChat bridge API error', error);
+    if (res.headersSent) {
+      return;
+    }
+
+    res.status(500).json({ message: 'Internal bridge error' });
+  });
+
   return app;
 }

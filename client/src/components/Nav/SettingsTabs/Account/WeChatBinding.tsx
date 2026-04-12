@@ -1,4 +1,6 @@
 import React, { useEffect, useState } from 'react';
+import { QRCodeSVG } from 'qrcode.react';
+import { useQueryClient } from '@tanstack/react-query';
 import {
   Button,
   Label,
@@ -6,8 +8,8 @@ import {
   OGDialogContent,
   OGDialogHeader,
   OGDialogTitle,
+  useToastContext,
 } from '@librechat/client';
-import { useQueryClient } from '@tanstack/react-query';
 import { QueryKeys } from 'librechat-data-provider';
 import {
   useStartWeChatBindMutation,
@@ -32,8 +34,13 @@ function getWeChatStatusText(
   return localize('com_ui_wechat_unbound');
 }
 
+function shouldRenderQrImage(value: string | null): value is string {
+  return typeof value === 'string' && value.startsWith('data:image/');
+}
+
 export default function WeChatBinding() {
   const localize = useLocalize();
+  const { showToast } = useToastContext();
   const queryClient = useQueryClient();
   const [bindSessionId, setBindSessionId] = useState<string | null>(null);
   const [qrCodeDataUrl, setQrCodeDataUrl] = useState<string | null>(null);
@@ -44,6 +51,10 @@ export default function WeChatBinding() {
   const bindStatusQuery = useWeChatBindStatusQuery(bindSessionId, isDialogOpen);
 
   useEffect(() => {
+    if (bindSessionId == null) {
+      return;
+    }
+
     const bindStatus = bindStatusQuery.data;
     if (bindStatus?.qrCodeDataUrl) {
       setQrCodeDataUrl(bindStatus.qrCodeDataUrl);
@@ -53,11 +64,20 @@ export default function WeChatBinding() {
       return;
     }
 
-    queryClient.invalidateQueries([QueryKeys.wechatStatus]);
+    void queryClient.invalidateQueries([QueryKeys.wechatStatus]);
+    void queryClient.refetchQueries([QueryKeys.wechatStatus]);
+
+    if (bindStatus.status === 'healthy') {
+      showToast({
+        message: localize('com_ui_wechat_bound_success'),
+        status: 'success',
+      });
+    }
+
     setDialogOpen(false);
     setBindSessionId(null);
     setQrCodeDataUrl(null);
-  }, [bindStatusQuery.data, queryClient]);
+  }, [bindSessionId, bindStatusQuery.data, localize, queryClient, showToast]);
 
   const status = statusQuery.data;
   const hasBinding = status?.hasBinding === true;
@@ -124,12 +144,22 @@ export default function WeChatBinding() {
           </OGDialogHeader>
           <div className="space-y-4">
             <p className="text-sm text-text-secondary">{localize('com_ui_wechat_qr_help')}</p>
-            {qrCodeDataUrl ? (
+            {shouldRenderQrImage(qrCodeDataUrl) ? (
               <img
                 alt={localize('com_ui_wechat_qr_title')}
                 className="mx-auto max-h-72 w-full max-w-72 rounded-md border border-border-light object-contain p-2"
                 src={qrCodeDataUrl}
               />
+            ) : null}
+            {qrCodeDataUrl != null && !shouldRenderQrImage(qrCodeDataUrl) ? (
+              <div className="mx-auto flex w-full max-w-72 justify-center rounded-md border border-border-light bg-white p-4">
+                <QRCodeSVG
+                  value={qrCodeDataUrl}
+                  size={240}
+                  marginSize={2}
+                  title={localize('com_ui_wechat_qr_title')}
+                />
+              </div>
             ) : null}
           </div>
         </OGDialogContent>

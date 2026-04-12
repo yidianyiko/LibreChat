@@ -1657,6 +1657,7 @@
   "com_nav_wechat_binding": "WeChat",
   "com_ui_wechat_bind": "Bind WeChat",
   "com_ui_wechat_bound_healthy": "Connected",
+  "com_ui_wechat_bound_success": "WeChat connected",
   "com_ui_wechat_connected_account": "Connected account",
   "com_ui_wechat_qr_help": "Use WeChat to scan this QR code and complete the bind.",
   "com_ui_wechat_qr_title": "Scan with WeChat",

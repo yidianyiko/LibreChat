@@ -73,6 +73,18 @@ interface BridgeStatusResult<TData> {
   data: TData;
 }
 
+function isBridgeStatusResult(value: unknown): value is BridgeStatusResult<unknown> {
+  return typeof value === 'object' && value !== null && 'data' in value;
+}
+
+function unwrapBridgePayload(value: unknown): unknown {
+  if (!isBridgeStatusResult(value)) {
+    return value;
+  }
+
+  return isBridgeStatusResult(value.data) ? value.data.data : value.data;
+}
+
 interface CreateWeChatHandlersDependencies {
   service: WeChatService;
   bridgeClient: WeChatBridgeClient;
@@ -145,7 +157,8 @@ function getAuthenticatedUserId(req: AuthenticatedRequest): string | null {
 }
 
 function getBodyUserId(req: Request<unknown, unknown, UserIdBody>): string | null {
-  return typeof req.body.userId === 'string' && req.body.userId.length > 0 ? req.body.userId : null;
+  const userId = req.body?.userId;
+  return typeof userId === 'string' && userId.length > 0 ? userId : null;
 }
 
 function isSwitchConflictError(error: unknown): boolean {
@@ -172,7 +185,7 @@ export function createWeChatHandlers(deps: CreateWeChatHandlersDependencies) {
     }
 
     const started = await deps.bridgeClient.startBindSession({ userId });
-    res.status(201).json((started as BridgeStatusResult<unknown>).data);
+    res.status(201).json(unwrapBridgePayload(started));
   }
 
   async function getBindStatus(
@@ -185,7 +198,7 @@ export function createWeChatHandlers(deps: CreateWeChatHandlersDependencies) {
     }
 
     const result = await deps.bridgeClient.getBindSession(req.params.bindSessionId);
-    res.json((result as BridgeStatusResult<unknown>).data);
+    res.json(unwrapBridgePayload(result));
   }
 
   async function unbind(req: AuthenticatedRequest, res: Response) {
@@ -318,6 +331,8 @@ export function createWeChatHandlers(deps: CreateWeChatHandlersDependencies) {
     if (!currentConversation) {
       return res.status(409).json({ message: NO_CURRENT_CONVERSATION_MESSAGE });
     }
+
+    req.user ??= { id: userId };
 
     req.body = {
       ...req.body,
