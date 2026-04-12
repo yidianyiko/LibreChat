@@ -48,6 +48,9 @@ LOCAL_TEST=false
 NO_CACHE=false  # 默认使用 Docker 缓存，加速构建（可用 --no-cache 强制重建）
 DEPLOY_MODE="full-build"  # full-build | config-only | no-change
 CHANGED_FILES=""
+LOCAL_TEST_PROXY=""
+LOCAL_PROXY_BRIDGE_PID=""
+LOCAL_PROXY_BRIDGE_PORT="${LOCAL_PROXY_BRIDGE_PORT:-17897}"
 
 # 日志函数
 log_info() {
@@ -81,6 +84,146 @@ cleanup() {
         log_info "清理本地 tarball..."
         rm -f "${TARBALL}"
     fi
+}
+
+
+start_local_proxy_bridge() {
+    local source_proxy="${PROXY:-}"
+    if [ -z "${source_proxy}" ] && [ -f ".env" ]; then
+        source_proxy=$(grep -E '^PROXY=' .env | tail -n 1 | cut -d'=' -f2-)
+    fi
+    if [ -z "${source_proxy}" ]; then
+        LOCAL_TEST_PROXY=""
+        return
+    fi
+
+    case "${source_proxy}" in
+        http://127.0.0.1:*|http://localhost:*|https://127.0.0.1:*|https://localhost:*)
+            ;;
+        *)
+            LOCAL_TEST_PROXY="${source_proxy}"
+            log_info "本地测试使用现有代理: ${LOCAL_TEST_PROXY}"
+            return
+            ;;
+    esac
+
+    if ! check_command python3; then
+        log_error "本地代理桥接需要 python3"
+        exit 1
+    fi
+
+    local source_port
+    source_port=$(printf '%s' "${source_proxy}" | sed -E 's#^[a-z]+://[^:]+:([0-9]+)$#\1#')
+    if ! printf '%s' "${source_port}" | grep -Eq '^[0-9]+$'; then
+        log_error "无法解析本地代理端口: ${source_proxy}"
+        exit 1
+    fi
+
+    if lsof -iTCP:"${LOCAL_PROXY_BRIDGE_PORT}" -sTCP:LISTEN -n -P >/dev/null 2>&1; then
+        log_error "本地代理桥接端口已被占用: ${LOCAL_PROXY_BRIDGE_PORT}"
+        exit 1
+    fi
+
+    log_info "检测到 localhost 代理，启动桥接端口 ${LOCAL_PROXY_BRIDGE_PORT} -> 127.0.0.1:${source_port}..."
+    python3 -u - <<PY2 >/tmp/librechat-local-proxy-bridge.log 2>&1 &
+import selectors
+import socket
+
+LISTEN_HOST = "0.0.0.0"
+LISTEN_PORT = ${LOCAL_PROXY_BRIDGE_PORT}
+TARGET_HOST = "127.0.0.1"
+TARGET_PORT = ${source_port}
+
+lsock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+lsock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+lsock.bind((LISTEN_HOST, LISTEN_PORT))
+lsock.listen()
+
+def handle(client):
+    try:
+        upstream = socket.create_connection((TARGET_HOST, TARGET_PORT), timeout=10)
+    except Exception:
+        client.close()
+        return
+
+    selector = selectors.DefaultSelector()
+    sockets = [client, upstream]
+    for sock in sockets:
+        sock.setblocking(False)
+
+    selector.register(client, selectors.EVENT_READ, upstream)
+    selector.register(upstream, selectors.EVENT_READ, client)
+    open_sockets = 2
+
+    try:
+        while open_sockets > 0:
+            events = selector.select(timeout=10)
+            if not events:
+                continue
+            for key, _ in events:
+                source = key.fileobj
+                target = key.data
+                try:
+                    data = source.recv(65536)
+                except Exception:
+                    data = b""
+
+                if data:
+                    try:
+                        target.sendall(data)
+                    except Exception:
+                        data = b""
+
+                if not data:
+                    try:
+                        selector.unregister(source)
+                    except Exception:
+                        pass
+                    try:
+                        target.shutdown(socket.SHUT_WR)
+                    except Exception:
+                        pass
+                    open_sockets -= 1
+    finally:
+        selector.close()
+        for sock in sockets:
+            try:
+                sock.close()
+            except Exception:
+                pass
+
+while True:
+    client, _ = lsock.accept()
+    import threading
+    threading.Thread(target=handle, args=(client,), daemon=True).start()
+PY2
+    LOCAL_PROXY_BRIDGE_PID=$!
+    sleep 1
+
+    if ! kill -0 "${LOCAL_PROXY_BRIDGE_PID}" 2>/dev/null; then
+        log_error "本地代理桥接启动失败"
+        if [ -f /tmp/librechat-local-proxy-bridge.log ]; then
+            cat /tmp/librechat-local-proxy-bridge.log
+        fi
+        exit 1
+    fi
+
+    LOCAL_TEST_PROXY="http://host.docker.internal:${LOCAL_PROXY_BRIDGE_PORT}"
+    log_success "本地测试代理已桥接为 ${LOCAL_TEST_PROXY}"
+}
+
+stop_local_proxy_bridge() {
+    if [ -n "${LOCAL_PROXY_BRIDGE_PID}" ] && kill -0 "${LOCAL_PROXY_BRIDGE_PID}" 2>/dev/null; then
+        kill "${LOCAL_PROXY_BRIDGE_PID}" 2>/dev/null || true
+        wait "${LOCAL_PROXY_BRIDGE_PID}" 2>/dev/null || true
+    fi
+    LOCAL_PROXY_BRIDGE_PID=""
+}
+
+stop_local_test_services() {
+    log_info "停止 prod-test 容器..."
+    docker compose -f docker-compose.dev.yml --profile prod-test down >/dev/null 2>&1 || true
+    stop_local_proxy_bridge
 }
 
 # 陷阱处理
@@ -625,11 +768,12 @@ local_test() {
         exit 1
     fi
 
-    # 清理上次可能遗留的孤儿进程和容器
+    start_local_proxy_bridge
+
     local vite_pids
     vite_pids=$(lsof -ti :3090 2>/dev/null || true)
     if [ -n "${vite_pids}" ]; then
-        log_warning "端口 3090 被占用，清理遗留进程 (PID: ${vite_pids})..."
+        log_warning "检测到遗留的 Vite dev 进程占用 3090，正在清理 (PID: ${vite_pids})..."
         kill ${vite_pids} 2>/dev/null || true
         sleep 1
     fi
@@ -637,16 +781,21 @@ local_test() {
     log_info "清理遗留 prod-test 容器..."
     docker compose -f docker-compose.dev.yml --profile prod-test down 2>/dev/null || true
 
-    log_info "后台启动 prod-test 后端容器（端口 3080）..."
-    docker compose -f docker-compose.dev.yml --profile prod-test up -d
+    log_info "后台启动 prod-test 生产容器（端口 3080）..."
+    LOCAL_TEST_PROXY="${LOCAL_TEST_PROXY}" docker compose -f docker-compose.dev.yml --profile prod-test up -d
 
-    trap 'log_info "停止 prod-test 容器..."; docker compose -f docker-compose.dev.yml --profile prod-test down; exit 0' INT TERM
+    trap 'stop_local_test_services; exit 0' EXIT INT TERM
 
     log_info "等待后端就绪..."
     sleep 5
 
-    log_info "启动 Vite 前端（端口 3090，Ctrl+C 停止所有服务）..."
-    npm run frontend:dev
+    log_success "本地生产测试环境已启动"
+    echo "访问地址: http://localhost:3080"
+    echo "说明: 此入口使用与正式部署一致的生产前端构建产物，不再启动 Vite dev (3090)"
+    echo "按 Ctrl+C 可停止本地测试容器"
+    echo ""
+
+    docker compose -f docker-compose.dev.yml --profile prod-test logs -f api-prod-test
 }
 
 # 回滚功能
@@ -804,7 +953,7 @@ while [[ $# -gt 0 ]]; do
             echo "选项:"
             echo "  --server, -s <IP>    服务器 IP 地址 (默认: 54.64.181.104)"
             echo "  --user, -u <USER>    SSH 用户名 (默认: ubuntu)"
-            echo "  --local-test, -l     本地构建并用 prod-test profile 启动（不部署远程）"
+            echo "  --local-test, -l     本地构建并启动 prod-test 生产容器（访问 http://localhost:3080）"
             echo "  --init-only          仅初始化远程目录，不构建镜像"
             echo "  --no-cache           强制重新构建所有 Docker 层（忽略缓存）"
             echo "  --use-cache          允许复用 Docker 缓存层（推荐日常部署）"
