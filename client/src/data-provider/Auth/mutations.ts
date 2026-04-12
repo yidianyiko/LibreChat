@@ -56,6 +56,7 @@ export const useRefreshTokenMutation = (
   options?: t.MutationOptions<t.TRefreshTokenResponse | undefined, undefined, unknown, unknown>,
 ): UseMutationResult<t.TRefreshTokenResponse | undefined, unknown, undefined, unknown> => {
   return useMutation([MutationKeys.refreshToken], {
+    retry: false,
     mutationFn: () => request.refreshToken(),
     ...(options || {}),
   });

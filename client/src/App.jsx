@@ -9,6 +9,7 @@ import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 import { Toast, ThemeProvider, ToastProvider } from '@librechat/client';
 import { QueryClient, QueryClientProvider, QueryCache } from '@tanstack/react-query';
 import { ScreenshotProvider, useApiErrorBoundary } from './hooks';
+import PWAUpdatePrompt from '~/components/System/PWAUpdatePrompt';
 import WakeLockManager from '~/components/System/WakeLockManager';
 import { getThemeFromEnv } from './utils/getThemeFromEnv';
 import { initializeFontSize } from '~/store/fontSize';
@@ -59,30 +60,31 @@ const App = () => {
     <QueryClientProvider client={queryClient}>
       <RecoilRoot>
         <HelmetProvider>
-        <LiveAnnouncer>
-          <ThemeProvider
-            // Only pass initialTheme and themeRGB if environment theme exists
-            // This allows localStorage values to persist when no env theme is set
-            {...(envTheme && { initialTheme: 'system', themeRGB: envTheme })}
-          >
-            {/* The ThemeProvider will automatically:
+          <LiveAnnouncer>
+            <ThemeProvider
+              // Only pass initialTheme and themeRGB if environment theme exists
+              // This allows localStorage values to persist when no env theme is set
+              {...(envTheme && { initialTheme: 'system', themeRGB: envTheme })}
+            >
+              {/* The ThemeProvider will automatically:
                 1. Apply dark/light mode classes
                 2. Apply custom theme colors if envTheme is provided
                 3. Otherwise use stored theme preferences from localStorage
                 4. Fall back to default theme colors if nothing is stored */}
-            <RadixToast.Provider>
-              <ToastProvider>
-                <DndProvider backend={HTML5Backend}>
-                  <RouterProvider router={router} />
-                  <WakeLockManager />
-                  <ReactQueryDevtools initialIsOpen={false} position="top-right" />
-                  <Toast />
-                  <RadixToast.Viewport className="pointer-events-none fixed inset-0 z-[1000] mx-auto my-2 flex max-w-[560px] flex-col items-stretch justify-start md:pb-5" />
-                </DndProvider>
-              </ToastProvider>
-            </RadixToast.Provider>
-          </ThemeProvider>
-        </LiveAnnouncer>
+              <RadixToast.Provider>
+                <ToastProvider>
+                  <DndProvider backend={HTML5Backend}>
+                    <RouterProvider router={router} />
+                    <WakeLockManager />
+                    <ReactQueryDevtools initialIsOpen={false} position="top-right" />
+                    <PWAUpdatePrompt />
+                    <Toast />
+                    <RadixToast.Viewport className="pointer-events-none fixed inset-0 z-[1000] mx-auto my-2 flex max-w-[560px] flex-col items-stretch justify-start md:pb-5" />
+                  </DndProvider>
+                </ToastProvider>
+              </RadixToast.Provider>
+            </ThemeProvider>
+          </LiveAnnouncer>
         </HelmetProvider>
       </RecoilRoot>
     </QueryClientProvider>

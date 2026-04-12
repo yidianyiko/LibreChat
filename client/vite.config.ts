@@ -67,11 +67,11 @@ export default defineConfig(({ command }) => ({
     nodePolyfills(),
     VitePWA({
       injectRegister: 'auto', // 'auto' | 'manual' | 'disabled'
-      registerType: 'autoUpdate', // 'prompt' | 'autoUpdate'
+      registerType: 'prompt',
       devOptions: {
         enabled: false, // disable service worker registration in development mode
       },
-      selfDestroying: true,
+      selfDestroying: false,
       cleanupOutdatedCaches: true,
       useCredentials: true,
       includeManifestIcons: false,

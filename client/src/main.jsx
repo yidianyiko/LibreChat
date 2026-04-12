@@ -1,10 +1,12 @@
 import 'regenerator-runtime/runtime';
 import { createRoot } from 'react-dom/client';
+import { registerSW } from 'virtual:pwa-register';
 import App from './App';
 import './style.css';
 import './mobile.css';
 import { ApiErrorBoundaryProvider } from './hooks/ApiErrorBoundaryContext';
 import { initializeI18n } from './locales/i18n';
+import { handlePWAUnhandledRejection, initializePWAUpdateRegistration } from './utils/pwaUpdate';
 import { scheduleGoogleAnalyticsLoad } from './utils/analyticsLoader';
 import 'katex/dist/katex.min.css';
 import 'katex/dist/contrib/copy-tex.js';
@@ -24,24 +26,16 @@ const bootstrap = async () => {
   );
 
   if (import.meta.env.PROD) {
-    scheduleGoogleAnalyticsLoad(import.meta.env.VITE_GA_MEASUREMENT_ID ?? DEFAULT_GA_MEASUREMENT_ID);
-  }
-
-  // Service Worker 自动刷新逻辑：当检测到新版本时自动刷新页面
-  if ('serviceWorker' in navigator) {
-    let refreshing = false;
-
-    navigator.serviceWorker.addEventListener('controllerchange', () => {
-      if (refreshing) return;
-      refreshing = true;
-      window.location.reload();
-    });
+    scheduleGoogleAnalyticsLoad(
+      import.meta.env.VITE_GA_MEASUREMENT_ID ?? DEFAULT_GA_MEASUREMENT_ID,
+    );
+    initializePWAUpdateRegistration(registerSW);
   }
 };
 
 window.addEventListener('unhandledrejection', (event) => {
-  if (event.reason?.message?.includes('Failed to fetch dynamically imported module')) {
-    window.location.reload();
+  if (handlePWAUnhandledRejection(event.reason)) {
+    event.preventDefault();
   }
 });
 
