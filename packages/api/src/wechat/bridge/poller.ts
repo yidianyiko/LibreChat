@@ -1,3 +1,4 @@
+import { logger } from '@librechat/data-schemas';
 import { parseWeChatCommand, formatWeChatConversationList, formatWeChatCurrentConversation, getNoCurrentConversationMessage, splitWeChatReply } from './commands';
 import { InboundMessageDedupe } from './dedupe';
 import {
@@ -214,7 +215,9 @@ export class WeChatBridgeRuntime {
       // The bridge admin API should still boot even when LibreChat is temporarily unavailable.
     }
     this.refreshTimer = setInterval(() => {
-      void this.refreshBindings();
+      void this.refreshBindings().catch((error) => {
+        logger.error('[WeChatBridgeRuntime] Binding refresh failed', error);
+      });
     }, this.config.bindingRefreshIntervalMs);
   }
 
@@ -315,7 +318,8 @@ export class WeChatBridgeRuntime {
 
           await this.handleInboundMessage(binding, message);
         }
-      } catch {
+      } catch (error) {
+        logger.error(`[WeChatBridgeRuntime] Poller iteration failed for ${binding.userId}`, error);
         await sleep(this.config.pollIntervalMs);
       }
     }
@@ -418,6 +422,7 @@ export class WeChatBridgeRuntime {
         }
       }
     } catch (error) {
+      logger.error(`[WeChatBridgeRuntime] Command handling failed for ${binding.userId}`, error);
       const messageText =
         error instanceof Error && error.message === '请先执行 /list'
           ? error.message
@@ -441,7 +446,8 @@ export class WeChatBridgeRuntime {
 
       const response = await this.librechatClient.sendMessage(binding.userId, text);
       await this.sendReply(binding, peerUserId, contextToken, response.text);
-    } catch {
+    } catch (error) {
+      logger.error(`[WeChatBridgeRuntime] Plain text handling failed for ${binding.userId}`, error);
       await this.sendReply(binding, peerUserId, contextToken, '消息发送失败，请稍后重试。');
     }
   }

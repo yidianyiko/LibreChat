@@ -53,6 +53,7 @@ function createDependencies() {
       modelOptions: { model: 'gpt-4o' },
     })),
     advanceCurrentConversation: jest.fn(async () => undefined),
+    getAppConfig: jest.fn(async () => ({ endpoints: { openAI: {} } })),
   };
 }
 
@@ -169,6 +170,48 @@ describe('createWeChatHandlers', () => {
       expect.objectContaining({
         req: expect.objectContaining({ user: { id: 'user-1' } }),
       }),
+    );
+  });
+
+  it('hydrates req.config before building the endpoint option for internal messages', async () => {
+    const deps = createDependencies();
+    deps.service.getCurrentConversation.mockResolvedValue({
+      conversationId: 'convo-1',
+      parentMessageId: 'parent-1',
+      source: 'new',
+      selectedAt: new Date('2026-04-12T00:00:00.000Z'),
+      lastAdvancedAt: null,
+      conversation: {
+        conversationId: 'convo-1',
+        endpoint: 'openAI',
+        endpointType: 'openAI',
+        model: 'gpt-4o',
+      },
+    });
+    deps.orchestrator.sendMessage.mockResolvedValue({
+      text: 'reply',
+      nextParentMessageId: 'parent-2',
+      timedOut: false,
+    });
+    const handlers = createWeChatHandlers(deps);
+    const req = {
+      body: {
+        userId: 'user-1',
+        text: 'hello',
+      },
+    } as unknown as Request<unknown, unknown, { userId?: string; text?: string }> & {
+      config?: { endpoints?: { openAI?: object } };
+      user?: { id: string; role?: string };
+    };
+    const res = createMockResponse();
+
+    await handlers.sendMessage(req, res);
+
+    expect(deps.getAppConfig).toHaveBeenCalledWith(undefined);
+    expect(req.config).toEqual({ endpoints: { openAI: {} } });
+    expect(deps.buildMessageEndpointOption).toHaveBeenCalledWith(
+      expect.objectContaining({ config: { endpoints: { openAI: {} } } }),
+      expect.objectContaining({ conversationId: 'convo-1' }),
     );
   });
 

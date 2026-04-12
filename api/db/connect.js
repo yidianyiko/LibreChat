@@ -1,5 +1,5 @@
 require('dotenv').config();
-const { isEnabled } = require('@librechat/api');
+const { isEnabled, ensureConversationImportSourceIndex } = require('@librechat/api');
 const { logger } = require('@librechat/data-schemas');
 
 const mongoose = require('mongoose');
@@ -74,6 +74,11 @@ async function connectDb() {
     });
   }
   cached.conn = await cached.promise;
+
+  const db = cached.conn.connection.db;
+  if (db) {
+    await ensureConversationImportSourceIndex(db);
+  }
 
   return cached.conn;
 }

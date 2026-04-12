@@ -1,3 +1,4 @@
+import { isSupportedWeChatModel } from './modelSupport';
 import type { ResolveWeChatPresetParams, WeChatFallbackPreset, WeChatPreset } from './types';
 
 export async function resolveWeChatPreset<
@@ -7,7 +8,7 @@ export async function resolveWeChatPreset<
   const userPreset = await params.getUserDefaultPreset();
   const provider = userPreset?.endpointType ?? userPreset?.endpoint;
 
-  if (provider === 'openAI' && userPreset?.model === 'gpt-4o') {
+  if (userPreset != null && provider === 'openAI' && isSupportedWeChatModel(userPreset.model)) {
     return userPreset;
   }
 

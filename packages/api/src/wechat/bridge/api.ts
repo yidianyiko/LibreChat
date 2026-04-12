@@ -16,29 +16,32 @@ export function createWeChatBridgeApi(params: CreateWeChatBridgeApiParams) {
   app.use(express.json());
   app.use(requireBridgeAuth);
 
-  app.post('/bind-sessions', async (req, res) => {
+  app.post('/bind-sessions', async (req, res): Promise<void> => {
     const userId = typeof req.body.userId === 'string' ? req.body.userId.trim() : '';
     if (userId.length === 0) {
-      return res.status(400).json({ message: 'Missing userId' });
+      res.status(400).json({ message: 'Missing userId' });
+      return;
     }
 
     const session = await params.createBindSession(userId);
     res.status(201).json({ data: session });
   });
 
-  app.get('/bind-sessions/:bindSessionId', async (req, res) => {
+  app.get('/bind-sessions/:bindSessionId', async (req, res): Promise<void> => {
     const session = await params.getBindSession(req.params.bindSessionId);
     if (session == null) {
-      return res.status(404).json({ message: 'Bind session not found' });
+      res.status(404).json({ message: 'Bind session not found' });
+      return;
     }
 
     res.json({ data: session });
   });
 
-  app.delete('/bind-sessions/:bindSessionId', async (req, res) => {
+  app.delete('/bind-sessions/:bindSessionId', async (req, res): Promise<void> => {
     const cancelled = await params.cancelBindSession(req.params.bindSessionId);
     if (!cancelled) {
-      return res.status(404).json({ message: 'Bind session not found' });
+      res.status(404).json({ message: 'Bind session not found' });
+      return;
     }
 
     res.status(204).send();

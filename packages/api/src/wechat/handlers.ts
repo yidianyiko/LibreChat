@@ -42,7 +42,9 @@ type WeChatMessageParams = {
 interface AuthenticatedRequest extends Request {
   user?: {
     id: string;
+    role?: string;
   };
+  config?: StartResumableGenerationParams['req']['config'];
 }
 
 interface UserIdBody {
@@ -147,6 +149,9 @@ interface CreateWeChatHandlersDependencies {
     currentConversation: WeChatCurrentBinding;
     nextParentMessageId: string;
   }) => Promise<void>;
+  getAppConfig: (
+    role?: string,
+  ) => Promise<NonNullable<StartResumableGenerationParams['req']['config']>>;
 }
 
 const SWITCH_REQUIRED_MESSAGE = '请先执行 /list';
@@ -156,7 +161,7 @@ function getAuthenticatedUserId(req: AuthenticatedRequest): string | null {
   return typeof req.user?.id === 'string' && req.user.id.length > 0 ? req.user.id : null;
 }
 
-function getBodyUserId(req: Request<unknown, unknown, UserIdBody>): string | null {
+function getBodyUserId(req: { body?: UserIdBody | null }): string | null {
   const userId = req.body?.userId;
   return typeof userId === 'string' && userId.length > 0 ? userId : null;
 }
@@ -333,6 +338,9 @@ export function createWeChatHandlers(deps: CreateWeChatHandlersDependencies) {
     }
 
     req.user ??= { id: userId };
+    if (!req.config) {
+      req.config = await deps.getAppConfig(req.user.role);
+    }
 
     req.body = {
       ...req.body,

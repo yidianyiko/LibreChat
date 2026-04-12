@@ -9,6 +9,7 @@ import type {
 } from './types';
 
 const INVALID_SWITCH_MESSAGE = '请先执行 /list';
+const NO_PARENT_MESSAGE_ID = Constants.NO_PARENT as string;
 
 export class WeChatService {
   private deps: WeChatServiceDependencies;
@@ -63,7 +64,7 @@ export class WeChatService {
     await this.deps.upsertBinding(userId, {
       currentConversation: {
         conversationId,
-        parentMessageId: Constants.NO_PARENT,
+        parentMessageId: NO_PARENT_MESSAGE_ID,
         selectedAt: new Date(),
         lastAdvancedAt: null,
         source: 'new',

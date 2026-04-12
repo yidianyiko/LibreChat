@@ -1,4 +1,5 @@
 import { Constants } from 'librechat-data-provider';
+import { isSupportedWeChatModel } from './modelSupport';
 import type { WeChatConversation, WeChatConversationMessage } from './types';
 
 export function isEligibleWeChatConversation(
@@ -13,7 +14,7 @@ export function isEligibleWeChatConversation(
   return (
     conversation.user === userId &&
     provider === 'openAI' &&
-    conversation.model === 'gpt-4o' &&
+    isSupportedWeChatModel(conversation.model) &&
     conversation.isArchived !== true &&
     conversation.expiredAt == null
   );

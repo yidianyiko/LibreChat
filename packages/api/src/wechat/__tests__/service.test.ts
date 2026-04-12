@@ -50,6 +50,20 @@ describe('WeChat service helpers', () => {
     expect(
       isEligibleWeChatConversation(
         {
+          user: 'user-1',
+          endpointType: 'openAI',
+          endpoint: 'openAI',
+          model: 'gpt-4o-2024-11-20',
+          isArchived: false,
+          expiredAt: null,
+        },
+        'user-1',
+      ),
+    ).toBe(true);
+
+    expect(
+      isEligibleWeChatConversation(
+        {
           user: 'other-user',
           endpointType: 'openAI',
           endpoint: 'openAI',
@@ -69,6 +83,20 @@ describe('WeChat service helpers', () => {
     });
 
     expect(resolved.model).toBe('gpt-4o');
+    expect(resolved.endpoint).toBe('openAI');
+  });
+
+  it('keeps an openAI GPT-4o family preset when the user default preset uses a dated GPT-4o variant', async () => {
+    const resolved = await resolveWeChatPreset({
+      getUserDefaultPreset: async () => ({
+        endpoint: 'openAI',
+        endpointType: 'openAI',
+        model: 'gpt-4o-2024-11-20',
+      }),
+      fallbackPreset: { endpoint: 'openAI', model: 'gpt-4o', title: 'GPT-4o Default' },
+    });
+
+    expect(resolved.model).toBe('gpt-4o-2024-11-20');
     expect(resolved.endpoint).toBe('openAI');
   });
 

@@ -1,15 +1,17 @@
-import type { NextFunction, Request, Response } from 'express';
+import type { NextFunction, Request, RequestHandler, Response } from 'express';
 
-export function createRequireWeChatBridgeAuth(expectedToken: string) {
-  return (req: Request, res: Response, next: NextFunction) => {
+export function createRequireWeChatBridgeAuth(expectedToken: string): RequestHandler {
+  return (req: Request, res: Response, next: NextFunction): void => {
     const auth = req.headers.authorization;
     if (!auth?.startsWith('Bearer ')) {
-      return res.status(401).json({ message: 'Missing bridge authorization' });
+      res.status(401).json({ message: 'Missing bridge authorization' });
+      return;
     }
 
     const token = auth.slice('Bearer '.length);
     if (!expectedToken || token !== expectedToken) {
-      return res.status(401).json({ message: 'Invalid bridge authorization' });
+      res.status(401).json({ message: 'Invalid bridge authorization' });
+      return;
     }
 
     next();

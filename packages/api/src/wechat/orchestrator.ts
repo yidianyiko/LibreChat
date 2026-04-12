@@ -5,6 +5,8 @@ import type {
 } from '../agents/startResumableGeneration';
 import { flattenWeChatText } from './output';
 
+type WeChatStartParams = Omit<StartResumableGenerationParams, 'disposeClient' | 'saveMessage'>;
+
 type WeChatTimeoutResult = {
   type: 'timeout';
   reconciledParentMessageId?: string | null;
@@ -19,9 +21,7 @@ type WeChatDoneResult = {
 type WeChatTerminalResult = WeChatTimeoutResult | WeChatDoneResult;
 
 export interface WeChatMessageOrchestratorDependencies {
-  startResumableGeneration: (
-    params: StartResumableGenerationParams,
-  ) => Promise<StartResumableGenerationResult>;
+  startResumableGeneration: (params: WeChatStartParams) => Promise<StartResumableGenerationResult>;
   initializeClient: StartResumableGenerationParams['initializeClient'];
   addTitle?: StartResumableGenerationParams['addTitle'];
   waitForStream: (streamId: string, timeoutMs: number) => Promise<WeChatTerminalResult>;

@@ -15,3 +15,4 @@ export * from './output';
 export * from './presets';
 export * from './service';
 export * from './types';
+export * from './waitForStream';

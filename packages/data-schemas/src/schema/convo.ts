@@ -51,6 +51,12 @@ convoSchema.index({ conversationId: 1, user: 1 }, { unique: true });
 // index for MeiliSearch sync operations
 convoSchema.index({ _meiliIndex: 1, expiredAt: 1 });
 
-convoSchema.index({ user: 1, importSourceId: 1 }, { unique: true, sparse: true });
+convoSchema.index(
+  { user: 1, importSourceId: 1 },
+  {
+    unique: true,
+    partialFilterExpression: { importSourceId: { $type: 'string' } },
+  },
+);
 
 export default convoSchema;

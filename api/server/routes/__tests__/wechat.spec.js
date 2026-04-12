@@ -4,6 +4,16 @@ const request = require('supertest');
 
 let capturedWeChatServiceDeps;
 
+const mockConversationCreate = jest.fn();
+const mockPresetLean = jest.fn();
+const mockPresetSort = jest.fn(() => ({ lean: mockPresetLean }));
+const mockPresetFindOne = jest.fn(() => ({ sort: mockPresetSort }));
+
+jest.mock('~/db/models', () => ({
+  Conversation: { create: mockConversationCreate },
+  Preset: { findOne: mockPresetFindOne },
+}));
+
 const mockWeChatService = {
   getStatus: jest.fn(),
   unbind: jest.fn(),
@@ -135,6 +145,49 @@ describe('/api/wechat routes', () => {
 
     expect(response.status).toBe(409);
     expect(response.body.message).toBe('请先执行 /list');
+  });
+
+  it('strips preset metadata before creating a new WeChat conversation', async () => {
+    mockConversationCreate.mockResolvedValue({
+      toObject: () => ({ conversationId: 'convo-1', title: 'Preset Title' }),
+    });
+
+    await capturedWeChatServiceDeps.createConversation({
+      userId: 'user-1',
+      conversationId: 'convo-1',
+      preset: {
+        _id: 'preset-id',
+        user: 'user-1',
+        defaultPreset: true,
+        isArchived: false,
+        createdAt: new Date('2026-04-12T00:00:00.000Z'),
+        updatedAt: new Date('2026-04-12T00:00:00.000Z'),
+        __v: 0,
+        title: 'Preset Title',
+        endpoint: 'openAI',
+        endpointType: 'openAI',
+        model: 'gpt-4o',
+      },
+    });
+
+    expect(mockConversationCreate).toHaveBeenCalledWith(
+      expect.not.objectContaining({
+        _id: 'preset-id',
+        user: 'user-1',
+        defaultPreset: true,
+        __v: 0,
+      }),
+    );
+    expect(mockConversationCreate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        conversationId: 'convo-1',
+        user: 'user-1',
+        endpoint: 'openAI',
+        endpointType: 'openAI',
+        model: 'gpt-4o',
+        title: 'Preset Title',
+      }),
+    );
   });
 
   it('unsets ilinkUserId when unbind persistence omits it', async () => {

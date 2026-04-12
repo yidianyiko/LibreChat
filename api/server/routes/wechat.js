@@ -9,6 +9,7 @@ const {
   WeChatBridgeClient,
   WeChatMessageOrchestrator,
   WeChatService,
+  waitForWeChatTerminalResult,
 } = require('@librechat/api');
 const { requireJwtAuth } = require('~/server/middleware');
 
@@ -36,6 +37,11 @@ const buildBindingUpdateDocument = (userId, update) => {
     ...(shouldUnsetIlinkUserId(update) ? { $unset: { ilinkUserId: 1 } } : {}),
     $setOnInsert: { userId },
   };
+};
+
+const sanitizePresetForConversation = (preset = {}) => {
+  const { _id, __v, user, defaultPreset, isArchived, createdAt, updatedAt, ...rest } = preset;
+  return rest;
 };
 
 const getBridgeBaseUrl = () => process.env.WECHAT_BRIDGE_URL || 'http://localhost:3091';
@@ -77,14 +83,15 @@ const service = new WeChatService({
   }),
   createConversation: async ({ userId, conversationId, preset }) => {
     const { Conversation } = require('~/db/models');
+    const sanitizedPreset = sanitizePresetForConversation(preset);
     const created = await Conversation.create({
-      ...preset,
+      ...sanitizedPreset,
       conversationId,
-      title: preset.title || 'New Chat',
+      title: sanitizedPreset.title || 'New Chat',
       user: userId,
-      endpoint: preset.endpoint || 'openAI',
-      endpointType: preset.endpointType || preset.endpoint || 'openAI',
-      model: preset.model || 'gpt-4o',
+      endpoint: sanitizedPreset.endpoint || 'openAI',
+      endpointType: sanitizedPreset.endpointType || sanitizedPreset.endpoint || 'openAI',
+      model: sanitizedPreset.model || 'gpt-4o',
       isArchived: false,
     });
     return created.toObject();
@@ -112,35 +119,17 @@ const service = new WeChatService({
 
 const bridgeClient = new WeChatBridgeClient(getBridgeBaseUrl(), getBridgeToken());
 
-const waitForStream = async (streamId, timeoutMs) => {
-  const timeoutAt = Date.now() + timeoutMs;
-
-  while (Date.now() < timeoutAt) {
-    const job = await GenerationJobManager.getJob(streamId);
-    const status = job?.status ?? (await GenerationJobManager.getJobStatus(streamId));
-
-    if (status === 'complete') {
-      const resumeState = await GenerationJobManager.getResumeState(streamId);
-      return {
-        type: 'done',
-        aggregatedContent: resumeState?.aggregatedContent ?? [],
-        responseMessageId: resumeState?.responseMessageId ?? Constants.NO_PARENT,
-      };
-    }
-
-    if (status === 'error' || status === 'aborted') {
-      throw new Error(job?.error || 'Generation failed');
-    }
-
-    await new Promise((resolve) => setTimeout(resolve, 250));
-  }
-
-  const resumeState = await GenerationJobManager.getResumeState(streamId);
-  return {
-    type: 'timeout',
-    reconciledParentMessageId: resumeState?.responseMessageId ?? null,
-  };
-};
+const waitForStream = async (streamId, timeoutMs) =>
+  waitForWeChatTerminalResult({
+    streamId,
+    timeoutMs,
+    noParentMessageId: Constants.NO_PARENT,
+    getJob: (id) => GenerationJobManager.getJob(id),
+    getJobStatus: (id) => GenerationJobManager.getJobStatus(id),
+    getResumeState: (id) => GenerationJobManager.getResumeState(id),
+    subscribe: (id, onDone, onError) =>
+      GenerationJobManager.subscribe(id, () => undefined, onDone, onError),
+  });
 
 const responseShim = () => ({
   headersSent: false,
@@ -278,6 +267,10 @@ const handlers = createWeChatHandlers({
       }),
       conversation.endpointType || undefined,
     );
+  },
+  getAppConfig: async (role) => {
+    const { getAppConfig } = require('~/server/services/Config');
+    return getAppConfig({ role });
   },
   advanceCurrentConversation: async ({ userId, currentConversation, nextParentMessageId }) => {
     await getWeChatBindingModel().findOneAndUpdate(
