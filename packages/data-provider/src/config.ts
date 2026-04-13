@@ -114,13 +114,48 @@ export const modelConfigSchema = z
 
 export type TAzureModelConfig = z.infer<typeof modelConfigSchema>;
 
+type TAddParamValue =
+  | string
+  | number
+  | boolean
+  | null
+  | TAddParamValue[]
+  | { [key: string]: TAddParamValue };
+
+type TAddParams = { [key: string]: TAddParamValue };
+
+const paramValueSchema: z.ZodType<TAddParamValue> = z.lazy(() =>
+  z.union([
+    z.string(),
+    z.number(),
+    z.boolean(),
+    z.null(),
+    z.array(paramValueSchema),
+    z.record(z.string(), paramValueSchema),
+  ]),
+);
+
+const addParamsSchema: z.ZodType<TAddParams> = z
+  .record(z.string(), paramValueSchema)
+  .superRefine((params, ctx) => {
+    if (params.web_search === undefined || typeof params.web_search === 'boolean') {
+      return;
+    }
+
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ['web_search'],
+      message: '`web_search` must be a boolean in addParams',
+    });
+  });
+
 export const azureBaseSchema = z.object({
   apiKey: z.string(),
   serverless: z.boolean().optional(),
   instanceName: z.string().optional(),
   deploymentName: z.string().optional(),
   assistants: z.boolean().optional(),
-  addParams: z.record(z.any()).optional(),
+  addParams: addParamsSchema.optional(),
   dropParams: z.array(z.string()).optional(),
   version: z.string().optional(),
   baseURL: z.string().optional(),
@@ -322,7 +357,7 @@ export const endpointSchema = baseEndpointSchema.merge(
     iconURL: z.string().optional(),
     modelDisplayLabel: z.string().optional(),
     headers: z.record(z.any()).optional(),
-    addParams: z.record(z.any()).optional(),
+    addParams: addParamsSchema.optional(),
     dropParams: z.array(z.string()).optional(),
     customParams: z
       .object({
@@ -790,6 +825,7 @@ export type TStartupConfig = {
   sharePointPickerGraphScope?: string;
   sharePointPickerSharePointScope?: string;
   openidReuseTokens?: boolean;
+  allowAccountDeletion: boolean;
   minPasswordLength?: number;
   webSearch?: {
     searchProvider?: SearchProviders;
