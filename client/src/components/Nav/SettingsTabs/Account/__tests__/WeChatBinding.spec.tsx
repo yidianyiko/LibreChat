@@ -1,7 +1,8 @@
 import React from 'react';
-import { fireEvent, render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import WeChatBinding from '../WeChatBinding';
 
+const CLOSE_DIALOG_LABEL = 'Close dialog';
 const mockInvalidateQueries = jest.fn();
 const mockRefetchQueries = jest.fn();
 const mockShowToast = jest.fn();
@@ -34,12 +35,30 @@ jest.mock(
   '@librechat/client',
   () => ({
     Button: ({ children, ...props }: React.ComponentProps<'button'>) => (
-      <button {...props}>{children}</button>
+      <button type="button" {...props}>
+        {children}
+      </button>
     ),
     Label: ({ children, ...props }: React.ComponentProps<'label'>) => (
       <label {...props}>{children}</label>
     ),
-    OGDialog: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+    OGDialog: ({
+      children,
+      open,
+      onOpenChange,
+    }: {
+      children: React.ReactNode;
+      open: boolean;
+      onOpenChange: (open: boolean) => void;
+    }) =>
+      open ? (
+        <div>
+          <button type="button" aria-label={CLOSE_DIALOG_LABEL} onClick={() => onOpenChange(false)}>
+            {CLOSE_DIALOG_LABEL}
+          </button>
+          {children}
+        </div>
+      ) : null,
     OGDialogContent: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
     OGDialogHeader: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
     OGDialogTitle: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
@@ -107,6 +126,38 @@ describe('WeChatBinding', () => {
 
     expect(screen.getByRole('button', { name: 'Bind WeChat' })).toBeInTheDocument();
     expect(screen.getByText('Not connected')).toBeInTheDocument();
+  });
+
+  it('keeps the inline settings row and opens QR dialog after clicking bind', async () => {
+    const mutate = jest.fn((_value, options) => {
+      options?.onSuccess?.({
+        bindSessionId: 'bind-session-1',
+        qrCodeDataUrl: 'https://liteapp.weixin.qq.com/q/example',
+        expiresAt: '2026-04-12T00:00:00.000Z',
+      });
+    });
+
+    mockUseWeChatStatusQuery.mockReturnValue({
+      data: { status: 'unbound', hasBinding: false },
+      isLoading: false,
+      isError: false,
+    });
+    mockUseStartWeChatBindMutation.mockReturnValue({
+      mutate,
+      isLoading: false,
+    });
+
+    render(<WeChatBinding />);
+
+    expect(screen.getByText('WeChat binding')).toBeInTheDocument();
+    expect(screen.getByText('Not connected')).toBeInTheDocument();
+    expect(screen.queryByText('Scan with WeChat')).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Bind WeChat' }));
+
+    await waitFor(() => {
+      expect(screen.getByText('Scan with WeChat')).toBeInTheDocument();
+    });
   });
 
   it('shows the healthy status and unbind action when connected', () => {
