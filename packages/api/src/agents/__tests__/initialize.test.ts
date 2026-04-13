@@ -222,7 +222,7 @@ describe('initializeAgent — custom provider token lookup', () => {
     // Pipeline check: verifies endpointTokenConfig.context flows through the full
     // optionalChainWithEmptyCheck → Math.max formula. The toHaveBeenCalledWith
     // assertion above catches the actual provider-resolution regression.
-    expect(result.maxContextTokens).toBe(Math.round((65536 - 4096) * 0.95));
+    expect(result.maxContextTokens).toBe(Math.round((65536 - 4096) * 0.9));
   });
 });
 
