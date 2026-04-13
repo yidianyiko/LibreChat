@@ -1,4 +1,6 @@
+import { getWeChatWelcomeMessage } from './commands';
 import type { WeChatBridgeBindSession, WeChatBindSessions } from './bindSessions';
+import { sendOpenClawTextMessage } from './openclawClient';
 import { pollOpenClawQrLogin } from './openclawClient';
 
 export interface ResolveBindSessionParams {
@@ -7,10 +9,12 @@ export interface ResolveBindSessionParams {
   fetchImpl?: typeof fetch;
   internalToken: string;
   librechatBaseUrl: string;
+  logError?: (message: string, error: unknown) => void;
   pollQrLogin?: typeof pollOpenClawQrLogin;
   runtime: {
     refreshBindings: () => Promise<void>;
   };
+  sendTextMessage?: typeof sendOpenClawTextMessage;
   statusTimeoutMs: number;
 }
 
@@ -55,6 +59,26 @@ function getCurrentSession(
   return bindSessions.getSession(bindSessionId);
 }
 
+function buildCreateConversationRequest(params: {
+  internalToken: string;
+  librechatBaseUrl: string;
+  userId: string;
+}) {
+  return {
+    url: new URL('/api/wechat/conversations/new', params.librechatBaseUrl).toString(),
+    init: {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${params.internalToken}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        userId: params.userId,
+      }),
+    } satisfies RequestInit,
+  };
+}
+
 export async function resolveBindSession(
   params: ResolveBindSessionParams,
 ): Promise<WeChatBridgeBindSession | null> {
@@ -69,6 +93,7 @@ export async function resolveBindSession(
 
   const pollQrLogin = params.pollQrLogin ?? pollOpenClawQrLogin;
   const fetchImpl = params.fetchImpl ?? fetch;
+  const sendTextMessage = params.sendTextMessage ?? sendOpenClawTextMessage;
 
   try {
     const status = await pollQrLogin({
@@ -120,7 +145,34 @@ export async function resolveBindSession(
       baseUrl: updatedBaseUrl,
       ilinkUserId: status.ilinkUserId,
     });
+
     await params.runtime.refreshBindings();
+
+    try {
+      const createConversationRequest = buildCreateConversationRequest({
+        internalToken: params.internalToken,
+        librechatBaseUrl: params.librechatBaseUrl,
+        userId: session.userId,
+      });
+      const createConversationResponse = await fetchImpl(
+        createConversationRequest.url,
+        createConversationRequest.init,
+      );
+
+      if (!createConversationResponse.ok) {
+        throw new Error('Failed to create WeChat default conversation');
+      }
+
+      await sendTextMessage({
+        baseUrl: updatedBaseUrl,
+        botToken: status.botToken,
+        toUserId: status.ilinkUserId,
+        text: getWeChatWelcomeMessage(),
+      });
+    } catch (error) {
+      params.logError?.('Failed to initialize WeChat default conversation', error);
+    }
+
     return getCurrentSession(params.bindSessions, params.bindSessionId);
   } catch {
     return getCurrentSession(params.bindSessions, params.bindSessionId);
@@ -138,9 +190,11 @@ export function createBindSessionStatusResolver(
         bindSessions: params.bindSessions,
         internalToken: params.internalToken,
         librechatBaseUrl: params.librechatBaseUrl,
+        logError: params.logError,
         pollQrLogin: params.pollQrLogin,
         fetchImpl: params.fetchImpl,
         runtime: params.runtime,
+        sendTextMessage: params.sendTextMessage,
         statusTimeoutMs: params.statusTimeoutMs,
       });
     } catch (error) {

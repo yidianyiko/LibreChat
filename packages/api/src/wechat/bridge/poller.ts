@@ -438,10 +438,9 @@ export class WeChatBridgeRuntime {
     text: string,
   ) {
     try {
-      const current = await this.librechatClient.getCurrentConversation(binding.userId);
-      if (current == null) {
-        await this.sendReply(binding, peerUserId, contextToken, getNoCurrentConversationMessage());
-        return;
+      const currentConversation = await this.librechatClient.getCurrentConversation(binding.userId);
+      if (currentConversation == null) {
+        await this.librechatClient.createConversation(binding.userId);
       }
 
       const response = await this.librechatClient.sendMessage(binding.userId, text);
