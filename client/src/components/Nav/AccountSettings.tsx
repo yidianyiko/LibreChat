@@ -10,6 +10,7 @@ import { useAuthContext } from '~/hooks/AuthContext';
 import ImportConversationDialog from './SettingsTabs/Data/ImportConversationDialog';
 import ImportConversations from './SettingsTabs/Data/ImportConversations';
 import Settings from './Settings';
+import WeChatQuickAction from './WeChat/WeChatQuickAction';
 
 function AccountSettings() {
   const localize = useLocalize();
@@ -55,6 +56,7 @@ function AccountSettings() {
         onStartImport={(file) => setPendingImportFile(file)}
         isUploading={isImportUploading}
       />
+      <WeChatQuickAction />
       {user?.role === SystemRoles.ADMIN && (
         <button
           type="button"
