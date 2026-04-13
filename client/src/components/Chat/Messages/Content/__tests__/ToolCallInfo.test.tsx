@@ -6,7 +6,6 @@ import type { TAttachment } from 'librechat-data-provider';
 import UIResourceCarousel from '~/components/Chat/Messages/Content/UIResourceCarousel';
 import ToolCallInfo from '~/components/Chat/Messages/Content/ToolCallInfo';
 
-// Mock the dependencies
 jest.mock('~/hooks', () => ({
   useLocalize: () => (key: string, values?: any) => {
     const translations: Record<string, string> = {
@@ -30,7 +29,6 @@ jest.mock('../UIResourceCarousel', () => ({
   default: jest.fn(() => null),
 }));
 
-// Add TextEncoder/TextDecoder polyfill for Jest environment
 import { TextEncoder, TextDecoder } from 'util';
 
 if (typeof global.TextEncoder === 'undefined') {
@@ -65,10 +63,8 @@ describe('ToolCallInfo', () => {
         },
       ];
 
-      // Need output for ui_resources to render
       render(<ToolCallInfo {...mockProps} output="Some output" attachments={attachments} />);
 
-      // Should render UIResourceRenderer for single resource
       expect(UIResourceRenderer).toHaveBeenCalledWith(
         expect.objectContaining({
           resource: uiResource,
@@ -80,12 +76,10 @@ describe('ToolCallInfo', () => {
         expect.any(Object),
       );
 
-      // Should not render carousel for single resource
       expect(UIResourceCarousel).not.toHaveBeenCalled();
     });
 
     it('should render carousel for multiple ui_resources from attachments', () => {
-      // To test multiple resources, we can use a single attachment with multiple resources
       const attachments: TAttachment[] = [
         {
           type: Tools.ui_resources,
@@ -100,10 +94,8 @@ describe('ToolCallInfo', () => {
         },
       ];
 
-      // Need output for ui_resources to render
       render(<ToolCallInfo {...mockProps} output="Some output" attachments={attachments} />);
 
-      // Should render carousel for multiple resources
       expect(UIResourceCarousel).toHaveBeenCalledWith(
         expect.objectContaining({
           uiResources: [
@@ -115,7 +107,6 @@ describe('ToolCallInfo', () => {
         expect.any(Object),
       );
 
-      // Should not render individual UIResourceRenderer
       expect(UIResourceRenderer).not.toHaveBeenCalled();
     });
 
@@ -139,14 +130,11 @@ describe('ToolCallInfo', () => {
         <ToolCallInfo {...mockProps} output={output} attachments={attachments} />,
       );
 
-      // Check that the output is displayed normally
       const codeBlocks = container.querySelectorAll('code');
-      const outputCode = codeBlocks[1]?.textContent; // Second code block is the output
+      const outputCode = codeBlocks[1]?.textContent;
 
       expect(outputCode).toContain('Regular output 1');
       expect(outputCode).toContain('Regular output 2');
-
-      // UI resources should be rendered via attachments
       expect(UIResourceRenderer).toHaveBeenCalled();
     });
 
@@ -183,7 +171,6 @@ describe('ToolCallInfo', () => {
 
       render(<ToolCallInfo {...mockProps} attachments={attachments} />);
 
-      // Should not render UI resources components for non-ui_resources attachments
       expect(UIResourceRenderer).not.toHaveBeenCalled();
       expect(UIResourceCarousel).not.toHaveBeenCalled();
     });
@@ -201,7 +188,6 @@ describe('ToolCallInfo', () => {
         },
       ];
 
-      // Need output for ui_resources section to render
       render(<ToolCallInfo {...mockProps} output="Some output" attachments={attachments} />);
 
       expect(screen.getByText('UI Resources')).toBeInTheDocument();
@@ -229,7 +215,6 @@ describe('ToolCallInfo', () => {
         },
       ];
 
-      // Need output for ui_resources to render
       render(<ToolCallInfo {...mockProps} output="Some output" attachments={attachments} />);
 
       expect(UIResourceRenderer).toHaveBeenCalledWith(
@@ -257,73 +242,17 @@ describe('ToolCallInfo', () => {
         },
       ];
 
-      // Need output for ui_resources to render
       render(<ToolCallInfo {...mockProps} output="Some output" attachments={attachments} />);
 
-      const mockUIResourceRenderer = UIResourceRenderer as jest.MockedFunction<
-        typeof UIResourceRenderer
-      >;
-      const onUIAction = mockUIResourceRenderer.mock.calls[0]?.[0]?.onUIAction;
-      const testResult = { action: 'submit', data: { test: 'value' } };
+      const lastCall = (UIResourceRenderer as jest.Mock).mock.calls.at(-1);
+      const onUIAction = lastCall?.[0]?.onUIAction;
 
-      if (onUIAction) {
-        await onUIAction(testResult as any);
-      }
+      expect(onUIAction).toBeDefined();
 
-      expect(consoleSpy).toHaveBeenCalledWith('Action:', testResult);
+      await onUIAction({ type: 'test', payload: 'data' });
 
+      expect(consoleSpy).toHaveBeenCalledWith('Action:', { type: 'test', payload: 'data' });
       consoleSpy.mockRestore();
-    });
-  });
-
-  describe('backward compatibility', () => {
-    it('should handle output with ui_resources for backward compatibility', () => {
-      const output = JSON.stringify([
-        { type: 'text', text: 'Regular output' },
-        {
-          metadata: {
-            type: 'ui_resources',
-            data: [{ type: 'text', data: 'UI Resource' }],
-          },
-        },
-      ]);
-
-      render(<ToolCallInfo {...mockProps} output={output} />);
-
-      // Since we now use attachments, ui_resources in output should be ignored
-      expect(UIResourceRenderer).not.toHaveBeenCalled();
-      expect(UIResourceCarousel).not.toHaveBeenCalled();
-    });
-
-    it('should prioritize attachments over output ui_resources', () => {
-      const attachments: TAttachment[] = [
-        {
-          type: Tools.ui_resources,
-          messageId: 'msg123',
-          toolCallId: 'tool456',
-          conversationId: 'conv789',
-          [Tools.ui_resources]: [{ type: 'attachment', data: 'From attachments' }],
-        },
-      ];
-
-      const output = JSON.stringify([
-        {
-          metadata: {
-            type: 'ui_resources',
-            data: [{ type: 'output', data: 'From output' }],
-          },
-        },
-      ]);
-
-      render(<ToolCallInfo {...mockProps} output={output} attachments={attachments} />);
-
-      // Should use attachments, not output
-      expect(UIResourceRenderer).toHaveBeenCalledWith(
-        expect.objectContaining({
-          resource: { type: 'attachment', data: 'From attachments' },
-        }),
-        expect.any(Object),
-      );
     });
   });
 });

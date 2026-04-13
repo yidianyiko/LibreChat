@@ -1,7 +1,7 @@
 import type { TEndpointsConfig } from './types';
 import { EModelEndpoint, isDocumentSupportedProvider } from './schemas';
 import { getEndpointFileConfig, mergeFileConfig } from './file-config';
-import { resolveEndpointType } from './config';
+import { azureEndpointSchema, configSchema, endpointSchema, resolveEndpointType } from './config';
 
 const endpointsConfig: TEndpointsConfig = {
   [EModelEndpoint.openAI]: { userProvide: false, order: 0 },
@@ -312,4 +312,118 @@ describe('any custom endpoint is document-supported regardless of name', () => {
       expect(directType).toBe(agentType);
     },
   );
+});
+
+describe('addParams schema validation', () => {
+  const validEndpoint = {
+    name: 'CustomEndpoint',
+    apiKey: 'test-key',
+    baseURL: 'https://api.example.com',
+    models: { default: ['model-1'] },
+  };
+
+  const nestedAddParams = {
+    provider: {
+      only: ['z-ai'],
+      quantizations: ['int4'],
+    },
+  };
+
+  it('accepts nested addParams objects and arrays on custom endpoints', () => {
+    const result = endpointSchema.safeParse({
+      ...validEndpoint,
+      addParams: nestedAddParams,
+    });
+
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.addParams).toEqual(nestedAddParams);
+    }
+  });
+
+  it('keeps configSchema validation intact with nested custom addParams', () => {
+    const result = configSchema.safeParse({
+      version: '1.0.0',
+      endpoints: {
+        custom: [
+          {
+            ...validEndpoint,
+            addParams: nestedAddParams,
+          },
+        ],
+      },
+    });
+
+    expect(result.success).toBe(true);
+  });
+
+  it('accepts boolean web_search in addParams', () => {
+    const result = endpointSchema.safeParse({
+      ...validEndpoint,
+      addParams: {
+        provider: {
+          only: ['z-ai'],
+        },
+        web_search: true,
+      },
+    });
+
+    expect(result.success).toBe(true);
+  });
+
+  it('rejects non-boolean web_search objects in addParams', () => {
+    const result = endpointSchema.safeParse({
+      ...validEndpoint,
+      addParams: {
+        provider: {
+          only: ['z-ai'],
+        },
+        web_search: {
+          enabled: true,
+        },
+      },
+    });
+
+    expect(result.success).toBe(false);
+  });
+
+  it('accepts nested addParams in azure groups', () => {
+    const result = azureEndpointSchema.safeParse({
+      groups: [
+        {
+          group: 'test-group',
+          apiKey: 'test-key',
+          models: { 'gpt-4': true },
+          addParams: nestedAddParams,
+        },
+      ],
+    });
+
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.groups[0].addParams).toEqual(nestedAddParams);
+    }
+  });
+
+  it('rejects non-boolean web_search objects in azure addParams', () => {
+    const result = azureEndpointSchema.safeParse({
+      groups: [
+        {
+          group: 'test-group',
+          apiKey: 'test-key',
+          models: { 'gpt-4': true },
+          addParams: {
+            provider: {
+              only: ['z-ai'],
+            },
+            web_search: {
+              enabled: true,
+            },
+          },
+        },
+      ],
+    });
+
+    expect(result.success).toBe(false);
+  });
 });

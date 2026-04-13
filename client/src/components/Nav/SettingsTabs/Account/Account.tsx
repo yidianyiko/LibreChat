@@ -1,4 +1,6 @@
 import React from 'react';
+import { SystemRoles } from 'librechat-data-provider';
+import { useGetStartupConfig } from '~/data-provider';
 import DisplayUsernameMessages from './DisplayUsernameMessages';
 import DeleteAccount from './DeleteAccount';
 import Avatar from './Avatar';
@@ -9,6 +11,9 @@ import { useAuthContext } from '~/hooks';
 
 function Account() {
   const { user } = useAuthContext();
+  const { data: startupConfig } = useGetStartupConfig();
+  const showDeleteAccount =
+    startupConfig?.allowAccountDeletion !== false || user?.role === SystemRoles.ADMIN;
 
   return (
     <div className="flex flex-col gap-3 p-1 text-sm text-text-primary">
@@ -33,9 +38,11 @@ function Account() {
           )}
         </>
       )}
-      <div className="pb-3">
-        <DeleteAccount />
-      </div>
+      {showDeleteAccount && (
+        <div className="pb-3">
+          <DeleteAccount />
+        </div>
+      )}
     </div>
   );
 }

@@ -14,6 +14,7 @@ const {
   normalizeJsonSchema,
   GenerationJobManager,
   resolveJsonSchemaRefs,
+  buildOAuthToolCallName,
 } = require('@librechat/api');
 const {
   Time,
@@ -277,7 +278,7 @@ async function reconnectServer({
   const stepId = 'step_oauth_login_' + serverName;
   const toolCall = {
     id: flowId,
-    name: serverName,
+    name: buildOAuthToolCallName(serverName),
     type: 'tool_call_chunk',
   };
 

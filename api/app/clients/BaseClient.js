@@ -17,11 +17,13 @@ const {
   ContentTypes,
   excludedKeys,
   EModelEndpoint,
+  mergeFileConfig,
   isParamEndpoint,
   isAgentsEndpoint,
   isEphemeralAgentId,
   supportsBalanceCheck,
   isBedrockDocumentType,
+  getEndpointFileConfig,
 } = require('librechat-data-provider');
 const {
   updateMessage,
@@ -80,6 +82,10 @@ class BaseClient {
     this.currentMessages = [];
     /** @type {import('librechat-data-provider').VisionModes | undefined} */
     this.visionMode;
+    /** @type {import('librechat-data-provider').FileConfig | undefined} */
+    this._mergedFileConfig;
+    /** @type {import('librechat-data-provider').EndpointFileConfig | undefined} */
+    this._endpointFileConfig;
   }
 
   setOptions() {
@@ -686,7 +692,12 @@ class BaseClient {
         }
         delete userMessage.image_urls;
       }
-      userMessagePromise = this.saveMessageToDatabase(userMessage, saveOptions, user);
+      userMessagePromise = this.saveMessageToDatabase(userMessage, saveOptions, user).catch(
+        (err) => {
+          logger.error('[BaseClient] Failed to save user message:', err);
+          return {};
+        },
+      );
       this.savedMessageIds.add(userMessage.messageId);
       if (typeof opts?.getReqData === 'function') {
         opts.getReqData({
@@ -960,16 +971,25 @@ class BaseClient {
    * @param {string | null} user
    */
   async saveMessageToDatabase(message, endpointOptions, user = null) {
+    // Snapshot options before any await; disposeClient may set client.options = null
+    // while this method is suspended at an I/O boundary, but the local reference
+    // remains valid (disposeClient nulls the property, not the object itself).
+    const options = this.options;
+    if (!options) {
+      logger.error('[BaseClient] saveMessageToDatabase: client disposed before save, skipping');
+      return {};
+    }
+
     if (this.user && user !== this.user) {
       throw new Error('User mismatch.');
     }
 
-    const hasAddedConvo = this.options?.req?.body?.addedConvo != null;
+    const hasAddedConvo = options?.req?.body?.addedConvo != null;
     const savedMessage = await saveMessage(
-      this.options?.req,
+      options?.req,
       {
         ...message,
-        endpoint: this.options.endpoint,
+        endpoint: options.endpoint,
         unfinished: false,
         user,
         ...(hasAddedConvo && { addedConvo: true }),
@@ -983,20 +1003,20 @@ class BaseClient {
 
     const fieldsToKeep = {
       conversationId: message.conversationId,
-      endpoint: this.options.endpoint,
-      endpointType: this.options.endpointType,
+      endpoint: options.endpoint,
+      endpointType: options.endpointType,
       ...endpointOptions,
     };
 
     const existingConvo =
       this.fetchedConvo === true
         ? null
-        : await getConvo(this.options?.req?.user?.id, message.conversationId);
+        : await getConvo(options?.req?.user?.id, message.conversationId);
 
     const unsetFields = {};
     const exceptions = new Set(['spec', 'iconURL']);
     const hasNonEphemeralAgent =
-      isAgentsEndpoint(this.options.endpoint) &&
+      isAgentsEndpoint(options.endpoint) &&
       endpointOptions?.agent_id &&
       !isEphemeralAgentId(endpointOptions.agent_id);
     if (hasNonEphemeralAgent) {
@@ -1018,7 +1038,7 @@ class BaseClient {
       }
     }
 
-    const conversation = await saveConvo(this.options?.req, fieldsToKeep, {
+    const conversation = await saveConvo(options?.req, fieldsToKeep, {
       context: 'api/app/clients/BaseClient.js - saveMessageToDatabase #saveConvo',
       unsetFields,
     });
@@ -1257,6 +1277,7 @@ class BaseClient {
         provider: this.options.agent?.provider ?? this.options.endpoint,
         endpoint: this.options.agent?.endpoint ?? this.options.endpoint,
         useResponsesApi: this.options.agent?.model_parameters?.useResponsesApi,
+        model: this.modelOptions?.model ?? this.model,
       },
       getStrategyFunctions,
     );
@@ -1329,6 +1350,16 @@ class BaseClient {
     const provider = this.options.agent?.provider ?? this.options.endpoint;
     const isBedrock = provider === EModelEndpoint.bedrock;
 
+    if (!this._mergedFileConfig && this.options.req?.config?.fileConfig) {
+      this._mergedFileConfig = mergeFileConfig(this.options.req.config.fileConfig);
+      const endpoint = this.options.agent?.endpoint ?? this.options.endpoint;
+      this._endpointFileConfig = getEndpointFileConfig({
+        fileConfig: this._mergedFileConfig,
+        endpoint,
+        endpointType: this.options.endpointType,
+      });
+    }
+
     for (const file of attachments) {
       /** @type {FileSources} */
       const source = file.source ?? FileSources.local;
@@ -1354,6 +1385,14 @@ class BaseClient {
         allFiles.push(file);
       } else if (file.type.startsWith('audio/')) {
         categorizedAttachments.audios.push(file);
+        allFiles.push(file);
+      } else if (
+        file.type &&
+        this._mergedFileConfig &&
+        this._endpointFileConfig?.supportedMimeTypes &&
+        this._mergedFileConfig.checkType(file.type, this._endpointFileConfig.supportedMimeTypes)
+      ) {
+        categorizedAttachments.documents.push(file);
         allFiles.push(file);
       }
     }

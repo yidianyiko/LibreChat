@@ -112,6 +112,27 @@ function sendErrorResponse(res, statusCode, message, type = 'invalid_request_err
   res.status(statusCode).json(createErrorResponse(message, type, code));
 }
 
+function resolveRecursionLimit(agentsConfig, agent) {
+  let recursionLimit =
+    typeof agentsConfig?.recursionLimit === 'number' && agentsConfig.recursionLimit > 0
+      ? agentsConfig.recursionLimit
+      : 50;
+
+  if (typeof agent?.recursion_limit === 'number' && agent.recursion_limit > 0) {
+    recursionLimit = agent.recursion_limit;
+  }
+
+  if (
+    typeof agentsConfig?.maxRecursionLimit === 'number' &&
+    agentsConfig.maxRecursionLimit > 0 &&
+    recursionLimit > agentsConfig.maxRecursionLimit
+  ) {
+    recursionLimit = agentsConfig.maxRecursionLimit;
+  }
+
+  return recursionLimit;
+}
+
 /**
  * OpenAI-compatible chat completions controller for agents.
  *
@@ -128,6 +149,7 @@ function sendErrorResponse(res, statusCode, message, type = 'invalid_request_err
  */
 const OpenAIChatCompletionController = async (req, res) => {
   const appConfig = req.config;
+  const agentsEConfig = appConfig?.endpoints?.[EModelEndpoint.agents];
   const requestStartTime = Date.now();
 
   const validation = validateRequest(req.body);
@@ -194,9 +216,7 @@ const OpenAIChatCompletionController = async (req, res) => {
     const parentMessageId = request.parent_message_id ?? null;
 
     // Build allowed providers set
-    const allowedProviders = new Set(
-      appConfig?.endpoints?.[EModelEndpoint.agents]?.allowedProviders,
-    );
+    const allowedProviders = new Set(agentsEConfig?.allowedProviders);
 
     // Create tool loader
     const loadTools = createToolLoader(abortController.signal);
@@ -493,6 +513,7 @@ const OpenAIChatCompletionController = async (req, res) => {
         },
         ...(userMCPAuthMap != null && { userMCPAuthMap }),
       },
+      recursionLimit: resolveRecursionLimit(agentsEConfig, agent),
       signal: abortController.signal,
       streamMode: 'values',
       version: 'v2',

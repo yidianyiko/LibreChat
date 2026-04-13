@@ -3,6 +3,7 @@
  * Tests that recordCollectedUsage is called correctly for token spending
  */
 
+const mockProcessStream = jest.fn().mockResolvedValue(undefined);
 const mockSpendTokens = jest.fn().mockResolvedValue({});
 const mockSpendStructuredTokens = jest.fn().mockResolvedValue({});
 const mockRecordCollectedUsage = jest
@@ -35,7 +36,7 @@ jest.mock('@librechat/agents', () => ({
 jest.mock('@librechat/api', () => ({
   writeSSE: jest.fn(),
   createRun: jest.fn().mockResolvedValue({
-    processStream: jest.fn().mockResolvedValue(undefined),
+    processStream: mockProcessStream,
   }),
   createChunk: jest.fn().mockReturnValue({}),
   buildToolSet: jest.fn().mockReturnValue(new Set()),
@@ -132,6 +133,7 @@ describe('OpenAIChatCompletionController', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+    mockProcessStream.mockClear();
 
     const controller = require('../openai');
     OpenAIChatCompletionController = controller.OpenAIChatCompletionController;
@@ -295,6 +297,36 @@ describe('OpenAIChatCompletionController', () => {
         expect.objectContaining({
           model: 'gpt-4',
         }),
+      );
+    });
+  });
+
+  describe('recursionLimit handling', () => {
+    it('should pass the resolved recursionLimit to processStream config', async () => {
+      const { getAgent } = require('~/models/Agent');
+      getAgent.mockResolvedValueOnce({
+        id: 'agent-123',
+        provider: 'openAI',
+        recursion_limit: 75,
+        model_parameters: { model: 'gpt-4' },
+      });
+
+      req.config = {
+        endpoints: {
+          agents: {
+            allowedProviders: ['openAI'],
+            recursionLimit: 50,
+            maxRecursionLimit: 100,
+          },
+        },
+      };
+
+      await OpenAIChatCompletionController(req, res);
+
+      expect(mockProcessStream).toHaveBeenCalledWith(
+        expect.anything(),
+        expect.objectContaining({ recursionLimit: 75 }),
+        expect.anything(),
       );
     });
   });
