@@ -1,5 +1,5 @@
 import React from 'react';
-import { fireEvent, render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import AccountSettings from '../AccountSettings';
 
@@ -228,6 +228,7 @@ describe('AccountSettings', () => {
     expect(accountPopover).toBeInTheDocument();
     expect(migrateButton.closest('.account-settings-popover')).toBeNull();
     expect(wechatButton.closest('.account-settings-popover')).toBeNull();
+    expect(wechatButton.closest('.account-settings-wechat-quick-action')).toBeInTheDocument();
     expect(accountPopover).not.toContainElement(migrateButton);
     expect(accountPopover).not.toContainElement(wechatButton);
   });
@@ -239,5 +240,35 @@ describe('AccountSettings', () => {
 
     expect(screen.getByTestId('wechat-dialog-title')).toHaveTextContent('com_nav_wechat_binding');
     expect(screen.getByText('com_ui_wechat_connected_account: wechat-1')).toBeInTheDocument();
+  });
+
+  it('auto-starts the wechat QR flow from account settings for unbound accounts', async () => {
+    const startBindMutate = jest.fn((_value, options) =>
+      options?.onSuccess?.({
+        bindSessionId: 'bind-session-1',
+        qrCodeDataUrl: 'data:image/png;base64,wechat-qr',
+        expiresAt: '2026-04-13T00:00:00.000Z',
+      }),
+    );
+
+    mockUseWeChatStatusQuery.mockReturnValue({
+      data: { status: 'unbound', hasBinding: false },
+      isLoading: false,
+      isError: false,
+    });
+    mockUseStartWeChatBindMutation.mockReturnValue({
+      mutate: startBindMutate,
+      isLoading: false,
+    });
+
+    render(<AccountSettings />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'com_nav_wechat_binding' }));
+
+    await waitFor(() => {
+      expect(startBindMutate).toHaveBeenCalledTimes(1);
+    });
+    expect(screen.getByTestId('wechat-dialog-title')).toHaveTextContent('com_ui_wechat_qr_title');
+    expect(screen.getByAltText('com_ui_wechat_qr_title')).toBeInTheDocument();
   });
 });

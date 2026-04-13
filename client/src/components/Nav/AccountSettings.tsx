@@ -56,7 +56,9 @@ function AccountSettings() {
         onStartImport={(file) => setPendingImportFile(file)}
         isUploading={isImportUploading}
       />
-      <WeChatQuickAction />
+      <div className="account-settings-wechat-quick-action [&>button]:!h-auto [&>button]:!w-full [&>button]:!justify-start [&>button]:!gap-2 [&>button]:!rounded-xl [&>button]:!bg-transparent [&>button]:!p-2 [&>button]:!text-sm [&>button]:!font-normal [&>button]:!text-text-primary [&>button]:!shadow-none [&>button]:transition-all [&>button]:duration-200 [&>button]:ease-in-out [&>button]:hover:!bg-surface-active-alt">
+        <WeChatQuickAction />
+      </div>
       {user?.role === SystemRoles.ADMIN && (
         <button
           type="button"
