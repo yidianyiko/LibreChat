@@ -1,6 +1,7 @@
 const express = require('express');
 const mongoose = require('mongoose');
 const request = require('supertest');
+const { DEFAULT_PRESET_CONFIG } = require('../../../../config/default-preset');
 
 let capturedWeChatServiceDeps;
 
@@ -187,6 +188,29 @@ describe('/api/wechat routes', () => {
         endpointType: 'openAI',
         model: 'gpt-4o',
         title: 'Preset Title',
+      }),
+    );
+  });
+
+  it('uses the global default preset fields for WeChat fallback conversations', async () => {
+    mockConversationCreate.mockResolvedValue({
+      toObject: () => ({ conversationId: 'convo-1', title: 'GPT-4o Default' }),
+    });
+
+    await capturedWeChatServiceDeps.createConversation({
+      userId: 'user-1',
+      conversationId: 'convo-1',
+      preset: capturedWeChatServiceDeps.getFallbackPreset(),
+    });
+
+    expect(mockConversationCreate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        conversationId: 'convo-1',
+        user: 'user-1',
+        endpoint: 'openAI',
+        model: 'gpt-4o',
+        title: DEFAULT_PRESET_CONFIG.title,
+        system: DEFAULT_PRESET_CONFIG.system,
       }),
     );
   });

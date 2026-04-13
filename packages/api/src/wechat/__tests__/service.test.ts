@@ -141,6 +141,57 @@ describe('WeChat service helpers', () => {
     );
   });
 
+  it('stores only the 10 most recent eligible conversations in snapshot order', async () => {
+    const deps = createDependencies({
+      listUserConversations: jest.fn(async () =>
+        Array.from({ length: 12 }, (_, index) => ({
+          conversationId: `convo-${index + 1}`,
+          user: 'user-1',
+          endpointType: 'openAI',
+          endpoint: 'openAI',
+          model: 'gpt-4o',
+          isArchived: false,
+          expiredAt: null,
+          updatedAt: new Date(`2026-04-${String(index + 1).padStart(2, '0')}T00:00:00.000Z`),
+        })),
+      ),
+    });
+    const service = new WeChatService(deps);
+
+    const result = await service.listEligibleConversations('user-1');
+
+    expect(result.conversations).toHaveLength(10);
+    expect(result.conversations.map((conversation) => conversation.conversationId)).toEqual([
+      'convo-12',
+      'convo-11',
+      'convo-10',
+      'convo-9',
+      'convo-8',
+      'convo-7',
+      'convo-6',
+      'convo-5',
+      'convo-4',
+      'convo-3',
+    ]);
+    expect(deps.storeSnapshot).toHaveBeenCalledWith(
+      'user-1',
+      expect.objectContaining({
+        conversationIds: [
+          'convo-12',
+          'convo-11',
+          'convo-10',
+          'convo-9',
+          'convo-8',
+          'convo-7',
+          'convo-6',
+          'convo-5',
+          'convo-4',
+          'convo-3',
+        ],
+      }),
+    );
+  });
+
   it('requires a valid list snapshot before switching conversations', async () => {
     const deps = createDependencies();
     const service = new WeChatService(deps);

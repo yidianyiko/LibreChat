@@ -9,7 +9,17 @@ import type {
 } from './types';
 
 const INVALID_SWITCH_MESSAGE = '请先执行 /list';
+const MAX_WECHAT_LIST_CONVERSATIONS = 10;
 const NO_PARENT_MESSAGE_ID = Constants.NO_PARENT as string;
+
+function getConversationUpdatedAt(value?: Date | null): number {
+  if (!(value instanceof Date)) {
+    return 0;
+  }
+
+  const timestamp = value.getTime();
+  return Number.isFinite(timestamp) ? timestamp : 0;
+}
 
 export class WeChatService {
   private deps: WeChatServiceDependencies;
@@ -34,9 +44,13 @@ export class WeChatService {
 
   async listEligibleConversations(userId: string) {
     const conversations = await this.deps.listUserConversations(userId);
-    const eligibleConversations = conversations.filter((conversation) =>
-      isEligibleWeChatConversation(conversation, userId),
-    );
+    const eligibleConversations = conversations
+      .filter((conversation) => isEligibleWeChatConversation(conversation, userId))
+      .sort(
+        (left, right) =>
+          getConversationUpdatedAt(right.updatedAt) - getConversationUpdatedAt(left.updatedAt),
+      )
+      .slice(0, MAX_WECHAT_LIST_CONVERSATIONS);
 
     const snapshotId = crypto.randomUUID();
     await this.deps.storeSnapshot(userId, {
