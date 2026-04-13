@@ -1,6 +1,7 @@
 # Docker Compose for Development
 # 默认：只运行数据库服务，应用代码在本地运行
 # prod-test 模式：运行完整生产镜像测试（先构建镜像再用 --profile prod-test 启动）
+# 包含本地 API、MongoDB、Meilisearch 和 WeChat Bridge
 #   docker build -f Dockerfile.multi --target api-build -t librechat-local:test .
 #   docker compose -f docker-compose.dev.yml --profile prod-test up
 
@@ -76,6 +77,8 @@ services:
       - PORT=3080
       - MONGO_URI=mongodb://mongodb:27017/LibreChat
       - MEILI_HOST=http://meilisearch:7700
+      - WECHAT_BRIDGE_URL=http://wechat-bridge-prod-test:3091
+      - WECHAT_BRIDGE_INTERNAL_TOKEN=${WECHAT_BRIDGE_INTERNAL_TOKEN:-local-wechat-bridge-token}
       - DOMAIN_CLIENT=http://localhost:3080
       - DOMAIN_SERVER=http://localhost:3080
       - PROXY=${LOCAL_TEST_PROXY:-}
@@ -87,6 +90,33 @@ services:
       - ./logs:/app/logs
       - ./data:/app/data
       - ./data:/app/api/data
+    profiles:
+      - prod-test
+
+  wechat-bridge-prod-test:
+    container_name: LibreChat-WeChat-Bridge-prod-test
+    image: librechat-local:test
+    restart: always
+    depends_on:
+      - api-prod-test
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    env_file:
+      - .env
+    environment:
+      - NODE_ENV=production
+      - WECHAT_BRIDGE_PORT=3091
+      - WECHAT_BRIDGE_LIBRECHAT_URL=http://api-prod-test:3080
+      - WECHAT_BRIDGE_INTERNAL_TOKEN=${WECHAT_BRIDGE_INTERNAL_TOKEN:-local-wechat-bridge-token}
+      - LIBRECHAT_LOG_DIR=/app/logs
+      - PROXY=${LOCAL_TEST_PROXY:-}
+    command:
+      - node
+      - -e
+      - require('/app/packages/api/dist/index.js').startWeChatBridge().catch((error) => { console.error(error); process.exit(1); })
+    volumes:
+      - ./.env:/app/.env
+      - ./logs:/app/logs
     profiles:
       - prod-test
 

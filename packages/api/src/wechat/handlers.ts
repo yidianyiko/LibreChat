@@ -21,6 +21,7 @@ type ActiveWeChatBinding = {
   baseUrl?: string | null;
   status: WeChatBindingStatus;
   boundAt?: Date | null;
+  welcomeMessageSentAt?: Date | null;
   unhealthyAt?: Date | null;
   currentConversation?: WeChatCurrentBinding | null;
 };
@@ -43,6 +44,9 @@ interface AuthenticatedRequest extends Request {
   user?: {
     id: string;
     role?: string;
+    personalization?: {
+      memories?: boolean;
+    };
   };
   config?: StartResumableGenerationParams['req']['config'];
 }
@@ -105,6 +109,9 @@ interface CreateWeChatHandlersDependencies {
     userId: string;
     status: WeChatBindingStatus;
   }) => Promise<void>;
+  markWelcomeMessageSent: (input: {
+    userId: string;
+  }) => Promise<void>;
   buildMessageEndpointOption: (
     req: AuthenticatedRequest,
     conversation: {
@@ -152,6 +159,10 @@ interface CreateWeChatHandlersDependencies {
   getAppConfig: (
     role?: string,
   ) => Promise<NonNullable<StartResumableGenerationParams['req']['config']>>;
+  getUserById: (
+    userId: string,
+    fieldsToSelect?: string | string[] | null,
+  ) => Promise<AuthenticatedRequest['user'] | null>;
 }
 
 const SWITCH_REQUIRED_MESSAGE = '请先执行 /list';
@@ -174,6 +185,27 @@ function isSwitchConflictError(error: unknown): boolean {
 }
 
 export function createWeChatHandlers(deps: CreateWeChatHandlersDependencies) {
+  async function hydrateBridgeUser(
+    req: AuthenticatedRequest,
+    userId: string,
+  ): Promise<NonNullable<AuthenticatedRequest['user']>> {
+    if (
+      req.user?.id === userId &&
+      req.user.role != null &&
+      req.user.personalization != null
+    ) {
+      return req.user;
+    }
+
+    const storedUser = await deps.getUserById(userId, 'role personalization');
+    req.user = {
+      id: userId,
+      role: storedUser?.role,
+      personalization: storedUser?.personalization,
+    };
+    return req.user;
+  }
+
   async function getStatus(req: AuthenticatedRequest, res: Response) {
     const userId = getAuthenticatedUserId(req);
     if (!userId) {
@@ -258,6 +290,19 @@ export function createWeChatHandlers(deps: CreateWeChatHandlersDependencies) {
     res.status(204).send();
   }
 
+  async function markWelcomeMessageSent(
+    req: Request<unknown, unknown, UserIdBody>,
+    res: Response,
+  ) {
+    const userId = getBodyUserId(req);
+    if (!userId) {
+      return res.status(400).json({ message: 'Missing userId' });
+    }
+
+    await deps.markWelcomeMessageSent({ userId });
+    res.status(204).send();
+  }
+
   async function listConversations(
     req: Request<unknown, unknown, UserIdBody, UserIdBody>,
     res: Response,
@@ -337,9 +382,9 @@ export function createWeChatHandlers(deps: CreateWeChatHandlersDependencies) {
       return res.status(409).json({ message: NO_CURRENT_CONVERSATION_MESSAGE });
     }
 
-    req.user ??= { id: userId };
+    const bridgeUser = await hydrateBridgeUser(req, userId);
     if (!req.config) {
-      req.config = await deps.getAppConfig(req.user.role);
+      req.config = await deps.getAppConfig(bridgeUser.role);
     }
 
     req.body = {
@@ -397,6 +442,7 @@ export function createWeChatHandlers(deps: CreateWeChatHandlersDependencies) {
     getActiveBindings,
     completeBinding,
     updateBindingHealth,
+    markWelcomeMessageSent,
     listConversations,
     createConversation,
     switchConversation,

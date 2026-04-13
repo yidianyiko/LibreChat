@@ -206,6 +206,7 @@ const handlers = createWeChatHandlers({
           baseUrl,
           status: 'healthy',
           boundAt: new Date(),
+          welcomeMessageSentAt: null,
           unhealthyAt: null,
           unboundAt: null,
         },
@@ -221,6 +222,18 @@ const handlers = createWeChatHandlers({
         $set: {
           status,
           unhealthyAt: status === 'reauth_required' ? new Date() : null,
+        },
+        $setOnInsert: { userId },
+      },
+      { upsert: true },
+    );
+  },
+  markWelcomeMessageSent: async ({ userId }) => {
+    await getWeChatBindingModel().findOneAndUpdate(
+      { userId },
+      {
+        $set: {
+          welcomeMessageSentAt: new Date(),
         },
         $setOnInsert: { userId },
       },
@@ -272,6 +285,10 @@ const handlers = createWeChatHandlers({
     const { getAppConfig } = require('~/server/services/Config');
     return getAppConfig({ role });
   },
+  getUserById: async (userId, fieldsToSelect) => {
+    const { getUserById } = require('~/models');
+    return getUserById(userId, fieldsToSelect);
+  },
   advanceCurrentConversation: async ({ userId, currentConversation, nextParentMessageId }) => {
     await getWeChatBindingModel().findOneAndUpdate(
       { userId },
@@ -300,6 +317,7 @@ router.delete('/bind', requireJwtAuth, handlers.unbind);
 router.get('/internal/bindings/active', requireBridgeAuth, handlers.getActiveBindings);
 router.post('/internal/bindings/complete', requireBridgeAuth, handlers.completeBinding);
 router.post('/internal/bindings/health', requireBridgeAuth, handlers.updateBindingHealth);
+router.post('/internal/bindings/welcome', requireBridgeAuth, handlers.markWelcomeMessageSent);
 
 router.get('/conversations', requireBridgeAuth, handlers.listConversations);
 router.post('/conversations/new', requireBridgeAuth, handlers.createConversation);

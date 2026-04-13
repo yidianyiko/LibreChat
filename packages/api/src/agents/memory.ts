@@ -521,7 +521,7 @@ export async function createMemoryProcessor({
   });
 
   return [
-    withoutKeys,
+    withKeys,
     async function (messages: BaseMessage[]): Promise<(TAttachment | null)[] | undefined> {
       try {
         return await processMemory({

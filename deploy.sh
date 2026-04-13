@@ -16,7 +16,7 @@
 #   ./deploy.sh --no-cache               # 强制重新构建（忽略 Docker 缓存）
 #   ./deploy.sh --init-only              # 仅初始化远程目录，不构建
 #   ./deploy.sh --rollback               # 回滚到上一版本
-#   ./deploy.sh --local-test             # 本地构建并用 prod-test profile 启动
+#   ./deploy.sh --local-test             # 本地构建并用 prod-test profile 启动（含 WeChat Bridge）
 ################################################################################
 
 set -e  # 遇到错误立即退出
@@ -780,7 +780,7 @@ local_test() {
     log_info "清理遗留 prod-test 容器..."
     docker compose -f docker-compose.dev.yml --profile prod-test down 2>/dev/null || true
 
-    log_info "后台启动 prod-test 生产容器（端口 3080）..."
+    log_info "后台启动 prod-test 生产容器（端口 3080，包含 WeChat Bridge）..."
     LOCAL_TEST_PROXY="${LOCAL_TEST_PROXY}" docker compose -f docker-compose.dev.yml --profile prod-test up -d
 
     trap 'stop_local_test_services; exit 0' EXIT INT TERM
@@ -790,11 +790,12 @@ local_test() {
 
     log_success "本地生产测试环境已启动"
     echo "访问地址: http://localhost:3080"
-    echo "说明: 此入口使用与正式部署一致的生产前端构建产物，不再启动 Vite dev (3090)"
+    echo "说明: 此入口使用与正式部署一致的生产前端构建产物，并默认带起本地 WeChat Bridge"
+    echo "说明: 不再启动 Vite dev (3090)"
     echo "按 Ctrl+C 可停止本地测试容器"
     echo ""
 
-    docker compose -f docker-compose.dev.yml --profile prod-test logs -f api-prod-test
+    docker compose -f docker-compose.dev.yml --profile prod-test logs -f api-prod-test wechat-bridge-prod-test
 }
 
 # 回滚功能
@@ -950,7 +951,7 @@ while [[ $# -gt 0 ]]; do
             echo "选项:"
             echo "  --server, -s <IP>    服务器 IP 地址 (默认: 54.64.181.104)"
             echo "  --user, -u <USER>    SSH 用户名 (默认: ubuntu)"
-            echo "  --local-test, -l     本地构建并启动 prod-test 生产容器（访问 http://localhost:3080）"
+            echo "  --local-test, -l     本地构建并启动 prod-test 生产容器（含 WeChat Bridge，访问 http://localhost:3080）"
             echo "  --init-only          仅初始化远程目录，不构建镜像"
             echo "  --no-cache           强制重新构建所有 Docker 层（忽略缓存）"
             echo "  --use-cache          允许复用 Docker 缓存层（推荐日常部署）"
@@ -963,8 +964,8 @@ while [[ $# -gt 0 ]]; do
             echo ""
             echo "示例:"
             echo "  $0                           # 完整部署流程"
-            echo "  $0 --local-test              # 本地生产镜像测试"
-            echo "  $0 --local-test --no-cache   # 强制重建后本地测试"
+            echo "  $0 --local-test              # 本地生产镜像测试（含 WeChat Bridge）"
+            echo "  $0 --local-test --no-cache   # 强制重建后本地测试（含 WeChat Bridge）"
             echo "  $0 --no-cache                # 强制重新构建并部署"
             echo "  $0 --init-only               # 仅初始化目录"
             echo "  $0 --server 1.2.3.4          # 指定服务器"

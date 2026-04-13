@@ -26,6 +26,7 @@ const weChatBindingSchema: Schema<IWeChatBinding> = new Schema(
       default: 'unbound',
     },
     boundAt: { type: Date, default: null },
+    welcomeMessageSentAt: { type: Date, default: null },
     unhealthyAt: { type: Date, default: null },
     unboundAt: { type: Date, default: null },
     currentConversation: { type: currentConversationSchema, default: null },

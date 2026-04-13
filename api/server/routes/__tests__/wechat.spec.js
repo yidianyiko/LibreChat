@@ -58,6 +58,7 @@ jest.mock('@librechat/api', () => ({
     getActiveBindings: async (_req, res) => res.json({ bindings: [] }),
     completeBinding: async (_req, res) => res.status(204).send(),
     updateBindingHealth: async (_req, res) => res.status(204).send(),
+    markWelcomeMessageSent: async (_req, res) => res.status(204).send(),
     listConversations: async (req, res) =>
       res.json(await deps.service.listEligibleConversations(req.body.userId)),
     createConversation: async (req, res) =>

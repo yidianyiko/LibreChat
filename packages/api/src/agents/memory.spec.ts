@@ -2,7 +2,7 @@ import { Types } from 'mongoose';
 import { Run, Providers } from '@librechat/agents';
 import type { IUser } from '@librechat/data-schemas';
 import type { Response } from 'express';
-import { processMemory } from './memory';
+import { createMemoryProcessor, processMemory } from './memory';
 
 jest.mock('~/stream/GenerationJobManager');
 
@@ -536,5 +536,33 @@ describe('Memory Agent Header Resolution', () => {
     const runConfig = (Run.create as jest.Mock).mock.calls[0][0];
 
     expect(runConfig.graphConfig.llmConfig.temperature).toBe(0.7);
+  });
+});
+
+describe('createMemoryProcessor', () => {
+  it('returns key-aware memory text for prompt injection', async () => {
+    const res = {
+      write: jest.fn(),
+      end: jest.fn(),
+      headersSent: false,
+    } as unknown as Response;
+
+    const [memoryContext] = await createMemoryProcessor({
+      res,
+      userId: 'user-123',
+      messageId: 'message-123',
+      conversationId: 'conversation-123',
+      memoryMethods: {
+        setMemory: jest.fn(),
+        deleteMemory: jest.fn(),
+        getFormattedMemories: jest.fn(async () => ({
+          withKeys: '1. [2026-04-13]. ["key": "username"]. ["value": "Li Zihao"]',
+          withoutKeys: '1. [2026-04-13]. Li Zihao',
+          totalTokens: 5,
+        })),
+      },
+    });
+
+    expect(memoryContext).toBe('1. [2026-04-13]. ["key": "username"]. ["value": "Li Zihao"]');
   });
 });

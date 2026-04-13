@@ -1,5 +1,12 @@
 import { logger } from '@librechat/data-schemas';
-import { parseWeChatCommand, formatWeChatConversationList, formatWeChatCurrentConversation, getNoCurrentConversationMessage, splitWeChatReply } from './commands';
+import {
+  parseWeChatCommand,
+  formatWeChatConversationList,
+  formatWeChatCurrentConversation,
+  getNoCurrentConversationMessage,
+  getWeChatWelcomeMessage,
+  splitWeChatReply,
+} from './commands';
 import { InboundMessageDedupe } from './dedupe';
 import {
   getOpenClawUpdates,
@@ -15,6 +22,7 @@ type ActiveWeChatBinding = {
   botToken?: string | null;
   baseUrl?: string | null;
   status: 'healthy' | 'reauth_required';
+  welcomeMessageSentAt?: Date | string | null;
 };
 
 type ConversationSummary = {
@@ -152,6 +160,13 @@ class LibreChatWeChatClient {
     await this.request('/api/wechat/internal/bindings/health', {
       method: 'POST',
       body: JSON.stringify(input),
+    });
+  }
+
+  async markWelcomeMessageSent(userId: string): Promise<void> {
+    await this.request('/api/wechat/internal/bindings/welcome', {
+      method: 'POST',
+      body: JSON.stringify({ userId }),
     });
   }
 
@@ -443,11 +458,34 @@ export class WeChatBridgeRuntime {
         await this.librechatClient.createConversation(binding.userId);
       }
 
+      await this.sendWelcomeMessageIfNeeded(binding, peerUserId, contextToken);
+
       const response = await this.librechatClient.sendMessage(binding.userId, text);
       await this.sendReply(binding, peerUserId, contextToken, response.text);
     } catch (error) {
       logger.error(`[WeChatBridgeRuntime] Plain text handling failed for ${binding.userId}`, error);
       await this.sendReply(binding, peerUserId, contextToken, '消息发送失败，请稍后重试。');
+    }
+  }
+
+  private async sendWelcomeMessageIfNeeded(
+    binding: ActiveWeChatBinding,
+    peerUserId: string,
+    contextToken: string | undefined,
+  ) {
+    if (binding.welcomeMessageSentAt != null) {
+      return;
+    }
+
+    try {
+      await this.sendReply(binding, peerUserId, contextToken, getWeChatWelcomeMessage());
+      binding.welcomeMessageSentAt = new Date().toISOString();
+      await this.librechatClient.markWelcomeMessageSent(binding.userId);
+    } catch (error) {
+      logger.error(
+        `[WeChatBridgeRuntime] Failed to send or persist the welcome message for ${binding.userId}`,
+        error,
+      );
     }
   }
 

@@ -48,12 +48,20 @@ function createDependencies() {
     listActiveBindings: jest.fn(async () => []),
     completeBinding: jest.fn(async () => undefined),
     updateBindingHealth: jest.fn(async () => undefined),
+    markWelcomeMessageSent: jest.fn(async () => undefined),
     buildMessageEndpointOption: jest.fn(async () => ({
       endpoint: 'openAI',
       modelOptions: { model: 'gpt-4o' },
     })),
     advanceCurrentConversation: jest.fn(async () => undefined),
     getAppConfig: jest.fn(async () => ({ endpoints: { openAI: {} } })),
+    getUserById: jest.fn(async () => ({
+      id: 'user-1',
+      role: 'USER',
+      personalization: {
+        memories: true,
+      },
+    })),
   };
 }
 
@@ -127,7 +135,7 @@ describe('createWeChatHandlers', () => {
   });
 
 
-  it('hydrates req.user from the bridge userId before sending a message', async () => {
+  it('hydrates req.user from the stored user before sending a bridge message', async () => {
     const deps = createDependencies();
     deps.service.getCurrentConversation.mockResolvedValue({
       conversationId: 'convo-1',
@@ -160,15 +168,38 @@ describe('createWeChatHandlers', () => {
 
     await handlers.sendMessage(req, res);
 
-    expect(req.user).toEqual({ id: 'user-1' });
+    expect(deps.getUserById).toHaveBeenCalledWith('user-1', 'role personalization');
+    expect(req.user).toEqual({
+      id: 'user-1',
+      role: 'USER',
+      personalization: {
+        memories: true,
+      },
+    });
     expect(deps.buildMessageEndpointOption).toHaveBeenCalledWith(
-      expect.objectContaining({ user: { id: 'user-1' } }),
+      expect.objectContaining({
+        user: {
+          id: 'user-1',
+          role: 'USER',
+          personalization: {
+            memories: true,
+          },
+        },
+      }),
       expect.objectContaining({ conversationId: 'convo-1' }),
     );
     expect(deps.orchestrator.sendMessage).toHaveBeenCalledWith(
       res,
       expect.objectContaining({
-        req: expect.objectContaining({ user: { id: 'user-1' } }),
+        req: expect.objectContaining({
+          user: {
+            id: 'user-1',
+            role: 'USER',
+            personalization: {
+              memories: true,
+            },
+          },
+        }),
       }),
     );
   });
@@ -207,7 +238,7 @@ describe('createWeChatHandlers', () => {
 
     await handlers.sendMessage(req, res);
 
-    expect(deps.getAppConfig).toHaveBeenCalledWith(undefined);
+    expect(deps.getAppConfig).toHaveBeenCalledWith('USER');
     expect(req.config).toEqual({ endpoints: { openAI: {} } });
     expect(deps.buildMessageEndpointOption).toHaveBeenCalledWith(
       expect.objectContaining({ config: { endpoints: { openAI: {} } } }),

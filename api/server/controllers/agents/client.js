@@ -329,9 +329,9 @@ class AgentClient extends BaseClient {
     }
 
     /** Memory context (user preferences/memories) */
-    const withoutKeys = await this.useMemory();
-    if (withoutKeys) {
-      const memoryContext = `${memoryInstructions}\n\n# Existing memory about the user:\n${withoutKeys}`;
+    const memoryContextContent = await this.useMemory();
+    if (memoryContextContent) {
+      const memoryContext = `${memoryInstructions}\n\n# Existing memory about the user:\n${memoryContextContent}`;
       sharedRunContextParts.push(memoryContext);
     }
 
@@ -530,7 +530,7 @@ class AgentClient extends BaseClient {
     const messageId = this.responseMessageId + '';
     const conversationId = this.conversationId + '';
     const streamId = this.options.req?._resumableStreamId || null;
-    const [withoutKeys, processMemory] = await createMemoryProcessor({
+    const [memoryContextContent, processMemory] = await createMemoryProcessor({
       userId,
       config,
       messageId,
@@ -546,7 +546,7 @@ class AgentClient extends BaseClient {
     });
 
     this.processMemory = processMemory;
-    return withoutKeys;
+    return memoryContextContent;
   }
 
   /**

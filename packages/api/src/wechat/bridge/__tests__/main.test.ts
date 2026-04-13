@@ -144,7 +144,7 @@ describe('resolveBindSession', () => {
     expect(runtime.refreshBindings).toHaveBeenCalledTimes(1);
   });
 
-  it('creates a default conversation and sends the first welcome message after bind success', async () => {
+  it('creates a default conversation after bind success without sending the welcome message immediately', async () => {
     const bindSessions = new WeChatBindSessions(5 * 60 * 1000);
     const session = bindSessions.createSession({
       userId: 'user-1',
@@ -159,8 +159,6 @@ describe('resolveBindSession', () => {
       .fn()
       .mockResolvedValueOnce({ ok: true, status: 204 })
       .mockResolvedValueOnce({ ok: true, status: 201 });
-    const sendTextMessage = jest.fn(async () => undefined);
-
     const result = await resolveBindSession({
       bindSessionId: session.bindSessionId,
       bindSessions,
@@ -168,7 +166,6 @@ describe('resolveBindSession', () => {
       librechatBaseUrl: 'http://127.0.0.1:3081',
       runtime,
       fetchImpl,
-      sendTextMessage,
       pollQrLogin: jest.fn(async () => ({
         status: 'confirmed',
         botToken: 'bot-token',
@@ -192,11 +189,5 @@ describe('resolveBindSession', () => {
         body: JSON.stringify({ userId: 'user-1' }),
       }),
     );
-    expect(sendTextMessage).toHaveBeenCalledWith({
-      baseUrl: 'https://redirect.example.com',
-      botToken: 'bot-token',
-      toUserId: 'ilink-user',
-      text: 'hi, 终于可以在微信上也和你聊天啦！如果你想创建一个新对话，可以试试在对话框输入 /new, 如果想找到之前的对话可以先输入 /list，再输入你想继续的某条对话，比如 /switch 1',
-    });
   });
 });

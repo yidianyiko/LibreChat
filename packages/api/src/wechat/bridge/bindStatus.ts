@@ -1,6 +1,4 @@
-import { getWeChatWelcomeMessage } from './commands';
 import type { WeChatBridgeBindSession, WeChatBindSessions } from './bindSessions';
-import { sendOpenClawTextMessage } from './openclawClient';
 import { pollOpenClawQrLogin } from './openclawClient';
 
 export interface ResolveBindSessionParams {
@@ -14,7 +12,6 @@ export interface ResolveBindSessionParams {
   runtime: {
     refreshBindings: () => Promise<void>;
   };
-  sendTextMessage?: typeof sendOpenClawTextMessage;
   statusTimeoutMs: number;
 }
 
@@ -93,8 +90,6 @@ export async function resolveBindSession(
 
   const pollQrLogin = params.pollQrLogin ?? pollOpenClawQrLogin;
   const fetchImpl = params.fetchImpl ?? fetch;
-  const sendTextMessage = params.sendTextMessage ?? sendOpenClawTextMessage;
-
   try {
     const status = await pollQrLogin({
       qrcode: session.qrcode,
@@ -163,12 +158,6 @@ export async function resolveBindSession(
         throw new Error('Failed to create WeChat default conversation');
       }
 
-      await sendTextMessage({
-        baseUrl: updatedBaseUrl,
-        botToken: status.botToken,
-        toUserId: status.ilinkUserId,
-        text: getWeChatWelcomeMessage(),
-      });
     } catch (error) {
       params.logError?.('Failed to initialize WeChat default conversation', error);
     }
@@ -194,7 +183,6 @@ export function createBindSessionStatusResolver(
         pollQrLogin: params.pollQrLogin,
         fetchImpl: params.fetchImpl,
         runtime: params.runtime,
-        sendTextMessage: params.sendTextMessage,
         statusTimeoutMs: params.statusTimeoutMs,
       });
     } catch (error) {

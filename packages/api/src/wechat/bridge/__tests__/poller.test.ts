@@ -19,11 +19,27 @@ type ActiveWeChatBinding = {
   botToken: string;
   baseUrl: string;
   status: 'healthy';
+  welcomeMessageSentAt?: Date | string | null;
 };
 
 type LibreChatClientMock = {
-  getCurrentConversation: jest.Mock<Promise<null>, [string]>;
+  getCurrentConversation: jest.Mock<
+    Promise<
+      | null
+      | {
+          conversationId: string;
+          parentMessageId: string;
+          selectedAt: Date;
+          source: 'new' | 'switch';
+          conversation: {
+            conversationId: string;
+          };
+        }
+    >,
+    [string]
+  >;
   createConversation: jest.Mock<Promise<{ conversationId: string }>, [string]>;
+  markWelcomeMessageSent: jest.Mock<Promise<void>, [string]>;
   sendMessage: jest.Mock<
     Promise<{
       conversationId: string;
@@ -103,6 +119,7 @@ describe('WeChatBridgeRuntime', () => {
     runtime.librechatClient = {
       getCurrentConversation: jest.fn(async () => null),
       createConversation: jest.fn(async () => ({ conversationId: 'conversation-1' })),
+      markWelcomeMessageSent: jest.fn(async () => undefined),
       sendMessage: jest.fn(async () => ({
         conversationId: 'conversation-1',
         parentMessageId: 'message-1',
@@ -118,6 +135,7 @@ describe('WeChatBridgeRuntime', () => {
         botToken: 'bot-token',
         baseUrl: 'https://redirect.example.com',
         status: 'healthy',
+        welcomeMessageSentAt: null,
       },
       'ilink-user',
       'context-1',
@@ -126,7 +144,71 @@ describe('WeChatBridgeRuntime', () => {
 
     expect(runtime.librechatClient.getCurrentConversation).toHaveBeenCalledWith('user-1');
     expect(runtime.librechatClient.createConversation).toHaveBeenCalledWith('user-1');
+    expect(runtime.librechatClient.markWelcomeMessageSent).toHaveBeenCalledWith('user-1');
     expect(runtime.librechatClient.sendMessage).toHaveBeenCalledWith('user-1', 'hello');
+    expect(mockSendOpenClawTextMessage).toHaveBeenNthCalledWith(1, {
+      baseUrl: 'https://redirect.example.com',
+      botToken: 'bot-token',
+      contextToken: 'context-1',
+      text: 'hi, 终于可以在微信上也和你聊天啦！如果你想创建一个新对话，可以试试在对话框输入 /new, 如果想找到之前的对话可以先输入 /list，再输入你想继续的某条对话，比如 /switch 1',
+      toUserId: 'ilink-user',
+    });
+    expect(mockSendOpenClawTextMessage).toHaveBeenNthCalledWith(2, {
+      baseUrl: 'https://redirect.example.com',
+      botToken: 'bot-token',
+      contextToken: 'context-1',
+      text: 'assistant reply',
+      toUserId: 'ilink-user',
+    });
+  });
+
+  it('does not resend the welcome message once the binding is marked as welcomed', async () => {
+    const runtime = new WeChatBridgeRuntime({
+      librechatBaseUrl: 'http://localhost:3080',
+      internalToken: 'internal-token',
+      pollIntervalMs: 100,
+      dedupeTtlMs: 1_000,
+      bindingRefreshIntervalMs: 1_000,
+      longPollTimeoutMs: 1_000,
+    }) as TestRuntime;
+
+    runtime.librechatClient = {
+      getCurrentConversation: jest.fn(async () => ({
+        conversationId: 'conversation-1',
+        parentMessageId: 'message-0',
+        selectedAt: new Date('2026-04-13T00:00:00.000Z'),
+        source: 'new',
+        conversation: {
+          conversationId: 'conversation-1',
+        },
+      })),
+      createConversation: jest.fn(async () => ({ conversationId: 'conversation-1' })),
+      markWelcomeMessageSent: jest.fn(async () => undefined),
+      sendMessage: jest.fn(async () => ({
+        conversationId: 'conversation-1',
+        parentMessageId: 'message-1',
+        text: 'assistant reply',
+        timedOut: false,
+      })),
+    };
+
+    await runtime.handlePlainText(
+      {
+        userId: 'user-1',
+        ilinkUserId: 'ilink-user',
+        botToken: 'bot-token',
+        baseUrl: 'https://redirect.example.com',
+        status: 'healthy',
+        welcomeMessageSentAt: '2026-04-13T00:00:00.000Z',
+      },
+      'ilink-user',
+      'context-1',
+      'hello again',
+    );
+
+    expect(runtime.librechatClient.createConversation).not.toHaveBeenCalled();
+    expect(runtime.librechatClient.markWelcomeMessageSent).not.toHaveBeenCalled();
+    expect(mockSendOpenClawTextMessage).toHaveBeenCalledTimes(1);
     expect(mockSendOpenClawTextMessage).toHaveBeenCalledWith({
       baseUrl: 'https://redirect.example.com',
       botToken: 'bot-token',

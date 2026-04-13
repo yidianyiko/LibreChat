@@ -46,6 +46,7 @@ export interface WeChatBindingRecord {
   userId: string;
   ilinkUserId?: string;
   status: WeChatBindingStatus;
+  welcomeMessageSentAt?: Date | null;
   currentConversation?: ICurrentConversationBinding | null;
 }
 
@@ -56,6 +57,7 @@ export interface WeChatBindingUpdate {
   ilinkUserId?: string;
   status?: WeChatBindingStatus;
   boundAt?: Date | null;
+  welcomeMessageSentAt?: Date | null;
   unhealthyAt?: Date | null;
   unboundAt?: Date | null;
   currentConversation?: ICurrentConversationBinding | null;

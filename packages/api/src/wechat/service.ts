@@ -129,6 +129,7 @@ export class WeChatService {
       baseUrl: null,
       status: 'unbound',
       boundAt: null,
+      welcomeMessageSentAt: null,
       unhealthyAt: null,
       unboundAt: new Date(),
       currentConversation: null,

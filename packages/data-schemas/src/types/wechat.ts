@@ -19,6 +19,7 @@ export interface IWeChatBinding extends Document {
   ilinkUserId?: string;
   status: WeChatBindingStatus;
   boundAt?: Date | null;
+  welcomeMessageSentAt?: Date | null;
   unhealthyAt?: Date | null;
   unboundAt?: Date | null;
   currentConversation?: ICurrentConversationBinding | null;
