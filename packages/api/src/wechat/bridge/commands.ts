@@ -10,6 +10,8 @@ export interface WeChatConversationSummary {
   updatedAt?: Date | string | null;
 }
 
+const WECHAT_WELCOME_MESSAGE =
+  'hi, 终于可以在微信上也和你聊天啦！如果你想创建一个新对话，可以试试在对话框输入 /new, 如果想找到之前的对话可以先输入 /list，再输入你想继续的某条对话，比如 /switch 1';
 const NO_CURRENT_CONVERSATION_MESSAGE =
   '当前还没有选中的对话，请先使用 /new 创建新对话，或使用 /list 查看最近对话后再 /switch <序号>';
 const MAX_REPLY_CHARS = 1200;
@@ -80,6 +82,10 @@ export function formatWeChatCurrentConversation(params: {
 
 export function getNoCurrentConversationMessage(): string {
   return NO_CURRENT_CONVERSATION_MESSAGE;
+}
+
+export function getWeChatWelcomeMessage(): string {
+  return WECHAT_WELCOME_MESSAGE;
 }
 
 export function splitWeChatReply(text: string): string[] {
