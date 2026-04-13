@@ -34,7 +34,7 @@ export default function WeChatQuickAction() {
     startBinding,
     status,
     unbindMutation,
-  } = useWeChatBindingFlow({ autoStartOnOpen: true });
+  } = useWeChatBindingFlow({ autoStartOnOpen: true, lazyStatusQuery: true });
   const showManagementState =
     status != null &&
     bindSessionId == null &&

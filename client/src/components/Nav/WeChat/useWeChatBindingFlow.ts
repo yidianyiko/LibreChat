@@ -18,6 +18,7 @@ import { useLocalize } from '~/hooks';
 
 type TUseWeChatBindingFlowOptions = {
   autoStartOnOpen?: boolean;
+  lazyStatusQuery?: boolean;
 };
 
 type TUseWeChatBindingFlowParams = {
@@ -57,7 +58,8 @@ export function useWeChatBindingFlow(
   const [isDialogOpen, setDialogOpen] = useState(false);
   const [qrCodeDataUrl, setQrCodeDataUrl] = useState<string | null>(null);
   const [shouldAutoStartCurrentOpen, setShouldAutoStartCurrentOpen] = useState(false);
-  const statusQuery = useWeChatStatusQuery();
+  const lazyStatusQuery = options?.lazyStatusQuery === true;
+  const statusQuery = useWeChatStatusQuery({ enabled: lazyStatusQuery ? isDialogOpen : true });
   const bindStartMutation = useStartWeChatBindMutation();
   const unbindMutation = useUnbindWeChatMutation();
   const bindStatusQuery = useWeChatBindStatusQuery(bindSessionId, isDialogOpen);
@@ -134,17 +136,41 @@ export function useWeChatBindingFlow(
       return;
     }
 
-    void queryClient.invalidateQueries([QueryKeys.wechatStatus]);
-    void queryClient.refetchQueries([QueryKeys.wechatStatus]);
+    const queryKey = [QueryKeys.wechatStatus];
+    let cancelled = false;
+    const closeWithSuccess = () => {
+      if (cancelled) {
+        return;
+      }
 
-    if (bindStatus.status === 'healthy') {
       showToast({
         message: localize('com_ui_wechat_bound_success'),
         status: 'success',
       });
+      onDialogOpenChange(false);
+    };
+
+    void queryClient.invalidateQueries(queryKey);
+
+    if (bindStatus.status === 'healthy') {
+      const refetchResult = queryClient.refetchQueries(queryKey) as Promise<void> | undefined;
+      if (refetchResult == null) {
+        closeWithSuccess();
+      } else {
+        void refetchResult.finally(closeWithSuccess);
+      }
+
+      return () => {
+        cancelled = true;
+      };
     }
 
+    void queryClient.refetchQueries(queryKey);
     onDialogOpenChange(false);
+
+    return () => {
+      cancelled = true;
+    };
   }, [bindSessionId, bindStatusQuery.data, localize, onDialogOpenChange, queryClient, showToast]);
 
   useEffect(() => {

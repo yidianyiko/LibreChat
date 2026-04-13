@@ -187,6 +187,46 @@ describe('WeChatQuickAction', () => {
     );
   });
 
+  it('keeps WeChat status query passive until dialog opens', () => {
+    const statusState: {
+      data:
+        | {
+            hasBinding: boolean;
+            status: 'unbound' | 'healthy' | 'reauth_required';
+          }
+        | undefined;
+    } = {
+      data: undefined,
+    };
+    const mutate = jest.fn();
+
+    mockUseWeChatStatusQuery.mockImplementation((config?: { enabled?: boolean }) => {
+      statusState.data =
+        config?.enabled === true ? { status: 'healthy', hasBinding: true } : undefined;
+
+      return {
+        data: statusState.data,
+        isLoading: config?.enabled === true ? false : true,
+        isError: false,
+      };
+    });
+    mockUseStartWeChatBindMutation.mockReturnValue({
+      mutate,
+      isLoading: false,
+    });
+
+    render(<WeChatQuickAction />);
+
+    expect(mockUseWeChatStatusQuery).toHaveBeenLastCalledWith({ enabled: false });
+    expect(mutate).not.toHaveBeenCalled();
+
+    fireEvent.click(screen.getByRole('button', { name: 'WeChat' }));
+
+    expect(mockUseWeChatStatusQuery).toHaveBeenLastCalledWith({ enabled: true });
+    expect(screen.getByText('Connected')).toBeInTheDocument();
+    expect(mutate).not.toHaveBeenCalled();
+  });
+
   it('shows an error toast and closes the dialog when bind start fails', async () => {
     const mutate = jest.fn((_value, options) =>
       options?.onError?.(new Error('bind start failed'), undefined, undefined),
@@ -210,6 +250,39 @@ describe('WeChatQuickAction', () => {
 
     expect(screen.queryByText('Scan with WeChat')).not.toBeInTheDocument();
     expect(screen.queryByText('Initializing...')).not.toBeInTheDocument();
+  });
+
+  it('auto-starts a QR bind flow for direct entry when reauth is required', async () => {
+    const mutate = jest.fn((_value, options) =>
+      options?.onSuccess?.({
+        bindSessionId: 'bind-session-reauth-1',
+        qrCodeDataUrl: 'https://liteapp.weixin.qq.com/q/reauth',
+        expiresAt: '2026-04-12T00:00:00.000Z',
+      }),
+    );
+
+    mockUseWeChatStatusQuery.mockReturnValue({
+      data: { status: 'reauth_required', hasBinding: true, ilinkUserId: 'wechat-1' },
+      isLoading: false,
+      isError: false,
+    });
+    mockUseStartWeChatBindMutation.mockReturnValue({
+      mutate,
+      isLoading: false,
+    });
+
+    render(<WeChatQuickAction />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'WeChat' }));
+
+    await waitFor(() => {
+      expect(mutate).toHaveBeenCalledTimes(1);
+    });
+    expect(screen.getByText('Scan with WeChat')).toBeInTheDocument();
+    expect(screen.getByTestId('wechat-qr-svg')).toHaveAttribute(
+      'data-value',
+      'https://liteapp.weixin.qq.com/q/reauth',
+    );
   });
 
   it('does not auto-start a new bind for healthy accounts and opens in management state', () => {
@@ -400,5 +473,79 @@ describe('WeChatQuickAction', () => {
     expect(screen.getByText('Not connected')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Bind WeChat' })).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Unbind WeChat' })).not.toBeInTheDocument();
+  });
+
+  it('does not auto-start a fresh bind after healthy completion and immediate reopen', async () => {
+    const statusState: {
+      data:
+        | {
+            hasBinding: boolean;
+            ilinkUserId?: string;
+            status: 'unbound' | 'healthy' | 'reauth_required';
+          }
+        | undefined;
+    } = {
+      data: { status: 'unbound', hasBinding: false },
+    };
+    const bindStatusState: {
+      data:
+        | {
+            status: 'pending' | 'healthy';
+            qrCodeDataUrl?: string;
+          }
+        | undefined;
+    } = {
+      data: undefined,
+    };
+    let resolveRefetch: (() => void) | undefined;
+    const refetchPromise = new Promise<void>((resolve) => {
+      resolveRefetch = resolve;
+    });
+    const startMutate = jest.fn((_value, options) =>
+      options?.onSuccess?.({
+        bindSessionId: 'bind-session-1',
+        qrCodeDataUrl: 'https://liteapp.weixin.qq.com/q/example',
+        expiresAt: '2026-04-12T00:00:00.000Z',
+      }),
+    );
+
+    mockRefetchQueries.mockImplementation(() => refetchPromise);
+    mockUseWeChatStatusQuery.mockImplementation(() => ({
+      data: statusState.data,
+      isLoading: false,
+      isError: false,
+    }));
+    mockUseWeChatBindStatusQuery.mockImplementation(() => ({
+      data: bindStatusState.data,
+      isError: false,
+    }));
+    mockUseStartWeChatBindMutation.mockReturnValue({
+      mutate: startMutate,
+      isLoading: false,
+    });
+
+    const { rerender } = render(<WeChatQuickAction />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'WeChat' }));
+    await waitFor(() => expect(startMutate).toHaveBeenCalledTimes(1));
+
+    bindStatusState.data = { status: 'healthy' };
+    rerender(<WeChatQuickAction />);
+
+    expect(screen.getByText('Scan with WeChat')).toBeInTheDocument();
+
+    statusState.data = { status: 'healthy', hasBinding: true, ilinkUserId: 'wechat-1' };
+    resolveRefetch?.();
+    rerender(<WeChatQuickAction />);
+
+    await waitFor(() => {
+      expect(screen.queryByText('Scan with WeChat')).not.toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: 'WeChat' }));
+
+    expect(startMutate).toHaveBeenCalledTimes(1);
+    expect(screen.getByText('Connected')).toBeInTheDocument();
+    expect(screen.getByText('Connected account: wechat-1')).toBeInTheDocument();
   });
 });
