@@ -86,7 +86,6 @@ cleanup() {
     fi
 }
 
-
 start_local_proxy_bridge() {
     local source_proxy="${PROXY:-}"
     if [ -z "${source_proxy}" ] && [ -f ".env" ]; then
@@ -125,7 +124,7 @@ start_local_proxy_bridge() {
     fi
 
     log_info "检测到 localhost 代理，启动桥接端口 ${LOCAL_PROXY_BRIDGE_PORT} -> 127.0.0.1:${source_port}..."
-    python3 -u - <<PY2 >/tmp/librechat-local-proxy-bridge.log 2>&1 &
+    python3 -u - <<PY >/tmp/librechat-local-proxy-bridge.log 2>&1 &
 import selectors
 import socket
 
@@ -196,7 +195,7 @@ while True:
     client, _ = lsock.accept()
     import threading
     threading.Thread(target=handle, args=(client,), daemon=True).start()
-PY2
+PY
     LOCAL_PROXY_BRIDGE_PID=$!
     sleep 1
 
@@ -458,12 +457,14 @@ EOF
         log_warning "本地 docker-compose.yml 不存在，跳过同步"
     fi
 
-    # 生产环境 .env 保持远端独立管理，不从本地覆盖
-    if ssh "${SERVER_HOST}" "[ -f ${PROJECT_DIR}/.env ]"; then
-        log_success "保留远端 .env 配置"
+    # 每次部署都同步 .env
+    # 安全：docker-compose.yml environment: 节会覆盖所有环境特定变量
+    # (DOMAIN, LOG_DIR, PROXY, CORS)，所以本地的 localhost 值不会影响生产
+    if [ -f ".env" ]; then
+        scp .env "${SERVER_HOST}:${PROJECT_DIR}/.env"
+        log_success "已同步 .env"
     else
-        log_error "远端 .env 不存在，请先在服务器上创建并配置"
-        exit 1
+        log_warning "本地 .env 不存在，跳过同步"
     fi
 
     # 每次部署都同步 librechat.yaml
@@ -616,7 +617,7 @@ create_override() {
         # 保存当前镜像到 rollback 文件（如果存在）
         CURRENT_OVERRIDE="${OVERRIDE_DIR}/override.yml"
         if [ -f "${CURRENT_OVERRIDE}" ]; then
-            CURRENT_IMAGE=$(grep -m1 "image:" "${CURRENT_OVERRIDE}" | awk '{print $2}')
+            CURRENT_IMAGE=$(grep "image:" "${CURRENT_OVERRIDE}" | awk '{print $2}')
             if [ -n "${CURRENT_IMAGE}" ]; then
                 echo "${CURRENT_IMAGE}" > "${OVERRIDE_DIR}/rollback_image.txt"
                 echo "已保存当前镜像用于回滚: ${CURRENT_IMAGE}"
@@ -631,8 +632,6 @@ create_override() {
         cat > "${OVERRIDE_FILE}" << YAML
 services:
   api:
-    image: ${IMAGE_TAG}
-  wechat-bridge:
     image: ${IMAGE_TAG}
 YAML
 
@@ -829,14 +828,12 @@ rollback() {
 services:
   api:
     image: ${ROLLBACK_IMAGE}
-  wechat-bridge:
-    image: ${ROLLBACK_IMAGE}
 YAML
 
         echo "回滚 override 文件创建成功"
 
         echo "重启服务..."
-        sudo docker-compose -f docker-compose.yml -f .deploy/override.yml up -d api wechat-bridge
+        sudo docker-compose -f docker-compose.yml -f .deploy/override.yml up -d api
 
         echo "等待服务启动..."
         sleep 5
@@ -846,7 +843,7 @@ YAML
 
         echo ""
         echo "=== 最近的日志 ==="
-        sudo docker-compose logs --tail=20 api wechat-bridge
+        sudo docker-compose logs --tail=20 api
 
         echo "回滚完成"
 EOF
@@ -907,8 +904,8 @@ main() {
     echo "访问地址: http://${SERVER_IP}:3080"
     echo ""
     echo "常用命令:"
-    echo "  查看日志: ssh ${SERVER_HOST} 'cd ${PROJECT_DIR} && sudo docker-compose logs -f api wechat-bridge'"
-    echo "  重启服务: ssh ${SERVER_HOST} 'cd ${PROJECT_DIR} && sudo docker-compose restart api wechat-bridge'"
+    echo "  查看日志: ssh ${SERVER_HOST} 'cd ${PROJECT_DIR} && sudo docker-compose logs -f api'"
+    echo "  重启服务: ssh ${SERVER_HOST} 'cd ${PROJECT_DIR} && sudo docker-compose restart api'"
     echo "  回滚版本: $0 --rollback"
     echo ""
 }
