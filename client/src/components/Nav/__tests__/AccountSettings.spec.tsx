@@ -219,8 +219,17 @@ describe('AccountSettings', () => {
   it('shows migrate history and wechat quick actions in the home-visible stack', () => {
     render(<AccountSettings />);
 
-    expect(screen.getByRole('button', { name: 'com_ui_import_conversation_info' })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'com_nav_wechat_binding' })).toBeInTheDocument();
+    const migrateButton = screen.getByRole('button', { name: 'com_ui_import_conversation_info' });
+    const wechatButton = screen.getByRole('button', { name: 'com_nav_wechat_binding' });
+    const accountPopover = document.querySelector('.account-settings-popover');
+
+    expect(migrateButton).toBeInTheDocument();
+    expect(wechatButton).toBeInTheDocument();
+    expect(accountPopover).toBeInTheDocument();
+    expect(migrateButton.closest('.account-settings-popover')).toBeNull();
+    expect(wechatButton.closest('.account-settings-popover')).toBeNull();
+    expect(accountPopover).not.toContainElement(migrateButton);
+    expect(accountPopover).not.toContainElement(wechatButton);
   });
 
   it('opens the shared wechat dialog from account settings quick action', () => {
