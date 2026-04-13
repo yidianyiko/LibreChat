@@ -75,6 +75,7 @@ describe('WeChatQuickAction', () => {
     mockShowToast.mockReset();
     mockUseLocalize.mockReturnValue((key: string) => {
       const translations: Record<string, string> = {
+        com_ui_error_connection: 'Error connecting to server, try refreshing the page.',
         com_nav_wechat_binding: 'WeChat',
         com_ui_wechat_qr_help: 'Use WeChat to scan this QR code.',
         com_ui_wechat_qr_title: 'Scan with WeChat',
@@ -166,5 +167,30 @@ describe('WeChatQuickAction', () => {
       'data-value',
       'https://liteapp.weixin.qq.com/q/example',
     );
+  });
+
+  it('shows an error toast and closes the dialog when bind start fails', async () => {
+    const mutate = jest.fn((_value, options) =>
+      options?.onError?.(new Error('bind start failed'), undefined, undefined),
+    );
+
+    mockUseStartWeChatBindMutation.mockReturnValue({
+      mutate,
+      isLoading: false,
+    });
+
+    render(<WeChatQuickAction />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'WeChat' }));
+
+    await waitFor(() => {
+      expect(mockShowToast).toHaveBeenCalledWith({
+        message: 'Error connecting to server, try refreshing the page.',
+        status: 'error',
+      });
+    });
+
+    expect(screen.queryByText('Scan with WeChat')).not.toBeInTheDocument();
+    expect(screen.queryByText('Initializing...')).not.toBeInTheDocument();
   });
 });

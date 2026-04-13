@@ -78,8 +78,15 @@ export function useWeChatBindingFlow(
         setBindSessionId(data.bindSessionId);
         setQrCodeDataUrl(data.qrCodeDataUrl);
       },
+      onError: () => {
+        showToast({
+          message: localize('com_ui_error_connection'),
+          status: 'error',
+        });
+        onDialogOpenChange(false);
+      },
     });
-  }, [bindStartMutation]);
+  }, [bindStartMutation, localize, onDialogOpenChange, showToast]);
 
   const openDialog = useCallback(() => {
     setDialogOpen(true);
