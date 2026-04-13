@@ -13,6 +13,10 @@ describe('vite PWA config', () => {
     expect(viteConfigSource).not.toContain('**/*.{css,html}');
   });
 
+  it('disables navigation fallback when index.html is not precached', () => {
+    expect(viteConfigSource).toContain('navigateFallback: null');
+  });
+
   it('uses prompt-based update handling instead of automatic reloads', () => {
     expect(viteConfigSource).toContain("registerType: 'prompt'");
   });

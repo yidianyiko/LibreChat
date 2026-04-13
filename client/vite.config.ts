@@ -86,7 +86,7 @@ export default defineConfig(({ command }) => ({
         ],
         globIgnores: ['images/**/*', '**/*.map', 'stats.html'],
         maximumFileSizeToCacheInBytes: 4 * 1024 * 1024,
-        navigateFallbackDenylist: [/^\/oauth/, /^\/api/],
+        navigateFallback: null,
         runtimeCaching: [
           {
             urlPattern: ({ request }) =>

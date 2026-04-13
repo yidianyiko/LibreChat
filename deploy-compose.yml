@@ -24,6 +24,7 @@ services:
       - RAG_PORT=${RAG_PORT:-8000}
       - RAG_API_URL=http://rag_api:${RAG_PORT:-8000}
       - WECHAT_BRIDGE_URL=http://wechat-bridge:3091
+      - WECHAT_BRIDGE_INTERNAL_TOKEN=${WECHAT_BRIDGE_INTERNAL_TOKEN:?WECHAT_BRIDGE_INTERNAL_TOKEN is required}
       - LIBRECHAT_LOG_DIR=/app/logs
     volumes:
       - type: bind
@@ -49,6 +50,7 @@ services:
       - NODE_ENV=production
       - WECHAT_BRIDGE_PORT=3091
       - WECHAT_BRIDGE_LIBRECHAT_URL=http://api:3080
+      - WECHAT_BRIDGE_INTERNAL_TOKEN=${WECHAT_BRIDGE_INTERNAL_TOKEN:?WECHAT_BRIDGE_INTERNAL_TOKEN is required}
       - LIBRECHAT_LOG_DIR=/app/logs
     expose:
       - "3091"

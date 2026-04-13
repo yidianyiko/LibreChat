@@ -78,6 +78,44 @@ check_command() {
     return 0
 }
 
+generate_random_hex_token() {
+    if command -v openssl &> /dev/null; then
+        openssl rand -hex 32
+        return 0
+    fi
+
+    if command -v node &> /dev/null; then
+        node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
+        return 0
+    fi
+
+    if command -v python3 &> /dev/null; then
+        python3 - <<'PY'
+import secrets
+print(secrets.token_hex(32))
+PY
+        return 0
+    fi
+
+    log_error "无法生成 WECHAT_BRIDGE_INTERNAL_TOKEN，需要 openssl、node 或 python3"
+    return 1
+}
+
+ensure_wechat_bridge_internal_token() {
+    if [ ! -f ".env" ]; then
+        return 0
+    fi
+
+    if grep -Eq '^WECHAT_BRIDGE_INTERNAL_TOKEN=' .env; then
+        return 0
+    fi
+
+    local generated_token
+    generated_token=$(generate_random_hex_token)
+    printf '\nWECHAT_BRIDGE_INTERNAL_TOKEN=%s\n' "${generated_token}" >> .env
+    log_success "已生成 WECHAT_BRIDGE_INTERNAL_TOKEN 并写入 .env"
+}
+
 # 清理函数
 cleanup() {
     if [ -f "${TARBALL}" ]; then
@@ -460,6 +498,7 @@ EOF
     # 每次部署都同步 .env
     # 安全：docker-compose.yml environment: 节会覆盖所有环境特定变量
     # (DOMAIN, LOG_DIR, PROXY, CORS)，所以本地的 localhost 值不会影响生产
+    ensure_wechat_bridge_internal_token
     if [ -f ".env" ]; then
         scp .env "${SERVER_HOST}:${PROJECT_DIR}/.env"
         log_success "已同步 .env"
@@ -632,6 +671,8 @@ create_override() {
         cat > "${OVERRIDE_FILE}" << YAML
 services:
   api:
+    image: ${IMAGE_TAG}
+  wechat-bridge:
     image: ${IMAGE_TAG}
 YAML
 
@@ -829,12 +870,14 @@ rollback() {
 services:
   api:
     image: ${ROLLBACK_IMAGE}
+  wechat-bridge:
+    image: ${ROLLBACK_IMAGE}
 YAML
 
         echo "回滚 override 文件创建成功"
 
         echo "重启服务..."
-        sudo docker-compose -f docker-compose.yml -f .deploy/override.yml up -d api
+        sudo docker-compose -f docker-compose.yml -f .deploy/override.yml up -d api wechat-bridge
 
         echo "等待服务启动..."
         sleep 5
