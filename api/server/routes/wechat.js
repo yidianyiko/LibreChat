@@ -1,6 +1,8 @@
+const path = require('path');
 const express = require('express');
 const mongoose = require('mongoose');
 const { CacheKeys, Constants } = require('librechat-data-provider');
+const { DEFAULT_PRESET_CONFIG } = require(path.resolve(__dirname, '..', '..', '..', 'config', 'default-preset'));
 const {
   createWeChatHandlers,
   createRequireWeChatBridgeAuth,
@@ -44,6 +46,36 @@ const sanitizePresetForConversation = (preset = {}) => {
   return rest;
 };
 
+const getDefaultWeChatFallbackPreset = () => {
+  const {
+    endpoint,
+    model,
+    title,
+    system,
+    temperature,
+    top_p,
+    frequency_penalty,
+    presence_penalty,
+    maxTokens,
+    resendImages,
+    imageDetail,
+  } = DEFAULT_PRESET_CONFIG;
+
+  return {
+    endpoint,
+    model,
+    title,
+    system,
+    temperature,
+    top_p,
+    frequency_penalty,
+    presence_penalty,
+    maxTokens,
+    resendImages,
+    imageDetail,
+  };
+};
+
 const getBridgeBaseUrl = () => process.env.WECHAT_BRIDGE_URL || 'http://localhost:3091';
 const getBridgeToken = () => process.env.WECHAT_BRIDGE_INTERNAL_TOKEN || '';
 
@@ -76,11 +108,7 @@ const service = new WeChatService({
       .sort({ updatedAt: -1 })
       .lean();
   },
-  getFallbackPreset: () => ({
-    endpoint: 'openAI',
-    model: 'gpt-4o',
-    title: 'GPT-4o',
-  }),
+  getFallbackPreset: () => getDefaultWeChatFallbackPreset(),
   createConversation: async ({ userId, conversationId, preset }) => {
     const { Conversation } = require('~/db/models');
     const sanitizedPreset = sanitizePresetForConversation(preset);
