@@ -158,6 +158,10 @@ describe('WeChatBinding', () => {
     await waitFor(() => {
       expect(screen.getByText('Scan with WeChat')).toBeInTheDocument();
     });
+
+    expect(screen.getByText('WeChat binding')).toBeInTheDocument();
+    expect(screen.getByText('Not connected')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Bind WeChat' })).toBeInTheDocument();
   });
 
   it('shows the healthy status and unbind action when connected', () => {
