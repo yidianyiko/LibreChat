@@ -26,8 +26,13 @@ type TUseWeChatBindingFlowParams = {
 
 type TUseWeChatBindingFlowReturn = TUseWeChatBindingFlowParams & {
   bindSessionId: string | null;
+  connectedAccount: string | undefined;
+  hasBinding: boolean;
+  isBusy: boolean;
   isDialogOpen: boolean;
   qrCodeDataUrl: string | null;
+  showBindAction: boolean;
+  status: TWeChatStatusResponse['status'] | undefined;
   bindStartMutation: UseMutationResult<TWeChatBindStartResponse>;
   bindStatusQuery: QueryObserverResult<TWeChatBindStatusResponse>;
   statusQuery: QueryObserverResult<TWeChatStatusResponse>;
@@ -52,6 +57,10 @@ export function useWeChatBindingFlow(
   const unbindMutation = useUnbindWeChatMutation();
   const bindStatusQuery = useWeChatBindStatusQuery(bindSessionId, isDialogOpen);
   const autoStartOnOpen = options?.autoStartOnOpen === true;
+  const status = statusQuery.data;
+  const hasBinding = status?.hasBinding === true;
+  const showBindAction = !hasBinding || status?.status === 'reauth_required';
+  const isBusy = bindStartMutation.isLoading || unbindMutation.isLoading;
 
   const resetBindingFlow = useCallback(() => {
     setBindSessionId(null);
@@ -135,11 +144,16 @@ export function useWeChatBindingFlow(
     bindSessionId,
     bindStartMutation,
     bindStatusQuery,
+    connectedAccount: status?.ilinkUserId,
+    hasBinding,
+    isBusy,
     isDialogOpen,
     onDialogOpenChange,
     openDialog,
     qrCodeDataUrl,
     resetBindingFlow,
+    showBindAction,
+    status: status?.status,
     statusQuery,
     startBinding,
     unbindMutation,
