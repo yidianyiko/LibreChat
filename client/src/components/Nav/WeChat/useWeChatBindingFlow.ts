@@ -24,6 +24,10 @@ type TUseWeChatBindingFlowParams = {
   autoStartOnOpen: boolean;
 };
 
+type TStartBindingOptions = {
+  closeDialogOnError?: boolean;
+};
+
 type TUseWeChatBindingFlowReturn = TUseWeChatBindingFlowParams & {
   bindSessionId: string | null;
   connectedAccount: string | undefined;
@@ -40,7 +44,7 @@ type TUseWeChatBindingFlowReturn = TUseWeChatBindingFlowParams & {
   onDialogOpenChange: (open: boolean) => void;
   openDialog: () => void;
   resetBindingFlow: () => void;
-  startBinding: () => void;
+  startBinding: (options?: TStartBindingOptions) => void;
 };
 
 export function useWeChatBindingFlow(
@@ -52,6 +56,7 @@ export function useWeChatBindingFlow(
   const [bindSessionId, setBindSessionId] = useState<string | null>(null);
   const [isDialogOpen, setDialogOpen] = useState(false);
   const [qrCodeDataUrl, setQrCodeDataUrl] = useState<string | null>(null);
+  const [shouldAutoStartCurrentOpen, setShouldAutoStartCurrentOpen] = useState(false);
   const statusQuery = useWeChatStatusQuery();
   const bindStartMutation = useStartWeChatBindMutation();
   const unbindMutation = useUnbindWeChatMutation();
@@ -65,6 +70,7 @@ export function useWeChatBindingFlow(
   const resetBindingFlow = useCallback(() => {
     setBindSessionId(null);
     setQrCodeDataUrl(null);
+    setShouldAutoStartCurrentOpen(false);
   }, []);
 
   const onDialogOpenChange = useCallback(
@@ -72,34 +78,47 @@ export function useWeChatBindingFlow(
       setDialogOpen(open);
       if (!open) {
         resetBindingFlow();
+        return;
       }
+
+      const currentStatus = status?.status;
+      const canAutoStartFromOpen =
+        currentStatus == null || currentStatus === 'unbound' || currentStatus === 'reauth_required';
+      setShouldAutoStartCurrentOpen(autoStartOnOpen && canAutoStartFromOpen);
     },
-    [resetBindingFlow],
+    [autoStartOnOpen, resetBindingFlow, status?.status],
   );
 
-  const startBinding = useCallback(() => {
-    if (bindStartMutation.isLoading) {
-      return;
-    }
+  const startBinding = useCallback(
+    (options?: TStartBindingOptions) => {
+      if (bindStartMutation.isLoading) {
+        return;
+      }
 
-    bindStartMutation.mutate(undefined, {
-      onSuccess: (data) => {
-        setBindSessionId(data.bindSessionId);
-        setQrCodeDataUrl(data.qrCodeDataUrl);
-      },
-      onError: () => {
-        showToast({
-          message: localize('com_ui_error_connection'),
-          status: 'error',
-        });
-        onDialogOpenChange(false);
-      },
-    });
-  }, [bindStartMutation, localize, onDialogOpenChange, showToast]);
+      const closeDialogOnError = options?.closeDialogOnError === true;
+
+      bindStartMutation.mutate(undefined, {
+        onSuccess: (data) => {
+          setBindSessionId(data.bindSessionId);
+          setQrCodeDataUrl(data.qrCodeDataUrl);
+        },
+        onError: () => {
+          showToast({
+            message: localize('com_ui_error_connection'),
+            status: 'error',
+          });
+          if (closeDialogOnError) {
+            onDialogOpenChange(false);
+          }
+        },
+      });
+    },
+    [bindStartMutation, localize, onDialogOpenChange, showToast],
+  );
 
   const openDialog = useCallback(() => {
-    setDialogOpen(true);
-  }, []);
+    onDialogOpenChange(true);
+  }, [onDialogOpenChange]);
 
   useEffect(() => {
     if (bindSessionId == null) {
@@ -129,15 +148,32 @@ export function useWeChatBindingFlow(
   }, [bindSessionId, bindStatusQuery.data, localize, onDialogOpenChange, queryClient, showToast]);
 
   useEffect(() => {
-    const status = statusQuery.data?.status;
-    const canStartBinding = status === 'unbound' || status === 'reauth_required';
+    const currentStatus = status?.status;
+    const canStartBinding = currentStatus === 'unbound' || currentStatus === 'reauth_required';
 
-    if (!autoStartOnOpen || !isDialogOpen || bindSessionId != null || !canStartBinding) {
+    if (!autoStartOnOpen || !isDialogOpen || !shouldAutoStartCurrentOpen || bindSessionId != null) {
       return;
     }
 
-    startBinding();
-  }, [autoStartOnOpen, bindSessionId, isDialogOpen, startBinding, statusQuery.data]);
+    if (currentStatus == null) {
+      return;
+    }
+
+    if (!canStartBinding) {
+      setShouldAutoStartCurrentOpen(false);
+      return;
+    }
+
+    setShouldAutoStartCurrentOpen(false);
+    startBinding({ closeDialogOnError: true });
+  }, [
+    autoStartOnOpen,
+    bindSessionId,
+    isDialogOpen,
+    shouldAutoStartCurrentOpen,
+    startBinding,
+    status?.status,
+  ]);
 
   return {
     autoStartOnOpen,

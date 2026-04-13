@@ -36,7 +36,10 @@ export default function WeChatQuickAction() {
     unbindMutation,
   } = useWeChatBindingFlow({ autoStartOnOpen: true });
   const showManagementState =
-    hasBinding && bindSessionId == null && qrCodeDataUrl == null && !bindStartMutation.isLoading;
+    status != null &&
+    bindSessionId == null &&
+    qrCodeDataUrl == null &&
+    !bindStartMutation.isLoading;
   const statusText = getWeChatStatusText(status, localize);
 
   return (

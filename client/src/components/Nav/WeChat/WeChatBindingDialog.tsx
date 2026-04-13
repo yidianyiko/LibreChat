@@ -40,12 +40,15 @@ export default function WeChatBindingDialog({
   statusText,
 }: TWeChatBindingDialogProps) {
   const localize = useLocalize();
+  const dialogTitle = showManagementState
+    ? localize('com_nav_wechat_binding')
+    : localize('com_ui_wechat_qr_title');
 
   return (
     <OGDialog open={open} onOpenChange={onOpenChange}>
       <OGDialogContent className="w-11/12 max-w-md">
         <OGDialogHeader>
-          <OGDialogTitle>{localize('com_ui_wechat_qr_title')}</OGDialogTitle>
+          <OGDialogTitle>{dialogTitle}</OGDialogTitle>
         </OGDialogHeader>
         {showManagementState ? (
           <div className="space-y-4">

@@ -3,6 +3,7 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import WeChatQuickAction from '../WeChatQuickAction';
 
+const CLOSE_DIALOG_LABEL = 'Close dialog';
 const mockInvalidateQueries = jest.fn();
 const mockRefetchQueries = jest.fn();
 const mockShowToast = jest.fn();
@@ -50,15 +51,17 @@ jest.mock(
     }) =>
       open ? (
         <div>
-          <button type="button" aria-label="Close dialog" onClick={() => onOpenChange(false)}>
-            Close dialog
+          <button type="button" aria-label={CLOSE_DIALOG_LABEL} onClick={() => onOpenChange(false)}>
+            {CLOSE_DIALOG_LABEL}
           </button>
           {children}
         </div>
       ) : null,
     OGDialogContent: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
     OGDialogHeader: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
-    OGDialogTitle: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+    OGDialogTitle: ({ children }: { children: React.ReactNode }) => (
+      <div data-testid="wechat-dialog-title">{children}</div>
+    ),
     useToastContext: () => ({
       showToast: mockShowToast,
     }),
@@ -89,6 +92,8 @@ describe('WeChatQuickAction', () => {
         com_ui_wechat_bind: 'Bind WeChat',
         com_ui_wechat_bound_healthy: 'Connected',
         com_ui_wechat_connected_account: 'Connected account',
+        com_ui_wechat_reauth_required: 'Rebind required',
+        com_ui_wechat_unbound: 'Not connected',
         com_ui_wechat_unbind: 'Unbind WeChat',
         com_ui_wechat_qr_help: 'Use WeChat to scan this QR code.',
         com_ui_wechat_qr_title: 'Scan with WeChat',
@@ -228,6 +233,8 @@ describe('WeChatQuickAction', () => {
     expect(screen.getByText('Connected')).toBeInTheDocument();
     expect(screen.getByText('Connected account: wechat-1')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Unbind WeChat' })).toBeInTheDocument();
+    expect(screen.getByTestId('wechat-dialog-title')).toHaveTextContent('WeChat');
+    expect(screen.queryByText('Scan with WeChat')).not.toBeInTheDocument();
     expect(screen.queryByText('Initializing...')).not.toBeInTheDocument();
   });
 
@@ -285,7 +292,113 @@ describe('WeChatQuickAction', () => {
     await waitFor(() => {
       expect(mutate).toHaveBeenCalledTimes(2);
     });
-    expect(screen.getByText('Initializing...')).toBeInTheDocument();
+    expect(screen.getByText('Not connected')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Bind WeChat' })).toBeInTheDocument();
     expect(screen.queryByTestId('wechat-qr-svg')).not.toBeInTheDocument();
+  });
+
+  it('does not auto-start a new bind after unbinding from management state', async () => {
+    const statusState: {
+      data:
+        | {
+            hasBinding: boolean;
+            ilinkUserId?: string;
+            status: 'unbound' | 'healthy' | 'reauth_required';
+          }
+        | undefined;
+    } = {
+      data: { status: 'healthy', hasBinding: true, ilinkUserId: 'wechat-1' },
+    };
+    const startMutate = jest.fn();
+    const unbindMutate = jest.fn(() => {
+      statusState.data = { status: 'unbound', hasBinding: false };
+    });
+
+    mockUseWeChatStatusQuery.mockImplementation(() => ({
+      data: statusState.data,
+      isLoading: false,
+      isError: false,
+    }));
+    mockUseStartWeChatBindMutation.mockReturnValue({
+      mutate: startMutate,
+      isLoading: false,
+    });
+    mockUseUnbindWeChatMutation.mockReturnValue({
+      mutate: unbindMutate,
+      isLoading: false,
+    });
+
+    const { rerender } = render(<WeChatQuickAction />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'WeChat' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Unbind WeChat' }));
+
+    expect(unbindMutate).toHaveBeenCalledTimes(1);
+
+    rerender(<WeChatQuickAction />);
+
+    await waitFor(() => {
+      expect(screen.getByText('Not connected')).toBeInTheDocument();
+    });
+    expect(screen.getByRole('button', { name: 'Bind WeChat' })).toBeInTheDocument();
+    expect(startMutate).not.toHaveBeenCalled();
+    expect(screen.queryByText('Initializing...')).not.toBeInTheDocument();
+  });
+
+  it('keeps dialog open and shows retry state when management bind start fails', async () => {
+    const statusState: {
+      data:
+        | {
+            hasBinding: boolean;
+            ilinkUserId?: string;
+            status: 'unbound' | 'healthy' | 'reauth_required';
+          }
+        | undefined;
+    } = {
+      data: { status: 'healthy', hasBinding: true, ilinkUserId: 'wechat-1' },
+    };
+    const mutate = jest.fn((_value, options) =>
+      options?.onError?.(new Error('bind start failed'), undefined, undefined),
+    );
+    const unbindMutate = jest.fn(() => {
+      statusState.data = { status: 'unbound', hasBinding: false };
+    });
+
+    mockUseWeChatStatusQuery.mockImplementation(() => ({
+      data: statusState.data,
+      isLoading: false,
+      isError: false,
+    }));
+    mockUseStartWeChatBindMutation.mockReturnValue({
+      mutate,
+      isLoading: false,
+    });
+    mockUseUnbindWeChatMutation.mockReturnValue({
+      mutate: unbindMutate,
+      isLoading: false,
+    });
+
+    const { rerender } = render(<WeChatQuickAction />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'WeChat' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Unbind WeChat' }));
+    rerender(<WeChatQuickAction />);
+
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: 'Bind WeChat' })).toBeInTheDocument();
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Bind WeChat' }));
+
+    await waitFor(() => {
+      expect(mockShowToast).toHaveBeenCalledWith({
+        message: 'Error connecting to server, try refreshing the page.',
+        status: 'error',
+      });
+    });
+
+    expect(screen.getByTestId('wechat-dialog-title')).toHaveTextContent('WeChat');
+    expect(screen.getByText('Not connected')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Bind WeChat' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Unbind WeChat' })).not.toBeInTheDocument();
   });
 });
