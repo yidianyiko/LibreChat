@@ -1,10 +1,5 @@
 import { QRCodeSVG } from 'qrcode.react';
-import {
-  OGDialog,
-  OGDialogContent,
-  OGDialogHeader,
-  OGDialogTitle,
-} from '@librechat/client';
+import { OGDialog, OGDialogContent, OGDialogHeader, OGDialogTitle } from '@librechat/client';
 import { useLocalize } from '~/hooks';
 
 type TWeChatBindingDialogProps = {

@@ -113,21 +113,15 @@ export function useWeChatBindingFlow(
   }, [bindSessionId, bindStatusQuery.data, localize, onDialogOpenChange, queryClient, showToast]);
 
   useEffect(() => {
-    const status = statusQuery.data;
-    const canStartBinding = status == null || !status.hasBinding || status.status === 'reauth_required';
+    const status = statusQuery.data?.status;
+    const canStartBinding = status === 'unbound' || status === 'reauth_required';
 
     if (!autoStartOnOpen || !isDialogOpen || bindSessionId != null || !canStartBinding) {
       return;
     }
 
     startBinding();
-  }, [
-    autoStartOnOpen,
-    bindSessionId,
-    isDialogOpen,
-    startBinding,
-    statusQuery.data,
-  ]);
+  }, [autoStartOnOpen, bindSessionId, isDialogOpen, startBinding, statusQuery.data]);
 
   return {
     autoStartOnOpen,

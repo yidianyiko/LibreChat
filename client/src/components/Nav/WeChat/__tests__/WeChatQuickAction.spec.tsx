@@ -1,5 +1,5 @@
 import React from 'react';
-import { fireEvent, render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import WeChatQuickAction from '../WeChatQuickAction';
 
@@ -114,6 +114,54 @@ describe('WeChatQuickAction', () => {
     fireEvent.click(screen.getByRole('button', { name: 'WeChat' }));
 
     expect(screen.getByText('Scan with WeChat')).toBeInTheDocument();
+    expect(screen.getByTestId('wechat-qr-svg')).toHaveAttribute(
+      'data-value',
+      'https://liteapp.weixin.qq.com/q/example',
+    );
+  });
+
+  it('waits for WeChat status resolution before auto-starting bind flow', async () => {
+    const statusState: {
+      data:
+        | {
+            hasBinding: boolean;
+            status: 'unbound' | 'healthy' | 'reauth_required';
+          }
+        | undefined;
+    } = {
+      data: undefined,
+    };
+    const mutate = jest.fn((_value, options) =>
+      options?.onSuccess?.({
+        bindSessionId: 'bind-session-1',
+        qrCodeDataUrl: 'https://liteapp.weixin.qq.com/q/example',
+        expiresAt: '2026-04-12T00:00:00.000Z',
+      }),
+    );
+
+    mockUseWeChatStatusQuery.mockImplementation(() => ({
+      data: statusState.data,
+      isLoading: statusState.data == null,
+      isError: false,
+    }));
+    mockUseStartWeChatBindMutation.mockReturnValue({
+      mutate,
+      isLoading: false,
+    });
+
+    const { rerender } = render(<WeChatQuickAction />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'WeChat' }));
+
+    expect(screen.getByText('Scan with WeChat')).toBeInTheDocument();
+    expect(screen.getByText('Initializing...')).toBeInTheDocument();
+    expect(screen.queryByTestId('wechat-qr-svg')).not.toBeInTheDocument();
+    expect(mutate).not.toHaveBeenCalled();
+
+    statusState.data = { status: 'unbound', hasBinding: false };
+    rerender(<WeChatQuickAction />);
+
+    await waitFor(() => expect(mutate).toHaveBeenCalledTimes(1));
     expect(screen.getByTestId('wechat-qr-svg')).toHaveAttribute(
       'data-value',
       'https://liteapp.weixin.qq.com/q/example',
