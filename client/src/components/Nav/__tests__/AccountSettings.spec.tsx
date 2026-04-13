@@ -19,10 +19,10 @@ jest.mock('@tanstack/react-query', () => ({
 }));
 
 jest.mock('@ariakit/react/select', () => {
-  const React = require('react');
+  const ReactModule = jest.requireActual<typeof import('react')>('react');
   return {
     SelectProvider: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
-    Select: React.forwardRef<HTMLDivElement, React.ComponentProps<'div'>>((props, ref) => {
+    Select: ReactModule.forwardRef<HTMLDivElement, React.ComponentProps<'div'>>((props, ref) => {
       const { children, ...rest } = props;
       return (
         <div ref={ref} {...rest}>
@@ -53,13 +53,8 @@ jest.mock(
         {children}
       </button>
     ),
-    OGDialog: ({
-      children,
-      open,
-    }: {
-      children: React.ReactNode;
-      open: boolean;
-    }) => (open ? <div>{children}</div> : null),
+    OGDialog: ({ children, open }: { children: React.ReactNode; open: boolean }) =>
+      open ? <div>{children}</div> : null,
     OGDialogContent: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
     OGDialogHeader: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
     OGDialogTitle: ({ children }: { children: React.ReactNode }) => (
@@ -96,15 +91,12 @@ jest.mock('../SettingsTabs/Data/ImportConversations', () => ({
     </div>
   ),
 }));
-jest.mock(
-  '../SettingsTabs/Data/ImportConversationDialog',
-  () => ({
-    __esModule: true,
-    default: ({ open }: { open: boolean }) => (
-      <div data-testid="outer-import-dialog" data-open={String(open)} />
-    ),
-  }),
-);
+jest.mock('../SettingsTabs/Data/ImportConversationDialog', () => ({
+  __esModule: true,
+  default: ({ open }: { open: boolean }) => (
+    <div data-testid="outer-import-dialog" data-open={String(open)} />
+  ),
+}));
 
 jest.mock('~/hooks', () => ({
   useLocalize: jest.fn(),
@@ -132,7 +124,8 @@ const mockUseGetStartupConfig = jest.requireMock('~/data-provider').useGetStartu
 const mockUseGetUserBalance = jest.requireMock('~/data-provider').useGetUserBalance;
 const mockUseWeChatStatusQuery = jest.requireMock('~/data-provider').useWeChatStatusQuery;
 const mockUseWeChatBindStatusQuery = jest.requireMock('~/data-provider').useWeChatBindStatusQuery;
-const mockUseStartWeChatBindMutation = jest.requireMock('~/data-provider').useStartWeChatBindMutation;
+const mockUseStartWeChatBindMutation =
+  jest.requireMock('~/data-provider').useStartWeChatBindMutation;
 const mockUseUnbindWeChatMutation = jest.requireMock('~/data-provider').useUnbindWeChatMutation;
 
 describe('AccountSettings', () => {
@@ -146,9 +139,21 @@ describe('AccountSettings', () => {
       isAuthenticated: true,
       logout: jest.fn(),
     });
-    mockUseLocalize.mockReturnValue((key: string) => {
+    mockUseLocalize.mockReturnValue((key: string, values?: { 0?: string }) => {
       if (key === 'com_nav_balance') {
         return 'Token Credits';
+      }
+      if (key === 'com_nav_balance_approx_usd') {
+        return `≈ $${values?.[0] ?? ''}`;
+      }
+      if (key === 'com_nav_add_credits') {
+        return 'Add Credits';
+      }
+      if (key === 'com_nav_add_credits_cta') {
+        return '+ Add Credits';
+      }
+      if (key === 'com_nav_statistics') {
+        return 'Statistics';
       }
       return key;
     });

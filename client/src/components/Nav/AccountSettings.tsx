@@ -67,7 +67,7 @@ function AccountSettings() {
           className="account-settings-stats flex w-full items-center gap-2 rounded-xl p-2 text-sm text-text-primary transition-all duration-200 ease-in-out hover:bg-surface-active-alt"
         >
           <BarChart3 className="icon-md flex-shrink-0" aria-hidden="true" />
-          <span className="truncate">Statistics</span>
+          <span className="truncate">{localize('com_nav_statistics')}</span>
         </button>
       )}
       <Select.SelectProvider>
@@ -97,7 +97,7 @@ function AccountSettings() {
           }}
         >
           <div
-            className="rounded-lg border border-border-medium bg-surface-secondary/50 px-3 py-3 dark:bg-surface-secondary/30"
+            className="bg-surface-secondary/50 dark:bg-surface-secondary/30 rounded-lg border border-border-medium px-3 py-3"
             role="group"
             aria-label="Account info"
           >
@@ -113,7 +113,9 @@ function AccountSettings() {
                   {localize('com_nav_balance')}:{' '}
                   {new Intl.NumberFormat().format(Math.round(tokenCredits))}
                 </span>
-                <span className="text-xs">≈ ${approxUsd.toFixed(2)}</span>
+                <span className="text-xs">
+                  {localize('com_nav_balance_approx_usd', { 0: approxUsd.toFixed(2) })}
+                </span>
               </div>
             )}
             <div className="mt-3 flex items-center justify-center">
@@ -121,9 +123,9 @@ function AccountSettings() {
                 type="button"
                 onClick={() => navigate('/recharge')}
                 className="rounded-md bg-green-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-green-700"
-                title="Add Credits"
+                title={localize('com_nav_add_credits')}
               >
-                + Add Credits
+                {localize('com_nav_add_credits_cta')}
               </button>
             </div>
           </div>
