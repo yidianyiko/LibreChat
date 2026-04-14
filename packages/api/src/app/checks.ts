@@ -184,14 +184,6 @@ export function checkInterfaceConfig(appConfig: AppConfig) {
     );
   };
 
-  // warn about config.modelSpecs.prioritize if true and presets are enabled, that default presets will conflict with prioritizing model specs.
-  if (appConfig?.modelSpecs?.prioritize && interfaceConfig?.presets) {
-    logger.warn(
-      "Note: Prioritizing model specs can conflict with default presets if a default preset is set. It's recommended to disable presets from the interface or disable use of a default preset.",
-    );
-    if (i === 0) i++;
-  }
-
   // warn about config.modelSpecs.enforce if true and if any of these, endpointsMenu, modelSelect, presets, or parameters are enabled, that enforcing model specs can conflict with these options.
   if (
     appConfig?.modelSpecs?.enforce &&

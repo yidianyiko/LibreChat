@@ -11,6 +11,7 @@ import {
   useUpdatePresetMutation,
   useDeletePresetMutation,
   useGetPresetsQuery,
+  useGetStartupConfig,
 } from '~/data-provider';
 import { cleanupPreset, removeUnavailableTools, getConvoSwitchLogic } from '~/utils';
 import useGetConversation from '~/hooks/Conversations/useGetConversation';
@@ -35,15 +36,18 @@ export default function usePresets(index = 0) {
   const availableTools = useRecoilValue(store.availableTools);
   const setPresetModalVisible = useSetRecoilState(store.presetModalVisible);
   const [_defaultPreset, setDefaultPreset] = useRecoilState(store.defaultPreset);
+  const { data: startupConfig } = useGetStartupConfig();
   const presetsQuery = useGetPresetsQuery({ enabled: !!user && isAuthenticated });
   const preset = useRecoilValue(store.presetByIndex(index));
   const setPreset = useSetRecoilState(store.presetByIndex(index));
   const conversationId = useRecoilValue(store.conversationIdByIndex(index));
   const { data: modelsData } = useGetModelsQuery();
   const { newConversation } = useNewConvo(index);
+  const allowDefaultPresetSelection =
+    startupConfig != null && startupConfig.modelSpecs?.prioritize !== true;
 
   useEffect(() => {
-    if (modelsData?.initial) {
+    if (modelsData?.initial || startupConfig == null || !allowDefaultPresetSelection) {
       return;
     }
 
@@ -69,7 +73,7 @@ export default function usePresets(index = 0) {
     hasLoaded.current = true;
     // dependencies are stable and only needed once
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [presetsQuery.data, user, modelsData, conversationId]);
+  }, [allowDefaultPresetSelection, startupConfig, presetsQuery.data, user, modelsData, conversationId]);
 
   const setPresets = useCallback(
     (presets: TPreset[]) => {
@@ -112,11 +116,15 @@ export default function usePresets(index = 0) {
     onSuccess: (data, preset) => {
       const toastTitle = data.title ? `"${data.title}"` : localize('com_endpoint_preset_title');
       let message = `${toastTitle} ${localize('com_ui_saved')}`;
-      if (data.defaultPreset && data.presetId !== _defaultPreset?.presetId) {
+      if (
+        allowDefaultPresetSelection &&
+        data.defaultPreset &&
+        data.presetId !== _defaultPreset?.presetId
+      ) {
         message = `${toastTitle} ${localize('com_endpoint_preset_default')}`;
         setDefaultPreset(data);
         newConversation({ preset: data, disableParams: true });
-      } else if (preset.defaultPreset === false) {
+      } else if (allowDefaultPresetSelection && preset.defaultPreset === false) {
         setDefaultPreset(null);
         message = `${toastTitle} ${localize('com_endpoint_preset_default_removed')}`;
       }
@@ -258,6 +266,10 @@ export default function usePresets(index = 0) {
   };
 
   const onSetDefaultPreset = (preset: TPreset, remove = false) => {
+    if (!allowDefaultPresetSelection) {
+      return;
+    }
+
     updatePreset.mutate({ ...preset, defaultPreset: !remove });
   };
 
@@ -283,6 +295,7 @@ export default function usePresets(index = 0) {
     onDeletePreset,
     submitPreset,
     exportPreset,
+    allowDefaultPresetSelection,
     showDeleteDialog,
     setShowDeleteDialog,
     presetToDelete,

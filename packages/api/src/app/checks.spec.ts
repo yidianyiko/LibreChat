@@ -12,7 +12,7 @@ jest.mock('@librechat/data-schemas', () => ({
 }));
 
 import { handleRateLimits } from './limits';
-import { checkWebSearchConfig } from './checks';
+import { checkInterfaceConfig, checkWebSearchConfig } from './checks';
 import { logger } from '@librechat/data-schemas';
 import { extractVariableName as extract } from 'librechat-data-provider';
 
@@ -354,5 +354,37 @@ describe('handleRateLimits', () => {
     expect(process.env.STT_IP_WINDOW).toEqual('50');
     expect(process.env.STT_USER_MAX).toEqual('30');
     expect(process.env.STT_USER_WINDOW).toEqual('20');
+  });
+});
+
+describe('checkInterfaceConfig', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  it('does not warn about preset conflicts when model specs are prioritized', () => {
+    checkInterfaceConfig({
+      modelSpecs: {
+        prioritize: true,
+        list: [
+          {
+            name: 'gpt-4o',
+            label: 'GPT-4o',
+            default: true,
+            preset: {
+              endpoint: 'openAI',
+              model: 'gpt-4o',
+            },
+          },
+        ],
+      },
+      interfaceConfig: {
+        presets: true,
+      },
+    });
+
+    expect(logger.warn).not.toHaveBeenCalledWith(
+      "Note: Prioritizing model specs can conflict with default presets if a default preset is set. It's recommended to disable presets from the interface or disable use of a default preset.",
+    );
   });
 });
