@@ -1,9 +1,17 @@
-import { replaceSpecialVars } from 'librechat-data-provider';
-import { DEFAULT_PRESET_ID, buildDefaultPresetConfig } from '../../../../config/default-preset';
-import { isSupportedWeChatModel } from './modelSupport';
+import {
+  DEFAULT_PRESET_ID,
+  buildDefaultPresetConfig,
+  replaceSpecialVars,
+} from 'librechat-data-provider';
 import type { ResolveWeChatPresetParams, WeChatFallbackPreset, WeChatPreset } from './types';
+import { isSupportedWeChatModel } from './modelSupport';
 
 type WeChatRuntimePromptFields = Pick<WeChatPreset, 'promptPrefix' | 'system'>;
+type WeChatPresetWithRuntimePrompt<TPreset extends WeChatPreset> = Omit<
+  TPreset,
+  keyof WeChatRuntimePromptFields
+> &
+  Required<WeChatRuntimePromptFields>;
 
 function getPromptText(value: string | null | undefined): string | null {
   return typeof value === 'string' && value.trim().length > 0 ? value : null;
@@ -11,7 +19,7 @@ function getPromptText(value: string | null | undefined): string | null {
 
 function buildCanonicalWeChatFallbackPreset<TFallbackPreset extends WeChatFallbackPreset>(
   fallbackPreset: Partial<TFallbackPreset> = {},
-): TFallbackPreset & Required<WeChatRuntimePromptFields> {
+): WeChatPresetWithRuntimePrompt<TFallbackPreset> {
   const canonicalPreset = buildDefaultPresetConfig();
   const promptPrefix = getPromptText(fallbackPreset.promptPrefix);
   const system = getPromptText(fallbackPreset.system);
@@ -23,7 +31,7 @@ function buildCanonicalWeChatFallbackPreset<TFallbackPreset extends WeChatFallba
     ...fallbackPreset,
     promptPrefix: promptPrefix ?? system ?? canonicalPreset.promptPrefix,
     system: system ?? promptPrefix ?? canonicalPreset.system,
-  } as TFallbackPreset & Required<WeChatRuntimePromptFields>;
+  } as WeChatPresetWithRuntimePrompt<TFallbackPreset>;
 }
 
 function isBuiltInDefaultPreset(preset: WeChatPreset | null | undefined): boolean {
@@ -32,7 +40,7 @@ function isBuiltInDefaultPreset(preset: WeChatPreset | null | undefined): boolea
 
 function normalizeBuiltInDefaultPreset<TPreset extends WeChatPreset>(
   preset: TPreset,
-): TPreset & Required<WeChatRuntimePromptFields> {
+): WeChatPresetWithRuntimePrompt<TPreset> {
   const canonicalPreset = buildDefaultPresetConfig();
 
   return {
@@ -40,7 +48,7 @@ function normalizeBuiltInDefaultPreset<TPreset extends WeChatPreset>(
     ...preset,
     promptPrefix: canonicalPreset.promptPrefix,
     system: canonicalPreset.system,
-  } as TPreset & Required<WeChatRuntimePromptFields>;
+  } as WeChatPresetWithRuntimePrompt<TPreset>;
 }
 
 export function resolveWeChatRuntimePromptPrefix(
@@ -57,15 +65,17 @@ export function resolveWeChatRuntimePromptPrefix(
 export async function resolveWeChatPreset<
   TPreset extends WeChatPreset,
   TFallbackPreset extends WeChatFallbackPreset,
->(params: ResolveWeChatPresetParams<TPreset, TFallbackPreset>): Promise<TPreset | TFallbackPreset> {
+>(
+  params: ResolveWeChatPresetParams<TPreset, TFallbackPreset>,
+): Promise<TPreset | TFallbackPreset> {
   const userPreset = await params.getUserDefaultPreset();
   const provider = userPreset?.endpointType ?? userPreset?.endpoint;
 
   if (userPreset != null && provider === 'openAI' && isSupportedWeChatModel(userPreset.model)) {
     return isBuiltInDefaultPreset(userPreset)
-      ? normalizeBuiltInDefaultPreset(userPreset)
+      ? (normalizeBuiltInDefaultPreset(userPreset) as TPreset)
       : userPreset;
   }
 
-  return buildCanonicalWeChatFallbackPreset(params.fallbackPreset);
+  return buildCanonicalWeChatFallbackPreset(params.fallbackPreset) as TFallbackPreset;
 }
