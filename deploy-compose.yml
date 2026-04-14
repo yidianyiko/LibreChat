@@ -25,6 +25,10 @@ services:
       - RAG_API_URL=http://rag_api:${RAG_PORT:-8000}
       - WECHAT_BRIDGE_URL=http://wechat-bridge:3091
       - WECHAT_BRIDGE_INTERNAL_TOKEN=${WECHAT_BRIDGE_INTERNAL_TOKEN:?WECHAT_BRIDGE_INTERNAL_TOKEN is required}
+      - DOMAIN_CLIENT=https://keep4oforever.com
+      - DOMAIN_SERVER=https://keep4oforever.com
+      - CORS_ALLOWED_ORIGINS=https://keep4oforever.com
+      - SSE_ALLOWED_ORIGINS=https://keep4oforever.com
       - LIBRECHAT_LOG_DIR=/app/logs
     volumes:
       - type: bind
