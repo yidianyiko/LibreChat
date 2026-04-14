@@ -198,24 +198,53 @@ const handlers = createWeChatHandlers({
       .lean();
   },
   completeBinding: async ({ userId, ilinkUserId, ilinkBotId, botToken, baseUrl }) => {
-    await getWeChatBindingModel().findOneAndUpdate(
-      { userId },
-      {
-        $set: {
-          ilinkUserId,
-          ilinkBotId,
-          botToken,
-          baseUrl,
-          status: 'healthy',
-          boundAt: new Date(),
-          welcomeMessageSentAt: null,
-          unhealthyAt: null,
-          unboundAt: null,
-        },
-        $setOnInsert: { userId },
-      },
-      { upsert: true },
-    );
+    const now = new Date();
+    const WeChatBinding = getWeChatBindingModel();
+    const session = await mongoose.startSession();
+
+    try {
+      await session.withTransaction(async () => {
+        await WeChatBinding.updateMany(
+          { ilinkUserId, userId: { $ne: userId } },
+          {
+            $set: {
+              status: 'unbound',
+              ilinkBotId: null,
+              botToken: null,
+              baseUrl: null,
+              boundAt: null,
+              welcomeMessageSentAt: null,
+              unhealthyAt: null,
+              currentConversation: null,
+              unboundAt: now,
+            },
+            $unset: { ilinkUserId: 1 },
+          },
+          { session },
+        );
+
+        await WeChatBinding.findOneAndUpdate(
+          { userId },
+          {
+            $set: {
+              ilinkUserId,
+              ilinkBotId,
+              botToken,
+              baseUrl,
+              status: 'healthy',
+              boundAt: now,
+              welcomeMessageSentAt: null,
+              unhealthyAt: null,
+              unboundAt: null,
+            },
+            $setOnInsert: { userId },
+          },
+          { upsert: true, session },
+        );
+      });
+    } finally {
+      await session.endSession();
+    }
   },
   updateBindingHealth: async ({ userId, status }) => {
     await getWeChatBindingModel().findOneAndUpdate(

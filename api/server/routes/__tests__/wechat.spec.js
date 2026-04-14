@@ -26,6 +26,34 @@ jest.mock('~/server/services/Endpoints/agents', () => ({
   buildOptions: mockBuildOptions,
 }));
 
+jest.mock(
+  'librechat-data-provider',
+  () => ({
+    CacheKeys: {
+      WECHAT_LIST_SNAPSHOT: 'wechat:list:snapshot',
+    },
+    Constants: {
+      NO_PARENT: '00000000-0000-0000-0000-000000000000',
+    },
+  }),
+  { virtual: true },
+);
+
+jest.mock(
+  'winston-daily-rotate-file',
+  () =>
+    jest.fn().mockImplementation(() => ({
+      level: 'error',
+      filename: '../logs/error-%DATE%.log',
+      datePattern: 'YYYY-MM-DD',
+      zippedArchive: true,
+      maxSize: '20m',
+      maxFiles: '14d',
+      format: 'format',
+    })),
+  { virtual: true },
+);
+
 const mockWeChatService = {
   getStatus: jest.fn(),
   unbind: jest.fn(),
@@ -45,92 +73,99 @@ const mockWeChatOrchestrator = {
   sendMessage: jest.fn(),
 };
 
-jest.mock('@librechat/api', () => ({
-  WeChatService: jest.fn((deps) => {
-    capturedWeChatServiceDeps = deps;
-    return mockWeChatService;
-  }),
-  WeChatBridgeClient: jest.fn(() => mockWeChatBridgeClient),
-  WeChatMessageOrchestrator: jest.fn(() => mockWeChatOrchestrator),
-  startResumableGeneration: jest.fn(),
-  buildWeChatFallbackPreset: jest.fn(() =>
-    require('../../../../config/default-preset').buildDefaultPresetConfig(),
-  ),
-  resolveWeChatRuntimePromptPrefix: jest.fn(
-    (conversation) =>
-      (
-        conversation.promptPrefix ??
-        conversation.system ??
-        require('../../../../config/default-preset').buildDefaultPresetConfig().promptPrefix
-      ).replace('{{current_date_ymd}}', new Date().toISOString().split('T')[0]),
-  ),
-  createWeChatHandlers: jest.fn((deps) => {
-    capturedWeChatHandlerDeps = deps;
-    return {
-      getStatus: async (req, res) => res.json(await deps.service.getStatus(req.user.id)),
-      startBind: async (req, res) => {
-        const result = await deps.bridgeClient.startBindSession({ userId: req.user.id });
-        res.status(201).json(result.data);
-      },
-      getBindStatus: async (req, res) => {
-        const result = await deps.bridgeClient.getBindSession(req.params.bindSessionId);
-        res.json(result.data);
-      },
-      unbind: async (req, res) => {
-        await deps.service.unbind(req.user.id);
-        res.status(204).send();
-      },
-      getActiveBindings: async (_req, res) => res.json({ bindings: [] }),
-      completeBinding: async (_req, res) => res.status(204).send(),
-      updateBindingHealth: async (_req, res) => res.status(204).send(),
-      markWelcomeMessageSent: async (_req, res) => res.status(204).send(),
-      listConversations: async (req, res) =>
-        res.json(await deps.service.listEligibleConversations(req.body.userId)),
-      createConversation: async (req, res) =>
-        res.status(201).json(await deps.service.createConversation(req.body.userId)),
-      switchConversation: async (req, res) => {
-        try {
-          const result = await deps.service.switchConversation(req.body.userId, {
-            snapshotId: req.body.snapshotId,
-            index: req.body.index,
-          });
-          res.json(result);
-        } catch (error) {
-          if (error.message === 'SNAPSHOT_REQUIRED') {
-            return res.status(409).json({ message: '请先执行 /list' });
+jest.mock(
+  '@librechat/api',
+  () => ({
+    WeChatService: jest.fn((deps) => {
+      capturedWeChatServiceDeps = deps;
+      return mockWeChatService;
+    }),
+    WeChatBridgeClient: jest.fn(() => mockWeChatBridgeClient),
+    WeChatMessageOrchestrator: jest.fn(() => mockWeChatOrchestrator),
+    startResumableGeneration: jest.fn(),
+    buildWeChatFallbackPreset: jest.fn(() =>
+      require('../../../../config/default-preset').buildDefaultPresetConfig(),
+    ),
+    resolveWeChatRuntimePromptPrefix: jest.fn(
+      (conversation) =>
+        (
+          conversation.promptPrefix ??
+          conversation.system ??
+          require('../../../../config/default-preset').buildDefaultPresetConfig().promptPrefix
+        ).replace('{{current_date_ymd}}', new Date().toISOString().split('T')[0]),
+    ),
+    createWeChatHandlers: jest.fn((deps) => {
+      capturedWeChatHandlerDeps = deps;
+      return {
+        getStatus: async (req, res) => res.json(await deps.service.getStatus(req.user.id)),
+        startBind: async (req, res) => {
+          const result = await deps.bridgeClient.startBindSession({ userId: req.user.id });
+          res.status(201).json(result.data);
+        },
+        getBindStatus: async (req, res) => {
+          const result = await deps.bridgeClient.getBindSession(req.params.bindSessionId);
+          res.json(result.data);
+        },
+        unbind: async (req, res) => {
+          await deps.service.unbind(req.user.id);
+          res.status(204).send();
+        },
+        getActiveBindings: async (_req, res) => res.json({ bindings: [] }),
+        completeBinding: async (req, res) => {
+          await deps.completeBinding(req.body);
+          res.status(204).send();
+        },
+        updateBindingHealth: async (_req, res) => res.status(204).send(),
+        markWelcomeMessageSent: async (_req, res) => res.status(204).send(),
+        listConversations: async (req, res) =>
+          res.json(await deps.service.listEligibleConversations(req.body.userId)),
+        createConversation: async (req, res) =>
+          res.status(201).json(await deps.service.createConversation(req.body.userId)),
+        switchConversation: async (req, res) => {
+          try {
+            const result = await deps.service.switchConversation(req.body.userId, {
+              snapshotId: req.body.snapshotId,
+              index: req.body.index,
+            });
+            res.json(result);
+          } catch (error) {
+            if (error.message === 'SNAPSHOT_REQUIRED') {
+              return res.status(409).json({ message: '请先执行 /list' });
+            }
+
+            throw error;
           }
+        },
+        getCurrentConversation: async (req, res) =>
+          res.json(await deps.service.getCurrentConversation(req.query.userId ?? req.body.userId)),
+        sendMessage: async (req, res) =>
+          res.json(
+            await deps.orchestrator.sendMessage({
+              req,
+              text: req.body.text,
+              conversationId: req.body.conversationId,
+              parentMessageId: req.body.parentMessageId,
+              endpointOption: req.body.endpointOption,
+            }),
+          ),
+      };
+    }),
+    createRequireWeChatBridgeAuth: jest.fn((expectedToken) => (req, res, next) => {
+      const auth = req.headers.authorization;
+      if (!auth?.startsWith('Bearer ')) {
+        return res.status(401).json({ message: 'Missing bridge authorization' });
+      }
 
-          throw error;
-        }
-      },
-      getCurrentConversation: async (req, res) =>
-        res.json(await deps.service.getCurrentConversation(req.query.userId ?? req.body.userId)),
-      sendMessage: async (req, res) =>
-        res.json(
-          await deps.orchestrator.sendMessage({
-            req,
-            text: req.body.text,
-            conversationId: req.body.conversationId,
-            parentMessageId: req.body.parentMessageId,
-            endpointOption: req.body.endpointOption,
-          }),
-        ),
-    };
+      const token = auth.slice('Bearer '.length);
+      if (token !== expectedToken) {
+        return res.status(401).json({ message: 'Invalid bridge authorization' });
+      }
+
+      next();
+    }),
   }),
-  createRequireWeChatBridgeAuth: jest.fn((expectedToken) => (req, res, next) => {
-    const auth = req.headers.authorization;
-    if (!auth?.startsWith('Bearer ')) {
-      return res.status(401).json({ message: 'Missing bridge authorization' });
-    }
-
-    const token = auth.slice('Bearer '.length);
-    if (token !== expectedToken) {
-      return res.status(401).json({ message: 'Invalid bridge authorization' });
-    }
-
-    next();
-  }),
-}));
+  { virtual: true },
+);
 
 jest.mock('~/server/middleware', () => ({
   requireJwtAuth: (req, _res, next) => {
@@ -155,6 +190,7 @@ describe('/api/wechat routes', () => {
   });
 
   afterEach(() => {
+    jest.restoreAllMocks();
     delete mongoose.models.WeChatBinding;
   });
 
@@ -308,5 +344,120 @@ describe('/api/wechat routes', () => {
       }),
       { new: true, upsert: true },
     );
+  });
+
+  it('transfers an ilink binding to a new owner and clears old owner state', async () => {
+    const session = {
+      withTransaction: jest.fn(async (callback) => callback()),
+      endSession: jest.fn(),
+    };
+    const updateMany = jest.fn().mockResolvedValue({});
+    const findOneAndUpdate = jest.fn().mockResolvedValue({});
+    const startSession = jest.spyOn(mongoose, 'startSession').mockResolvedValue(session);
+    mongoose.models.WeChatBinding = { updateMany, findOneAndUpdate };
+
+    const response = await request(app)
+      .post('/api/wechat/internal/bindings/complete')
+      .set('Authorization', 'Bearer internal-token')
+      .send({
+        userId: 'user-2',
+        ilinkUserId: 'wechat-1',
+        ilinkBotId: 'bot-2',
+        botToken: 'enc-token-2',
+        baseUrl: 'https://ilink.example',
+      });
+
+    expect(response.status).toBe(204);
+    expect(startSession).toHaveBeenCalledTimes(1);
+    expect(session.withTransaction).toHaveBeenCalledTimes(1);
+    expect(updateMany).toHaveBeenCalledWith(
+      { ilinkUserId: 'wechat-1', userId: { $ne: 'user-2' } },
+      {
+        $set: {
+          status: 'unbound',
+          ilinkBotId: null,
+          botToken: null,
+          baseUrl: null,
+          boundAt: null,
+          welcomeMessageSentAt: null,
+          unhealthyAt: null,
+          currentConversation: null,
+          unboundAt: expect.any(Date),
+        },
+        $unset: { ilinkUserId: 1 },
+      },
+      { session },
+    );
+    expect(findOneAndUpdate).toHaveBeenCalledWith(
+      { userId: 'user-2' },
+      {
+        $set: {
+          ilinkUserId: 'wechat-1',
+          ilinkBotId: 'bot-2',
+          botToken: 'enc-token-2',
+          baseUrl: 'https://ilink.example',
+          status: 'healthy',
+          boundAt: expect.any(Date),
+          welcomeMessageSentAt: null,
+          unhealthyAt: null,
+          unboundAt: null,
+        },
+        $setOnInsert: { userId: 'user-2' },
+      },
+      { upsert: true, session },
+    );
+    expect(session.endSession).toHaveBeenCalledTimes(1);
+  });
+
+  it('rebinds the same owner without clearing another user', async () => {
+    const session = {
+      withTransaction: jest.fn(async (callback) => callback()),
+      endSession: jest.fn(),
+    };
+    const updateMany = jest.fn().mockResolvedValue({});
+    const findOneAndUpdate = jest.fn().mockResolvedValue({});
+    const startSession = jest.spyOn(mongoose, 'startSession').mockResolvedValue(session);
+    mongoose.models.WeChatBinding = { updateMany, findOneAndUpdate };
+
+    const response = await request(app)
+      .post('/api/wechat/internal/bindings/complete')
+      .set('Authorization', 'Bearer internal-token')
+      .send({
+        userId: 'user-1',
+        ilinkUserId: 'wechat-1',
+        ilinkBotId: 'bot-1',
+        botToken: 'enc-token-1',
+        baseUrl: 'https://ilink.example',
+      });
+
+    expect(response.status).toBe(204);
+    expect(startSession).toHaveBeenCalledTimes(1);
+    expect(session.withTransaction).toHaveBeenCalledTimes(1);
+    expect(updateMany).toHaveBeenCalledWith(
+      { ilinkUserId: 'wechat-1', userId: { $ne: 'user-1' } },
+      expect.objectContaining({
+        $unset: { ilinkUserId: 1 },
+      }),
+      { session },
+    );
+    expect(findOneAndUpdate).toHaveBeenCalledWith(
+      { userId: 'user-1' },
+      {
+        $set: {
+          ilinkUserId: 'wechat-1',
+          ilinkBotId: 'bot-1',
+          botToken: 'enc-token-1',
+          baseUrl: 'https://ilink.example',
+          status: 'healthy',
+          boundAt: expect.any(Date),
+          welcomeMessageSentAt: null,
+          unhealthyAt: null,
+          unboundAt: null,
+        },
+        $setOnInsert: { userId: 'user-1' },
+      },
+      { upsert: true, session },
+    );
+    expect(session.endSession).toHaveBeenCalledTimes(1);
   });
 });
