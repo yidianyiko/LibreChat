@@ -1,6 +1,6 @@
 import mongoose from 'mongoose';
 import { MongoMemoryServer } from 'mongodb-memory-server';
-import { createModels } from '~/models';
+import { createWeChatBindingModel } from '~/models/wechatBinding';
 
 describe('WeChatBinding model', () => {
   let mongoServer: MongoMemoryServer;
@@ -8,7 +8,7 @@ describe('WeChatBinding model', () => {
   beforeAll(async () => {
     mongoServer = await MongoMemoryServer.create();
     await mongoose.connect(mongoServer.getUri());
-    createModels(mongoose);
+    createWeChatBindingModel(mongoose);
     await mongoose.models.WeChatBinding.init();
   });
 
@@ -75,6 +75,73 @@ describe('WeChatBinding model', () => {
         boundAt: new Date('2026-04-11T10:04:00.000Z'),
       }),
     ).rejects.toThrow(/duplicate key/i);
+  });
+
+  it('reuses an ilinkUserId only after the previous owner is explicitly unbound and cleared', async () => {
+    const WeChatBinding = mongoose.models.WeChatBinding;
+
+    await WeChatBinding.create({
+      userId: 'user-1',
+      ilinkBotId: 'bot-1',
+      botToken: 'enc-token-1',
+      baseUrl: 'https://ilink.example',
+      ilinkUserId: 'wechat-transfer',
+      status: 'healthy',
+      boundAt: new Date('2026-04-11T11:00:00.000Z'),
+    });
+
+    await expect(
+      WeChatBinding.create({
+        userId: 'user-2',
+        ilinkBotId: 'bot-2',
+        botToken: 'enc-token-2',
+        baseUrl: 'https://ilink.example',
+        ilinkUserId: 'wechat-transfer',
+        status: 'healthy',
+        boundAt: new Date('2026-04-11T11:01:00.000Z'),
+      }),
+    ).rejects.toThrow(/duplicate key/i);
+
+    await WeChatBinding.findOneAndUpdate(
+      { userId: 'user-1' },
+      {
+        $set: {
+          status: 'unbound',
+          ilinkBotId: null,
+          botToken: null,
+          baseUrl: null,
+          boundAt: null,
+          welcomeMessageSentAt: null,
+          unhealthyAt: null,
+          currentConversation: null,
+          unboundAt: new Date('2026-04-11T11:02:00.000Z'),
+        },
+        $unset: { ilinkUserId: 1 },
+      },
+    );
+
+    await expect(
+      WeChatBinding.create({
+        userId: 'user-2',
+        ilinkBotId: 'bot-2',
+        botToken: 'enc-token-2',
+        baseUrl: 'https://ilink.example',
+        ilinkUserId: 'wechat-transfer',
+        status: 'healthy',
+        boundAt: new Date('2026-04-11T11:03:00.000Z'),
+      }),
+    ).resolves.toMatchObject({
+      userId: 'user-2',
+      ilinkUserId: 'wechat-transfer',
+      status: 'healthy',
+    });
+
+    const transferredBinding = await WeChatBinding.findOne({ userId: 'user-2' });
+    expect(transferredBinding).toMatchObject({
+      userId: 'user-2',
+      ilinkUserId: 'wechat-transfer',
+      status: 'healthy',
+    });
   });
 
   it('allows multiple bindings when ilinkUserId is omitted', async () => {
