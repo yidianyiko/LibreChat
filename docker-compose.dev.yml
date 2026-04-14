@@ -12,7 +12,7 @@ services:
     restart: always
     volumes:
       - ./data-node:/data/db
-    command: mongod --noauth
+    command: mongod --replSet rs0 --bind_ip_all --noauth
 
   meilisearch:
     container_name: chat-meilisearch
@@ -76,7 +76,7 @@ services:
       - NODE_ENV=production
       - HOST=0.0.0.0
       - PORT=3080
-      - MONGO_URI=mongodb://mongodb:27017/LibreChat
+      - MONGO_URI=mongodb://mongodb:27017/LibreChat?replicaSet=rs0
       - MEILI_HOST=http://meilisearch:7700
       - WECHAT_BRIDGE_URL=http://wechat-bridge-prod-test:3091
       - WECHAT_BRIDGE_INTERNAL_TOKEN=${WECHAT_BRIDGE_INTERNAL_TOKEN:-local-wechat-bridge-token}
