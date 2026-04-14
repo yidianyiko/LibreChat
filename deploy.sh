@@ -41,6 +41,7 @@ TARBALL="${DEPLOY_DIR}/${IMAGE_NAME}-${TIMESTAMP}.tar.gz"
 LAST_IMAGE_FILE="${DEPLOY_DIR}/last_image.txt"
 ROLLBACK_IMAGE_FILE="${DEPLOY_DIR}/rollback_image.txt"
 LAST_DEPLOYED_COMMIT_FILE="${DEPLOY_DIR}/last_deployed_commit.txt"
+ROLLBACK_IMAGE_RETENTION_COUNT=3
 
 # 标志变量
 INIT_ONLY=false
@@ -122,6 +123,179 @@ cleanup() {
         log_info "清理本地 tarball..."
         rm -f "${TARBALL}"
     fi
+}
+
+is_managed_deploy_image() {
+    local image="${1:-}"
+    printf '%s\n' "${image}" | grep -Eq "^${IMAGE_NAME}:[0-9]{14}$"
+}
+
+list_managed_local_images() {
+    docker images --format "{{.Repository}}:{{.Tag}}" | grep -E "^${IMAGE_NAME}:[0-9]{14}$" | sort -r | uniq || true
+}
+
+image_in_keep_list() {
+    local image="${1:-}"
+    shift
+
+    local keep_image
+    for keep_image in "$@"; do
+        if [ "${keep_image}" = "${image}" ]; then
+            return 0
+        fi
+    done
+
+    return 1
+}
+
+build_keep_image_list() {
+    local current_image="${1:-}"
+    local keep_target_count="${ROLLBACK_IMAGE_RETENTION_COUNT}"
+    local keep_images=()
+    local image
+
+    if is_managed_deploy_image "${current_image}"; then
+        keep_images+=("${current_image}")
+        keep_target_count=$((keep_target_count + 1))
+    fi
+
+    while IFS= read -r image; do
+        if [ -z "${image}" ] || [ "${image}" = "${current_image}" ]; then
+            continue
+        fi
+
+        keep_images+=("${image}")
+        if [ "${#keep_images[@]}" -ge "${keep_target_count}" ]; then
+            break
+        fi
+    done < <(list_managed_local_images)
+
+    printf '%s\n' "${keep_images[@]}"
+}
+
+cleanup_local_images() {
+    local current_image="${1:-}"
+    local keep_images=()
+    local image
+    local deleted_count=0
+    local skipped_count=0
+
+    log_info "清理本地旧镜像，保留当前镜像与最近 ${ROLLBACK_IMAGE_RETENTION_COUNT} 个回滚镜像..."
+
+    mapfile -t keep_images < <(build_keep_image_list "${current_image}")
+
+    if [ "${#keep_images[@]}" -eq 0 ]; then
+        log_info "未发现需要清理的本地部署镜像"
+        return 0
+    fi
+
+    while IFS= read -r image; do
+        if [ -z "${image}" ] || image_in_keep_list "${image}" "${keep_images[@]}"; then
+            continue
+        fi
+
+        if docker image rm "${image}" >/dev/null 2>&1; then
+            log_info "已删除本地旧镜像: ${image}"
+            deleted_count=$((deleted_count + 1))
+        else
+            log_warning "本地镜像删除失败，可能仍被容器占用: ${image}"
+            skipped_count=$((skipped_count + 1))
+        fi
+    done < <(list_managed_local_images)
+
+    log_success "本地镜像清理完成: 删除 ${deleted_count} 个，跳过 ${skipped_count} 个"
+}
+
+cleanup_remote_images() {
+    local current_image="${1:-}"
+
+    log_info "清理远端旧镜像，保留当前镜像与最近 ${ROLLBACK_IMAGE_RETENTION_COUNT} 个回滚镜像..."
+
+    if ! ssh "${SERVER_HOST}" bash -s -- "${IMAGE_NAME}" "${ROLLBACK_IMAGE_RETENTION_COUNT}" "${current_image}" << 'EOF'
+        set -e
+        IMAGE_NAME=$1
+        ROLLBACK_IMAGE_RETENTION_COUNT=$2
+        CURRENT_IMAGE=$3
+
+        is_managed_deploy_image() {
+            local image="${1:-}"
+            printf '%s\n' "${image}" | grep -Eq "^${IMAGE_NAME}:[0-9]{14}$"
+        }
+
+        list_managed_images() {
+            sudo docker images --format "{{.Repository}}:{{.Tag}}" | grep -E "^${IMAGE_NAME}:[0-9]{14}$" | sort -r | uniq || true
+        }
+
+        image_in_keep_list() {
+            local image="${1:-}"
+            shift
+
+            local keep_image
+            for keep_image in "$@"; do
+                if [ "${keep_image}" = "${image}" ]; then
+                    return 0
+                fi
+            done
+
+            return 1
+        }
+
+        build_keep_image_list() {
+            local current_image="${1:-}"
+            local keep_target_count="${ROLLBACK_IMAGE_RETENTION_COUNT}"
+            local keep_images=()
+            local image
+
+            if is_managed_deploy_image "${current_image}"; then
+                keep_images+=("${current_image}")
+                keep_target_count=$((keep_target_count + 1))
+            fi
+
+            while IFS= read -r image; do
+                if [ -z "${image}" ] || [ "${image}" = "${current_image}" ]; then
+                    continue
+                fi
+
+                keep_images+=("${image}")
+                if [ "${#keep_images[@]}" -ge "${keep_target_count}" ]; then
+                    break
+                fi
+            done < <(list_managed_images)
+
+            printf '%s\n' "${keep_images[@]}"
+        }
+
+        deleted_count=0
+        skipped_count=0
+        mapfile -t KEEP_IMAGES < <(build_keep_image_list "${CURRENT_IMAGE}")
+
+        if [ "${#KEEP_IMAGES[@]}" -eq 0 ]; then
+            echo "未发现需要清理的远端部署镜像"
+            exit 0
+        fi
+
+        while IFS= read -r image; do
+            if [ -z "${image}" ] || image_in_keep_list "${image}" "${KEEP_IMAGES[@]}"; then
+                continue
+            fi
+
+            if sudo docker image rm "${image}" >/dev/null 2>&1; then
+                echo "已删除远端旧镜像: ${image}"
+                deleted_count=$((deleted_count + 1))
+            else
+                echo "警告: 远端镜像删除失败，可能仍被容器占用: ${image}"
+                skipped_count=$((skipped_count + 1))
+            fi
+        done < <(list_managed_images)
+
+        echo "远端镜像清理完成: 删除 ${deleted_count} 个，跳过 ${skipped_count} 个"
+EOF
+    then
+        log_warning "远端旧镜像清理失败，保留现有镜像集合"
+        return 0
+    fi
+
+    log_success "远端镜像清理完成"
 }
 
 start_local_proxy_bridge() {
@@ -937,6 +1111,8 @@ main() {
             deploy_service
             save_image_info
             save_deployed_commit
+            cleanup_remote_images "${IMAGE_TAG}"
+            cleanup_local_images "${IMAGE_TAG}"
             ;;
     esac
 

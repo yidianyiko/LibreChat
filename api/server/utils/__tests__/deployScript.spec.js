@@ -26,4 +26,13 @@ describe('deploy.sh remote override generation', () => {
     expect(deployScriptSource).toContain('已生成 WECHAT_BRIDGE_INTERNAL_TOKEN 并写入 .env');
     expect(deployScriptSource).toContain('ensure_wechat_bridge_internal_token\n    if [ -f ".env" ]; then');
   });
+
+  it('retains only the current image plus three rollback images for managed local and remote deploy tags', () => {
+    expect(deployScriptSource).toContain('ROLLBACK_IMAGE_RETENTION_COUNT=3');
+    expect(deployScriptSource).toContain('cleanup_local_images()');
+    expect(deployScriptSource).toContain('cleanup_remote_images()');
+    expect(deployScriptSource).toContain('grep -E "^${IMAGE_NAME}:[0-9]{14}$"');
+    expect(deployScriptSource).toContain('cleanup_remote_images "${IMAGE_TAG}"');
+    expect(deployScriptSource).toContain('cleanup_local_images "${IMAGE_TAG}"');
+  });
 });
