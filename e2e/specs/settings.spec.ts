@@ -1,63 +1,28 @@
 import { expect, test } from '@playwright/test';
+import type { Page } from '@playwright/test';
+
+async function dismissUpdateBanner(page: Page) {
+  const cancelButton = page.getByRole('status').getByRole('button', { name: 'Cancel' });
+  await cancelButton.click({ timeout: 2000 }).catch(() => {});
+}
+
+async function selectModel(page: Page, provider: string, model: string) {
+  await dismissUpdateBanner(page);
+  await page.getByRole('button', { name: /select a model/i }).click();
+  await page.getByRole('option', { name: provider }).click();
+  await page.locator('[role="option"]').filter({ hasText: model }).first().click();
+}
 
 test.describe('Settings suite', () => {
-  test('Last OpenAI settings', async ({ page }) => {
-    await page.goto('http://localhost:3080/', { timeout: 5000 });
-    await page.evaluate(() =>
-      window.localStorage.setItem(
-        'lastConversationSetup',
-        JSON.stringify({
-          conversationId: 'new',
-          title: 'New Chat',
-          endpoint: 'openAI',
-          createdAt: '',
-          updatedAt: '',
-        }),
-      ),
-    );
-    await page.goto('http://localhost:3080/', { timeout: 5000 });
+  test('Selected model persists after reload', async ({ page }) => {
+    await page.goto('/c/new', { timeout: 20000, waitUntil: 'domcontentloaded' });
 
-    const initialLocalStorage = await page.evaluate(() => window.localStorage);
-    const lastConvoSetup = JSON.parse(initialLocalStorage.lastConversationSetup);
-    expect(lastConvoSetup.endpoint).toEqual('openAI');
+    await selectModel(page, 'OpenAI', 'gpt-3.5-turbo');
+    const modelButton = page.getByRole('button', { name: /select a model/i });
+    await expect(modelButton).toHaveText('gpt-3.5-turbo');
 
-    const newTopicButton = page.getByTestId('new-conversation-menu');
-    await newTopicButton.click();
-
-    // includes the icon + endpoint names in obj property
-    const endpointItem = page.getByTestId('endpoint-item-openAI');
-    await endpointItem.click();
-
-    await page.getByTestId('text-input').click();
-    const button1 = page.getByRole('button', { name: 'Mode: BingAI' });
-    const button2 = page.getByRole('button', { name: 'Mode: Sydney' });
-
-    try {
-      await button1.click({ timeout: 100 });
-    } catch (e) {
-      // console.log('Bing button', e);
-    }
-
-    try {
-      await button2.click({ timeout: 100 });
-    } catch (e) {
-      // console.log('Sydney button', e);
-    }
-    await page.getByRole('option', { name: 'Sydney' }).click();
-    await page.getByRole('tab', { name: 'Balanced' }).click();
-
-    // Change Endpoint to see if settings will persist
-    await newTopicButton.click();
-    await page.getByRole('menuitemradio', { name: 'ChatGPT OpenAI' }).click();
-
-    // Close endpoint menu & re-select BingAI
-    await page.getByTestId('text-input').click();
-    await newTopicButton.click();
-    await endpointItem.click();
-
-    // Check if the settings persisted
-    const localStorage = await page.evaluate(() => window.localStorage);
-    const button = page.getByRole('button', { name: 'Mode: Sydney' });
-    expect(button.count()).toBeTruthy();
+    await page.reload({ waitUntil: 'domcontentloaded' });
+    await dismissUpdateBanner(page);
+    await expect(modelButton).toHaveText('gpt-3.5-turbo');
   });
 });

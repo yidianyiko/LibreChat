@@ -381,13 +381,13 @@ const Conversations: FC<ConversationsProps> = ({
                 rowHeight={getRowHeight}
                 rowRenderer={rowRenderer}
                 overscanRowCount={10}
-                aria-readonly={false}
                 className="outline-none"
-                aria-label="Conversations"
                 onRowsRendered={handleRowsRendered}
+                role="presentation"
+                aria-readonly={null}
                 tabIndex={-1}
                 style={{ outline: 'none', scrollbarGutter: 'stable' }}
-                containerRole="rowgroup"
+                containerRole="presentation"
               />
             )}
           </AutoSizer>
