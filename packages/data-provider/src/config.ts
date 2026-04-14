@@ -1946,6 +1946,7 @@ export const providerEndpointMap = {
 };
 
 export const specialVariables = {
+  current_date_ymd: true,
   current_date: true,
   current_user: true,
   iso_datetime: true,

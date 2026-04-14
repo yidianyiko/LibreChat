@@ -1,12 +1,12 @@
-const path = require('path');
 const express = require('express');
 const mongoose = require('mongoose');
 const { CacheKeys, Constants } = require('librechat-data-provider');
-const { DEFAULT_PRESET_CONFIG } = require(path.resolve(__dirname, '..', '..', '..', 'config', 'default-preset'));
 const {
   createWeChatHandlers,
   createRequireWeChatBridgeAuth,
   GenerationJobManager,
+  buildWeChatFallbackPreset,
+  resolveWeChatRuntimePromptPrefix,
   startResumableGeneration,
   WeChatBridgeClient,
   WeChatMessageOrchestrator,
@@ -47,33 +47,7 @@ const sanitizePresetForConversation = (preset = {}) => {
 };
 
 const getDefaultWeChatFallbackPreset = () => {
-  const {
-    endpoint,
-    model,
-    title,
-    system,
-    temperature,
-    top_p,
-    frequency_penalty,
-    presence_penalty,
-    maxTokens,
-    resendImages,
-    imageDetail,
-  } = DEFAULT_PRESET_CONFIG;
-
-  return {
-    endpoint,
-    model,
-    title,
-    system,
-    temperature,
-    top_p,
-    frequency_penalty,
-    presence_penalty,
-    maxTokens,
-    resendImages,
-    imageDetail,
-  };
+  return buildWeChatFallbackPreset();
 };
 
 const getBridgeBaseUrl = () => process.env.WECHAT_BRIDGE_URL || 'http://localhost:3091';
@@ -270,6 +244,14 @@ const handlers = createWeChatHandlers({
   },
   buildMessageEndpointOption: async (req, conversation) => {
     const { buildOptions } = require('~/server/services/Endpoints/agents');
+    const runtimePromptPrefix = resolveWeChatRuntimePromptPrefix(conversation);
+    const runtimeSystemPrompt =
+      conversation.system != null || conversation.promptPrefix != null
+        ? resolveWeChatRuntimePromptPrefix({
+            promptPrefix: conversation.system ?? conversation.promptPrefix ?? undefined,
+          })
+        : undefined;
+
     return buildOptions(
       req,
       conversation.endpoint || 'openAI',
@@ -278,7 +260,6 @@ const handlers = createWeChatHandlers({
         iconURL: conversation.iconURL || undefined,
         spec: conversation.spec || undefined,
         model: conversation.model || 'gpt-4o',
-        promptPrefix: conversation.promptPrefix || undefined,
         temperature: conversation.temperature ?? undefined,
         top_p: conversation.top_p ?? undefined,
         topP: conversation.topP ?? undefined,
@@ -303,7 +284,8 @@ const handlers = createWeChatHandlers({
         thinkingBudget: conversation.thinkingBudget ?? undefined,
         thinkingLevel: conversation.thinkingLevel ?? undefined,
         effort: conversation.effort ?? undefined,
-        system: conversation.system ?? undefined,
+        promptPrefix: runtimePromptPrefix,
+        system: runtimeSystemPrompt,
         resendImages: conversation.resendImages ?? undefined,
       }),
       conversation.endpointType || undefined,

@@ -411,8 +411,9 @@ export function replaceSpecialVars({ text, user }: { text: string; user?: t.TUse
   const now = dayjs();
   const weekdayName = now.format('dddd');
 
-  const currentDate = now.format('YYYY-MM-DD');
-  result = result.replace(/{{current_date}}/gi, `${currentDate} (${weekdayName})`);
+  const currentDateYmd = now.format('YYYY-MM-DD');
+  result = result.replace(/{{current_date_ymd}}/gi, currentDateYmd);
+  result = result.replace(/{{current_date}}/gi, `${currentDateYmd} (${weekdayName})`);
 
   const currentDatetime = now.format('YYYY-MM-DD HH:mm:ss Z');
   result = result.replace(/{{current_datetime}}/gi, `${currentDatetime} (${weekdayName})`);

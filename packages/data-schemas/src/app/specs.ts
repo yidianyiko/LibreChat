@@ -48,10 +48,13 @@ export function processModelSpecs(
       );
       continue;
     }
+
     if (EModelEndpoint[currentEndpoint] && currentEndpoint !== EModelEndpoint.custom) {
       modelSpecs.push(spec);
       continue;
-    } else if (currentEndpoint === EModelEndpoint.custom) {
+    }
+
+    if (currentEndpoint === EModelEndpoint.custom) {
       logger.warn(
         `Model Spec with endpoint "${currentEndpoint}" is not supported. You must specify the name of the custom endpoint (case-sensitive, as defined in your config). Skipping model spec...`,
       );

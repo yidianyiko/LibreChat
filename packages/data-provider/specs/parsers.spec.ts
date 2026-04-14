@@ -52,6 +52,11 @@ describe('replaceSpecialVars', () => {
     expect(result).toBe('Today is 2024-04-29 (Monday)');
   });
 
+  test('should replace {{current_date_ymd}} with the YYYY-MM-DD date', () => {
+    const result = replaceSpecialVars({ text: 'Date only: {{current_date_ymd}}' });
+    expect(result).toBe('Date only: 2024-04-29');
+  });
+
   test('should replace {{current_datetime}} with the current datetime', () => {
     const result = replaceSpecialVars({ text: 'Now is {{current_datetime}}' });
     expect(result).toBe('Now is 2024-04-29 12:34:56 -04:00 (Monday)');
@@ -121,6 +126,7 @@ describe('replaceSpecialVars', () => {
     });
 
     // Verify the expected replacements
+    expect(result).toContain('2024-04-29'); // current_date_ymd
     expect(result).toContain('2024-04-29 (Monday)'); // current_date
     expect(result).toContain('2024-04-29 12:34:56 -04:00 (Monday)'); // current_datetime
     expect(result).toContain('2024-04-29T16:34:56.000Z'); // iso_datetime

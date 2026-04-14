@@ -24,10 +24,13 @@ export interface WeChatConversationMessage {
 }
 
 export interface WeChatPreset {
+  presetId?: string | null;
   endpoint?: string | null;
   endpointType?: string | null;
   model?: string | null;
   title?: string | null;
+  promptPrefix?: string | null;
+  system?: string | null;
 }
 
 export interface WeChatFallbackPreset extends WeChatPreset {

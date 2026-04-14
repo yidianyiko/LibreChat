@@ -88,4 +88,37 @@ describe('GET /api/config allowAccountDeletion', () => {
     expect(response.statusCode).toBe(200);
     expect(response.body.allowAccountDeletion).toBe(true);
   });
+
+  it('injects the canonical website prompt into the default openAI model spec payload', async () => {
+    mockGetAppConfig.mockResolvedValue({
+      ...baseAppConfig,
+      modelSpecs: {
+        prioritize: true,
+        list: [
+          {
+            name: 'gpt-4o-default',
+            label: 'GPT-4o Default',
+            default: true,
+            preset: {
+              endpoint: 'openAI',
+              model: 'gpt-4o',
+            },
+          },
+        ],
+      },
+    });
+
+    const response = await request(createApp()).get('/api/config');
+
+    expect(response.statusCode).toBe(200);
+    expect(response.body.modelSpecs.list[0].preset.promptPrefix).toContain(
+      'You are ChatGPT, a large language model trained by OpenAI, based on the GPT-4o architecture.',
+    );
+    expect(response.body.modelSpecs.list[0].preset.promptPrefix).toContain(
+      'Current date: {{current_date_ymd}}',
+    );
+    expect(response.body.modelSpecs.list[0].preset.system).toBe(
+      response.body.modelSpecs.list[0].preset.promptPrefix,
+    );
+  });
 });

@@ -4,8 +4,15 @@ const request = require('supertest');
 const { DEFAULT_PRESET_CONFIG } = require('../../../../config/default-preset');
 
 let capturedWeChatServiceDeps;
+let capturedWeChatHandlerDeps;
 
 const mockConversationCreate = jest.fn();
+const mockBuildOptions = jest.fn((req, endpoint, options, endpointType) => ({
+  req,
+  endpoint,
+  options,
+  endpointType,
+}));
 const mockPresetLean = jest.fn();
 const mockPresetSort = jest.fn(() => ({ lean: mockPresetLean }));
 const mockPresetFindOne = jest.fn(() => ({ sort: mockPresetSort }));
@@ -13,6 +20,10 @@ const mockPresetFindOne = jest.fn(() => ({ sort: mockPresetSort }));
 jest.mock('~/db/models', () => ({
   Conversation: { create: mockConversationCreate },
   Preset: { findOne: mockPresetFindOne },
+}));
+
+jest.mock('~/server/services/Endpoints/agents', () => ({
+  buildOptions: mockBuildOptions,
 }));
 
 const mockWeChatService = {
@@ -42,56 +53,70 @@ jest.mock('@librechat/api', () => ({
   WeChatBridgeClient: jest.fn(() => mockWeChatBridgeClient),
   WeChatMessageOrchestrator: jest.fn(() => mockWeChatOrchestrator),
   startResumableGeneration: jest.fn(),
-  createWeChatHandlers: jest.fn((deps) => ({
-    getStatus: async (req, res) => res.json(await deps.service.getStatus(req.user.id)),
-    startBind: async (req, res) => {
-      const result = await deps.bridgeClient.startBindSession({ userId: req.user.id });
-      res.status(201).json(result.data);
-    },
-    getBindStatus: async (req, res) => {
-      const result = await deps.bridgeClient.getBindSession(req.params.bindSessionId);
-      res.json(result.data);
-    },
-    unbind: async (req, res) => {
-      await deps.service.unbind(req.user.id);
-      res.status(204).send();
-    },
-    getActiveBindings: async (_req, res) => res.json({ bindings: [] }),
-    completeBinding: async (_req, res) => res.status(204).send(),
-    updateBindingHealth: async (_req, res) => res.status(204).send(),
-    markWelcomeMessageSent: async (_req, res) => res.status(204).send(),
-    listConversations: async (req, res) =>
-      res.json(await deps.service.listEligibleConversations(req.body.userId)),
-    createConversation: async (req, res) =>
-      res.status(201).json(await deps.service.createConversation(req.body.userId)),
-    switchConversation: async (req, res) => {
-      try {
-        const result = await deps.service.switchConversation(req.body.userId, {
-          snapshotId: req.body.snapshotId,
-          index: req.body.index,
-        });
-        res.json(result);
-      } catch (error) {
-        if (error.message === 'SNAPSHOT_REQUIRED') {
-          return res.status(409).json({ message: '请先执行 /list' });
-        }
+  buildWeChatFallbackPreset: jest.fn(() =>
+    require('../../../../config/default-preset').buildDefaultPresetConfig(),
+  ),
+  resolveWeChatRuntimePromptPrefix: jest.fn(
+    (conversation) =>
+      (
+        conversation.promptPrefix ??
+        conversation.system ??
+        require('../../../../config/default-preset').buildDefaultPresetConfig().promptPrefix
+      ).replace('{{current_date_ymd}}', new Date().toISOString().split('T')[0]),
+  ),
+  createWeChatHandlers: jest.fn((deps) => {
+    capturedWeChatHandlerDeps = deps;
+    return {
+      getStatus: async (req, res) => res.json(await deps.service.getStatus(req.user.id)),
+      startBind: async (req, res) => {
+        const result = await deps.bridgeClient.startBindSession({ userId: req.user.id });
+        res.status(201).json(result.data);
+      },
+      getBindStatus: async (req, res) => {
+        const result = await deps.bridgeClient.getBindSession(req.params.bindSessionId);
+        res.json(result.data);
+      },
+      unbind: async (req, res) => {
+        await deps.service.unbind(req.user.id);
+        res.status(204).send();
+      },
+      getActiveBindings: async (_req, res) => res.json({ bindings: [] }),
+      completeBinding: async (_req, res) => res.status(204).send(),
+      updateBindingHealth: async (_req, res) => res.status(204).send(),
+      markWelcomeMessageSent: async (_req, res) => res.status(204).send(),
+      listConversations: async (req, res) =>
+        res.json(await deps.service.listEligibleConversations(req.body.userId)),
+      createConversation: async (req, res) =>
+        res.status(201).json(await deps.service.createConversation(req.body.userId)),
+      switchConversation: async (req, res) => {
+        try {
+          const result = await deps.service.switchConversation(req.body.userId, {
+            snapshotId: req.body.snapshotId,
+            index: req.body.index,
+          });
+          res.json(result);
+        } catch (error) {
+          if (error.message === 'SNAPSHOT_REQUIRED') {
+            return res.status(409).json({ message: '请先执行 /list' });
+          }
 
-        throw error;
-      }
-    },
-    getCurrentConversation: async (req, res) =>
-      res.json(await deps.service.getCurrentConversation(req.query.userId ?? req.body.userId)),
-    sendMessage: async (req, res) =>
-      res.json(
-        await deps.orchestrator.sendMessage({
-          req,
-          text: req.body.text,
-          conversationId: req.body.conversationId,
-          parentMessageId: req.body.parentMessageId,
-          endpointOption: req.body.endpointOption,
-        }),
-      ),
-  })),
+          throw error;
+        }
+      },
+      getCurrentConversation: async (req, res) =>
+        res.json(await deps.service.getCurrentConversation(req.query.userId ?? req.body.userId)),
+      sendMessage: async (req, res) =>
+        res.json(
+          await deps.orchestrator.sendMessage({
+            req,
+            text: req.body.text,
+            conversationId: req.body.conversationId,
+            parentMessageId: req.body.parentMessageId,
+            endpointOption: req.body.endpointOption,
+          }),
+        ),
+    };
+  }),
   createRequireWeChatBridgeAuth: jest.fn((expectedToken) => (req, res, next) => {
     const auth = req.headers.authorization;
     if (!auth?.startsWith('Bearer ')) {
@@ -210,9 +235,53 @@ describe('/api/wechat routes', () => {
         endpoint: 'openAI',
         model: 'gpt-4o',
         title: DEFAULT_PRESET_CONFIG.title,
+        promptPrefix: DEFAULT_PRESET_CONFIG.promptPrefix,
         system: DEFAULT_PRESET_CONFIG.system,
       }),
     );
+  });
+
+  it('returns a canonical default fallback preset template when the route builds it', () => {
+    jest.useFakeTimers();
+    jest.setSystemTime(new Date('2026-04-13T00:00:00.000Z'));
+
+    try {
+      const fallbackPreset = capturedWeChatServiceDeps.getFallbackPreset();
+
+      expect(fallbackPreset.promptPrefix).toContain('Current date: {{current_date_ymd}}');
+      expect(fallbackPreset.system).toBe(fallbackPreset.promptPrefix);
+    } finally {
+      jest.useRealTimers();
+    }
+  });
+
+  it('maps system-only conversation instructions into promptPrefix for WeChat sends', async () => {
+    jest.useFakeTimers();
+    jest.setSystemTime(new Date('2026-04-13T00:00:00.000Z'));
+
+    try {
+      await capturedWeChatHandlerDeps.buildMessageEndpointOption(
+        {},
+        {
+          endpoint: 'openAI',
+          endpointType: 'openAI',
+          model: 'gpt-4o',
+          system: 'Current date: {{current_date_ymd}}',
+        },
+      );
+
+      expect(mockBuildOptions).toHaveBeenCalledWith(
+        {},
+        'openAI',
+        expect.objectContaining({
+          promptPrefix: 'Current date: 2026-04-13',
+          system: 'Current date: 2026-04-13',
+        }),
+        'openAI',
+      );
+    } finally {
+      jest.useRealTimers();
+    }
   });
 
   it('unsets ilinkUserId when unbind persistence omits it', async () => {

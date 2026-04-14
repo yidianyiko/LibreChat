@@ -1,6 +1,6 @@
 import { Constants } from 'librechat-data-provider';
 import { isEligibleWeChatConversation, selectLatestLeafHead } from '../branching';
-import { resolveWeChatPreset } from '../presets';
+import { resolveWeChatPreset, resolveWeChatRuntimePromptPrefix } from '../presets';
 import { WeChatService } from '../service';
 import type { WeChatServiceDependencies } from '../types';
 
@@ -28,8 +28,14 @@ function createDependencies(
 }
 
 describe('WeChat service helpers', () => {
+  beforeEach(() => {
+    jest.useFakeTimers();
+    jest.setSystemTime(new Date('2026-04-14T12:00:00.000Z'));
+  });
+
   afterEach(() => {
     jest.clearAllMocks();
+    jest.useRealTimers();
   });
 
   it('accepts only owner-owned openAI gpt-4o conversations that are not archived or expired', () => {
@@ -86,6 +92,20 @@ describe('WeChat service helpers', () => {
     expect(resolved.endpoint).toBe('openAI');
   });
 
+  it('fills the canonical promptPrefix and system fields when the fallback preset is selected', async () => {
+    const resolved = await resolveWeChatPreset({
+      getUserDefaultPreset: async () => ({ endpoint: 'anthropic', model: 'claude-sonnet-4' }),
+      fallbackPreset: { endpoint: 'openAI', model: 'gpt-4o', title: 'GPT-4o Default' },
+    });
+
+    expect(resolved.promptPrefix).toContain(
+      'You are ChatGPT, a large language model trained by OpenAI',
+    );
+    expect(resolved.promptPrefix).toContain('Personality: v2');
+    expect(resolved.promptPrefix).toContain('Current date: {{current_date_ymd}}');
+    expect(resolved.system).toBe(resolved.promptPrefix);
+  });
+
   it('keeps an openAI GPT-4o family preset when the user default preset uses a dated GPT-4o variant', async () => {
     const resolved = await resolveWeChatPreset({
       getUserDefaultPreset: async () => ({
@@ -98,6 +118,31 @@ describe('WeChat service helpers', () => {
 
     expect(resolved.model).toBe('gpt-4o-2024-11-20');
     expect(resolved.endpoint).toBe('openAI');
+  });
+
+  it('normalizes the built-in default preset to the canonical runtime prompt template', async () => {
+    const resolved = await resolveWeChatPreset({
+      getUserDefaultPreset: async () => ({
+        presetId: 'global-default-gpt4o-12345678',
+        endpoint: 'openAI',
+        endpointType: 'openAI',
+        model: 'gpt-4o',
+        promptPrefix: 'Current date: 2025-01-01',
+      }),
+      fallbackPreset: { endpoint: 'openAI', model: 'gpt-4o', title: 'GPT-4o Default' },
+    });
+
+    expect(resolved.promptPrefix).toContain('Current date: {{current_date_ymd}}');
+    expect(resolved.system).toBe(resolved.promptPrefix);
+  });
+
+  it('maps a stored system-only conversation to the runtime promptPrefix', () => {
+    expect(
+      resolveWeChatRuntimePromptPrefix({
+        system: 'Current date: {{current_date_ymd}}',
+        promptPrefix: null,
+      }),
+    ).toBe('Current date: 2026-04-14');
   });
 
   it('returns the no-parent sentinel when a conversation has no messages', () => {
