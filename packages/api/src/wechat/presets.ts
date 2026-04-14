@@ -34,6 +34,12 @@ function buildCanonicalWeChatFallbackPreset<TFallbackPreset extends WeChatFallba
   } as WeChatPresetWithRuntimePrompt<TFallbackPreset>;
 }
 
+export function buildWeChatFallbackPreset<
+  TFallbackPreset extends WeChatFallbackPreset = WeChatFallbackPreset,
+>(fallbackPreset: Partial<TFallbackPreset> = {}): WeChatPresetWithRuntimePrompt<TFallbackPreset> {
+  return buildCanonicalWeChatFallbackPreset(fallbackPreset);
+}
+
 function isBuiltInDefaultPreset(preset: WeChatPreset | null | undefined): boolean {
   return typeof preset?.presetId === 'string' && preset.presetId.startsWith(DEFAULT_PRESET_ID);
 }
@@ -77,5 +83,5 @@ export async function resolveWeChatPreset<
       : userPreset;
   }
 
-  return buildCanonicalWeChatFallbackPreset(params.fallbackPreset) as TFallbackPreset;
+  return buildWeChatFallbackPreset(params.fallbackPreset) as TFallbackPreset;
 }

@@ -1,6 +1,10 @@
 import { Constants } from 'librechat-data-provider';
 import { isEligibleWeChatConversation, selectLatestLeafHead } from '../branching';
-import { resolveWeChatPreset, resolveWeChatRuntimePromptPrefix } from '../presets';
+import {
+  buildWeChatFallbackPreset,
+  resolveWeChatPreset,
+  resolveWeChatRuntimePromptPrefix,
+} from '../presets';
 import { WeChatService } from '../service';
 import type { WeChatServiceDependencies } from '../types';
 
@@ -104,6 +108,18 @@ describe('WeChat service helpers', () => {
     expect(resolved.promptPrefix).toContain('Personality: v2');
     expect(resolved.promptPrefix).toContain('Current date: {{current_date_ymd}}');
     expect(resolved.system).toBe(resolved.promptPrefix);
+  });
+
+  it('exports a canonical WeChat fallback preset from the package root', () => {
+    const preset = buildWeChatFallbackPreset();
+
+    expect(preset.endpoint).toBe('openAI');
+    expect(preset.model).toBe('gpt-4o');
+    expect(preset.promptPrefix).toContain(
+      'You are ChatGPT, a large language model trained by OpenAI',
+    );
+    expect(preset.promptPrefix).toContain('Current date: {{current_date_ymd}}');
+    expect(preset.system).toBe(preset.promptPrefix);
   });
 
   it('keeps an openAI GPT-4o family preset when the user default preset uses a dated GPT-4o variant', async () => {
