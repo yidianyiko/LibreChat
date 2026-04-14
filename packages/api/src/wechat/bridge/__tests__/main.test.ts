@@ -204,6 +204,7 @@ describe('resolveBindSession', () => {
         body: JSON.stringify({ userId: 'user-new' }),
       }),
     );
+    expect(fetchImpl).toHaveBeenCalledTimes(2);
     expect(runtime.refreshBindings).toHaveBeenCalledTimes(1);
   });
 
