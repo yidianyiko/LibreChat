@@ -146,6 +146,7 @@ export const getConvoTitle = ({
   conversationId?: string | null;
 }): string | null | undefined => {
   if (
+    parentId != null &&
     parentId !== Constants.NO_PARENT &&
     (currentTitle?.toLowerCase().includes('new chat') ?? false)
   ) {
@@ -164,6 +165,9 @@ export const getConvoTitle = ({
   }
   return currentTitle;
 };
+
+export const isRootMessageId = (parentMessageId?: string | null) =>
+  parentMessageId == null || parentMessageId === Constants.NO_PARENT;
 
 export default function useEventHandlers({
   setMessages,
@@ -308,7 +312,7 @@ export default function useEventHandlers({
           return update;
         });
 
-        if (requestMessage.parentMessageId === Constants.NO_PARENT) {
+        if (isRootMessageId(requestMessage.parentMessageId)) {
           addConvoToAllQueries(queryClient, update);
         } else {
           updateConvoInAllQueries(queryClient, update.conversationId!, (_c) => update, true);
@@ -384,7 +388,7 @@ export default function useEventHandlers({
         });
 
         if (!isTemporary) {
-          if (parentMessageId === Constants.NO_PARENT) {
+          if (isRootMessageId(parentMessageId)) {
             addConvoToAllQueries(queryClient, update);
           } else {
             updateConvoInAllQueries(queryClient, update.conversationId!, (_c) => update, true);
@@ -554,6 +558,22 @@ export default function useEventHandlers({
             [QueryKeys.messages, conversation.conversationId],
             [...currentMessages],
           );
+        }
+
+        if (conversation.conversationId) {
+          if (isNewConvo) {
+            addConvoToAllQueries(queryClient, conversation as TConversation);
+          } else {
+            updateConvoInAllQueries(
+              queryClient,
+              conversation.conversationId,
+              (currentConversation) => ({
+                ...currentConversation,
+                ...(conversation as TConversation),
+              }),
+              true,
+            );
+          }
         }
 
         if (isNewConvo && submissionConvo.conversationId) {

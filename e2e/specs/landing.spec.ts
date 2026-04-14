@@ -1,42 +1,39 @@
 import { expect, test } from '@playwright/test';
 
 test.describe('Landing suite', () => {
-  test('Landing title', async ({ page }) => {
-    await page.goto('http://localhost:3080/', { timeout: 5000 });
-    const pageTitle = await page.textContent('#landing-title');
-    expect(pageTitle?.length).toBeGreaterThan(0);
+  test('Landing title', async ({ browser, baseURL }) => {
+    const context = await browser.newContext({
+      baseURL,
+      storageState: { cookies: [], origins: [] },
+    });
+    const page = await context.newPage();
+
+    await page.goto('/', { timeout: 10000, waitUntil: 'domcontentloaded' });
+    await expect(page.locator('#landing-title')).toBeVisible();
+    await expect(page.locator('#landing-title')).not.toHaveText('');
+
+    await context.close();
   });
 
-  test('Create Conversation', async ({ page }) => {
-    await page.goto('http://localhost:3080/', { timeout: 5000 });
+  test('Landing CTAs navigate to the current auth flows', async ({ browser, baseURL }) => {
+    const context = await browser.newContext({
+      baseURL,
+      storageState: { cookies: [], origins: [] },
+    });
+    const page = await context.newPage();
 
-    async function getItems() {
-      const navDiv = await page.waitForSelector('nav > div');
-      if (!navDiv) {
-        return [];
-      }
+    await page.goto('/', { timeout: 10000, waitUntil: 'domcontentloaded' });
 
-      const items = await navDiv.$$('a.group');
-      return items || [];
-    }
+    await expect(page.getByText('BUY EXPLORER')).toBeVisible();
+    await expect(page.locator('form')).toContainText('Send Message');
 
-    // Wait for the page to load and the SVG loader to disappear
-    await page.waitForSelector('nav > div');
-    await page.waitForSelector('nav > div > div > svg', { state: 'detached' });
+    await page.locator('button').filter({ hasText: 'Reconnect with 4o' }).click();
+    await expect(page).toHaveURL(/\/login$/);
 
-    const beforeAdding = (await getItems()).length;
+    await page.goto('/', { timeout: 10000, waitUntil: 'domcontentloaded' });
+    await page.locator('button').filter({ hasText: 'Bring Memories Home' }).click();
+    await expect(page).toHaveURL(/\/register$/);
 
-    const input = await page.locator('form').getByRole('textbox');
-    await input.click();
-    await input.fill('Hi!');
-
-    // Send the message
-    await page.locator('form').getByRole('button').nth(1).click();
-
-    // Wait for the message to be sent
-    await page.waitForTimeout(3500);
-    const afterAdding = (await getItems()).length;
-
-    expect(afterAdding).toBeGreaterThanOrEqual(beforeAdding);
+    await context.close();
   });
 });

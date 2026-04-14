@@ -4,6 +4,8 @@ const absolutePath = path.resolve(process.cwd(), 'api/server/index.js');
 import dotenv from 'dotenv';
 dotenv.config();
 
+const webServerCommand = `npm run frontend && node ${absolutePath}`;
+
 export default defineConfig({
   globalSetup: require.resolve('./setup/global-setup'),
   globalTeardown: require.resolve('./setup/global-teardown'),
@@ -53,12 +55,12 @@ export default defineConfig({
 
   /* Run your local dev server before starting the tests */
   webServer: {
-    command: `node ${absolutePath}`,
+    command: webServerCommand,
     port: 3080,
     stdout: 'pipe',
     ignoreHTTPSErrors: true,
     // url: 'http://localhost:3080',
-    timeout: 30_000,
+    timeout: 420_000,
     reuseExistingServer: true,
     env: {
       ...process.env,

@@ -7,7 +7,7 @@ import { Constants, buildTree } from 'librechat-data-provider';
 import type { TMessage } from 'librechat-data-provider';
 import type { ChatFormValues } from '~/common';
 import { ChatContext, AddedChatContext, useFileMapContext, ChatFormProvider } from '~/Providers';
-import { useAddedResponse, useResumeOnLoad, useAdaptiveSSE, useChatHelpers } from '~/hooks';
+import { useAddedResponse, useResumeOnLoad, useAdaptiveSSE, useChatHelpers, useLocalize } from '~/hooks';
 import ConversationStarters from './Input/ConversationStarters';
 import { useGetMessagesByConvoId } from '~/data-provider';
 import MessagesView from './Messages/MessagesView';
@@ -31,6 +31,7 @@ function LoadingSpinner() {
 
 function ChatView({ index = 0 }: { index?: number }) {
   const { conversationId } = useParams();
+  const localize = useLocalize();
   const rootSubmission = useRecoilValue(store.submissionByIndex(index));
   const centerFormOnLanding = useRecoilValue(store.centerFormOnLanding);
 
@@ -82,6 +83,7 @@ function ChatView({ index = 0 }: { index?: number }) {
         <AddedChatContext.Provider value={addedChatHelpers}>
           <Presentation>
             <div className="relative flex h-full w-full flex-col">
+              <h1 className="sr-only">{localize('com_ui_chat')}</h1>
               {!isLoading && <Header />}
               <>
                 <div

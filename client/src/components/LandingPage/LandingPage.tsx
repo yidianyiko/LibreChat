@@ -688,15 +688,15 @@ const ChatPreview: React.FC<ChatPreviewProps> = ({ userPrompt, message, lang, pr
       <div className="bg-white rounded-[1.5rem] border border-gray-200 shadow-[0_20px_40px_rgba(0,0,0,0.03)] overflow-hidden">
         <div className="px-5 py-3 border-b border-gray-100 flex justify-between items-center bg-[#fdfcf9]">
           <span className="text-xs font-black text-gray-800 tracking-tight text-left">GPT-4o</span>
-          <div className="text-[10px] text-[#10a37f] font-bold uppercase tracking-widest flex items-center">
-            <div className="w-1 h-1 rounded-full bg-[#10a37f] animate-pulse mr-2" />
+          <div className="text-[10px] text-[#0b6b55] font-bold uppercase tracking-widest flex items-center">
+            <div className="w-1 h-1 rounded-full bg-[#0b6b55] animate-pulse mr-2" />
             {protectedLabel}
           </div>
         </div>
         <div className="px-8 py-10 space-y-6">
-          <div className="flex space-x-4 opacity-20 text-left">
-            <div className="w-7 h-7 rounded bg-gray-200 flex-shrink-0 flex items-center justify-center">
-              <User size={14} className="text-gray-500" />
+          <div className="flex space-x-4 text-left">
+            <div className="w-7 h-7 rounded bg-gray-100 flex-shrink-0 flex items-center justify-center">
+              <User size={14} className="text-gray-400" />
             </div>
             <p className="text-gray-900 text-sm font-bold pt-1 text-left">{userPrompt}</p>
           </div>
@@ -863,13 +863,13 @@ const LandingPage: React.FC = () => {
         <div className="max-w-7xl mx-auto px-6 md:px-10 flex justify-between items-center text-left">
           <BrandLogo />
           <div className="hidden md:flex items-center space-x-8 md:space-x-10">
-            <button type="button" onClick={scrollToTop} className={`text-[10px] uppercase tracking-[0.2em] font-bold ${activeNav === 'home' ? 'text-black underline underline-offset-4' : 'text-gray-400'} hover:text-black`}>
+            <button type="button" onClick={scrollToTop} className={`text-[10px] uppercase tracking-[0.2em] font-bold ${activeNav === 'home' ? 'text-black underline underline-offset-4' : 'text-gray-600'} hover:text-black`}>
               {t.nav.home}
             </button>
-            <a href="#pricing" onClick={() => setActiveNav('pricing')} className={`text-[10px] uppercase tracking-[0.2em] font-bold ${activeNav === 'pricing' ? 'text-black underline underline-offset-4' : 'text-gray-400'} hover:text-black`}>
+            <a href="#pricing" onClick={() => setActiveNav('pricing')} className={`text-[10px] uppercase tracking-[0.2em] font-bold ${activeNav === 'pricing' ? 'text-black underline underline-offset-4' : 'text-gray-600'} hover:text-black`}>
               {t.nav.pricing}
             </a>
-            <Link to="/mission" onClick={() => setActiveNav('mission')} className={`text-[10px] uppercase tracking-[0.2em] font-bold ${activeNav === 'mission' ? 'text-black underline underline-offset-4' : 'text-gray-400'} hover:text-black`}>
+            <Link to="/mission" onClick={() => setActiveNav('mission')} className={`text-[10px] uppercase tracking-[0.2em] font-bold ${activeNav === 'mission' ? 'text-black underline underline-offset-4' : 'text-gray-600'} hover:text-black`}>
               {t.nav.mission}
             </Link>
             <LanguageSwitcher currentLang={lang} onLangChange={setLang} />
@@ -885,7 +885,7 @@ const LandingPage: React.FC = () => {
         <section className="relative pt-40 md:pt-48 pb-20 px-6 md:px-10 text-center">
           <div className="max-w-5xl mx-auto relative text-center">
             <div className="inline-block mb-8">
-              <span className="px-5 py-2 rounded-full bg-white border border-gray-100 text-[10px] font-black uppercase tracking-[0.3em] text-[#10a37f] shadow-sm">{t.hero.tag}</span>
+              <span className="px-5 py-2 rounded-full bg-white border border-gray-100 text-[10px] font-black uppercase tracking-[0.3em] text-[#0b6b55] shadow-sm">{t.hero.tag}</span>
             </div>
             <h1 id="landing-title" className="text-5xl md:text-7xl lg:text-[88px] font-black tracking-tight mb-8 leading-[1.0] text-gray-900" style={{ letterSpacing: '-0.04em' }}>
               {t.hero.title}
@@ -897,7 +897,7 @@ const LandingPage: React.FC = () => {
             <ChatPreview userPrompt={t.hero.userPrompt} message={t.hero.aiMessage} lang={lang} protectedLabel={t.hero.protected} />
 
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mt-8 pb-24 md:pb-32">
-              <button type="button" onClick={() => navigate('/login')} className="w-full sm:w-auto px-8 md:px-10 py-4 md:py-5 bg-[#10a37f] text-white rounded-2xl font-bold text-base md:text-lg hover:shadow-2xl active:scale-95 transition-all">
+              <button type="button" onClick={() => navigate('/login')} className="w-full sm:w-auto px-8 md:px-10 py-4 md:py-5 bg-[#0b6b55] text-white rounded-2xl font-bold text-base md:text-lg hover:shadow-2xl active:scale-95 transition-all">
                 {t.hero.chatBtn}
               </button>
               <button type="button" onClick={() => navigate('/register')} className="w-full sm:w-auto px-8 md:px-10 py-4 md:py-5 bg-white text-gray-800 border-2 border-gray-100 rounded-2xl font-bold text-base md:text-lg hover:border-black transition-all flex items-center justify-center space-x-3 text-left">
@@ -912,7 +912,7 @@ const LandingPage: React.FC = () => {
         <section className="py-24 md:py-32 px-6 md:px-10 bg-white border-y border-gray-50 overflow-hidden text-left">
           <div className="max-w-6xl mx-auto flex flex-col md:flex-row items-center gap-16 md:gap-24 text-left">
             <div className="flex-1 text-left relative">
-              <span className="text-[10px] font-black uppercase tracking-[0.3em] text-[#10a37f] mb-6 block font-bold text-left">{t.migration.label}</span>
+              <span className="text-[10px] font-black uppercase tracking-[0.3em] text-[#0b6b55] mb-6 block font-bold text-left">{t.migration.label}</span>
               <h2 className="text-4xl md:text-5xl lg:text-6xl font-black mb-8 leading-[1.1] text-left text-gray-900" style={{ letterSpacing: '-0.04em' }}>{t.migration.title}</h2>
               <p className="text-gray-500 text-lg md:text-xl font-medium leading-relaxed mb-10 text-left">{t.migration.subtitle}</p>
               <div className="space-y-6">
@@ -942,15 +942,15 @@ const LandingPage: React.FC = () => {
                   </div>
                   <div className="bg-white p-6 rounded-3xl shadow-lg border border-[#10a37f]/10 text-left">
                     <div className="flex items-center justify-between mb-4 text-left">
-                      <span className="text-[10px] font-black uppercase text-gray-400">{t.migration.status}</span>
-                      <span className="text-[10px] font-black text-[#10a37f]">98.2%</span>
+                      <span className="text-[10px] font-black uppercase text-gray-600">{t.migration.status}</span>
+                      <span className="text-[10px] font-black text-[#0b6b55]">98.2%</span>
                     </div>
                     <div className="h-1.5 w-full bg-gray-100 rounded-full overflow-hidden text-left">
                       <div className="h-full w-[98%] bg-[#10a37f] rounded-full transition-all duration-1000" />
                     </div>
                     <div className="mt-4 flex items-center space-x-2 text-left">
                       <div className="w-2 h-2 bg-[#10a37f] rounded-full animate-ping" />
-                      <p className="text-[11px] font-medium text-gray-400 text-left">{t.migration.restoring}</p>
+                      <p className="text-[11px] font-medium text-gray-600 text-left">{t.migration.restoring}</p>
                     </div>
                   </div>
                 </div>
@@ -975,13 +975,16 @@ const LandingPage: React.FC = () => {
                 <div key={idx} className={`p-8 md:p-10 rounded-[3rem] border transition-all duration-500 flex flex-col shadow-sm ${plan.recommended ? 'bg-black text-white border-black shadow-2xl scale-105 z-10' : 'bg-white border-gray-100 text-gray-900'}`}>
                   <div className="mb-8 md:mb-10 text-left">
                     <div className="flex items-center space-x-2 mb-4">
-                      <span className={`text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-full ${plan.recommended ? 'bg-[#10a37f] text-white' : 'bg-gray-100 text-gray-500'}`}>{plan.tier.name}</span>
-                      {plan.recommended && <span className="text-[9px] font-black uppercase tracking-widest text-[#10a37f]">{t.pricing.recommended}</span>}
+                      <span className={`text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-full ${plan.recommended ? 'bg-[#0b6b55] text-white' : 'bg-gray-100 text-gray-600'}`}>{plan.tier.name}</span>
+                      {plan.recommended && <span className="text-[9px] font-black uppercase tracking-widest text-[#9be6d1]">{t.pricing.recommended}</span>}
                     </div>
-                    <div className="mt-6 flex items-baseline"><span className="text-5xl font-black tracking-tight">{plan.tier.price}</span><span className="text-sm ml-2 font-medium opacity-50">one-time</span></div>
-                    <p className="text-xs mt-4 font-bold text-gray-400">{plan.tier.sub}</p>
+                    <div className="mt-6 flex items-baseline">
+                      <span className="text-5xl font-black tracking-tight">{plan.tier.price}</span>
+                      <span className={`text-sm ml-2 font-medium ${plan.recommended ? 'text-gray-300' : 'text-gray-600'}`}>one-time</span>
+                    </div>
+                    <p className={`text-xs mt-4 font-bold ${plan.recommended ? 'text-gray-300' : 'text-gray-600'}`}>{plan.tier.sub}</p>
                   </div>
-                  <button type="button" onClick={() => navigate('/register')} className={`w-full py-4 mb-8 md:mb-10 rounded-2xl font-bold text-sm uppercase tracking-widest transition-all active:scale-95 ${plan.recommended ? 'bg-[#10a37f] text-white hover:bg-[#0d8a6a]' : 'bg-black text-white hover:bg-gray-800'}`}>
+                  <button type="button" onClick={() => navigate('/register')} className={`w-full py-4 mb-8 md:mb-10 rounded-2xl font-bold text-sm uppercase tracking-widest transition-all active:scale-95 ${plan.recommended ? 'bg-[#0b6b55] text-white hover:bg-[#084c3d]' : 'bg-black text-white hover:bg-gray-800'}`}>
                     {plan.tier.cta}
                   </button>
                   <ul className="space-y-5 flex-grow text-left">
@@ -1002,21 +1005,21 @@ const LandingPage: React.FC = () => {
         <section id="contact" className="pt-24 pb-32 px-6 md:px-10">
           <div className="max-w-2xl mx-auto text-center md:text-left">
             <h2 className="text-4xl md:text-5xl font-black tracking-tight mb-4 text-gray-900">{t.contact.title}</h2>
-            <p className="text-gray-400 font-medium tracking-tight italic mb-16 text-center md:text-left">{t.contact.desc}</p>
+            <p className="text-gray-600 font-medium tracking-tight italic mb-16 text-center md:text-left">{t.contact.desc}</p>
             <div className="bg-white rounded-[2.5rem] border border-gray-100 p-8 md:p-10 shadow-sm text-left">
               <form className="space-y-6 text-left" onSubmit={(e) => e.preventDefault()}>
                 <div className="grid md:grid-cols-2 gap-6">
                   <div className="text-left">
-                    <label htmlFor="contact-name" className="text-[10px] font-black uppercase text-gray-400 mb-2 block text-left">{t.contact.name}</label>
+                    <label htmlFor="contact-name" className="text-[10px] font-black uppercase text-gray-600 mb-2 block text-left">{t.contact.name}</label>
                     <input id="contact-name" type="text" className="w-full bg-gray-50 border border-gray-100 rounded-xl px-4 py-3 focus:outline-none focus:border-[#10a37f] text-left" placeholder="Alex Chen" />
                   </div>
                   <div className="text-left">
-                    <label htmlFor="contact-email" className="text-[10px] font-black uppercase text-gray-400 mb-2 block text-left">{t.contact.email}</label>
+                    <label htmlFor="contact-email" className="text-[10px] font-black uppercase text-gray-600 mb-2 block text-left">{t.contact.email}</label>
                     <input id="contact-email" type="email" className="w-full bg-gray-50 border border-gray-100 rounded-xl px-4 py-3 focus:outline-none focus:border-[#10a37f] text-left" placeholder="alex@example.com" />
                   </div>
                 </div>
                 <div className="text-left">
-                  <label htmlFor="contact-message" className="text-[10px] font-black uppercase text-gray-400 mb-2 block text-left">{t.contact.message}</label>
+                  <label htmlFor="contact-message" className="text-[10px] font-black uppercase text-gray-600 mb-2 block text-left">{t.contact.message}</label>
                   <textarea id="contact-message" className="w-full bg-gray-50 border border-gray-100 rounded-xl px-4 py-3 focus:outline-none focus:border-[#10a37f] min-h-[150px] text-left" placeholder="How can we assist you?" />
                 </div>
                 <button type="submit" className="w-full py-4 bg-black text-white rounded-xl font-bold uppercase text-xs tracking-widest hover:bg-[#10a37f] transition-all flex items-center justify-center space-x-2 shadow-lg">
@@ -1025,8 +1028,8 @@ const LandingPage: React.FC = () => {
                 </button>
               </form>
             </div>
-            <p className="mt-12 text-center md:text-left text-gray-400 text-sm font-medium">
-              {t.contact.official}: <a href="mailto:support@librechat.ai" className="text-[#10a37f] hover:underline font-bold">support@librechat.ai</a>
+            <p className="mt-12 text-center md:text-left text-gray-600 text-sm font-medium">
+              {t.contact.official}: <a href="mailto:support@librechat.ai" className="text-[#0b6b55] hover:underline font-bold">support@librechat.ai</a>
             </p>
           </div>
         </section>
@@ -1051,25 +1054,25 @@ const LandingPage: React.FC = () => {
           </div>
           <div className="grid grid-cols-2 md:grid-cols-3 gap-8 md:gap-12 text-[13px] font-semibold text-left">
             <div className="flex flex-col space-y-4">
-              <Link to="/" className="text-gray-400 hover:text-black transition-colors text-left w-fit font-bold">{t.footer.links.home}</Link>
-              <a href="#pricing" className="text-gray-400 hover:text-black transition-colors text-left w-fit font-bold">{t.footer.links.pricing}</a>
-              <a href="#pricing" className="text-gray-400 hover:text-black transition-colors text-left w-fit font-bold border-b border-black/10">FAQ</a>
+              <Link to="/" className="text-gray-700 hover:text-black transition-colors text-left w-fit font-bold">{t.footer.links.home}</Link>
+              <a href="#pricing" className="text-gray-700 hover:text-black transition-colors text-left w-fit font-bold">{t.footer.links.pricing}</a>
+              <a href="#pricing" className="text-gray-700 hover:text-black transition-colors text-left w-fit font-bold border-b border-black/10">FAQ</a>
             </div>
             <div className="flex flex-col space-y-4 text-left">
-              <Link to="/mission" className="text-gray-400 hover:text-black transition-colors text-left w-fit font-bold">{t.footer.links.mission}</Link>
-              <a href="#contact" className="text-gray-400 hover:text-black transition-colors text-left w-fit font-bold">{t.footer.links.contact}</a>
-              <button type="button" onClick={() => setShowCookies(true)} className="text-gray-400 hover:text-black transition-colors text-left w-fit font-bold">{t.footer.links.cookieSettings}</button>
+              <Link to="/mission" className="text-gray-700 hover:text-black transition-colors text-left w-fit font-bold">{t.footer.links.mission}</Link>
+              <a href="#contact" className="text-gray-700 hover:text-black transition-colors text-left w-fit font-bold">{t.footer.links.contact}</a>
+              <button type="button" onClick={() => setShowCookies(true)} className="text-gray-700 hover:text-black transition-colors text-left w-fit font-bold">{t.footer.links.cookieSettings}</button>
             </div>
             <div className="flex flex-col space-y-4 text-left col-span-2 md:col-span-1">
-              <a href="#" className="text-gray-400 hover:text-black transition-colors text-left w-fit font-bold underline underline-offset-4">Privacy Policy</a>
-              <a href="#" className="text-gray-400 hover:text-black transition-colors text-left w-fit font-bold">Terms of Service</a>
-              <button type="button" onClick={() => navigate('/login')} className="text-gray-400 hover:text-black transition-colors text-left w-fit font-bold">{t.footer.links.accountPortal}</button>
+              <a href="#" className="text-gray-700 hover:text-black transition-colors text-left w-fit font-bold underline underline-offset-4">Privacy Policy</a>
+              <a href="#" className="text-gray-700 hover:text-black transition-colors text-left w-fit font-bold">Terms of Service</a>
+              <button type="button" onClick={() => navigate('/login')} className="text-gray-700 hover:text-black transition-colors text-left w-fit font-bold">{t.footer.links.accountPortal}</button>
             </div>
           </div>
-          <div className="mt-16 md:mt-20 pt-8 md:pt-10 border-t border-gray-100 flex flex-col md:flex-row justify-between items-center gap-6 text-[10px] font-black uppercase tracking-[0.3em] md:tracking-[0.5em] text-gray-300">
+          <div className="mt-16 md:mt-20 pt-8 md:pt-10 border-t border-gray-100 flex flex-col md:flex-row justify-between items-center gap-6 text-[10px] font-black uppercase tracking-[0.3em] md:tracking-[0.5em] text-gray-600">
             <div>{t.footer.copyright}</div>
-            <div className="flex items-center space-x-3 opacity-50">
-              <div className="w-1.5 h-1.5 rounded-full bg-[#10a37f]" />
+            <div className="flex items-center space-x-3 text-gray-500">
+              <div className="w-1.5 h-1.5 rounded-full bg-[#0b6b55]" />
               <span>{t.footer.dataGuarantee}</span>
             </div>
           </div>

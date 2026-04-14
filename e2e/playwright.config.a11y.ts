@@ -1,20 +1,57 @@
-import { PlaywrightTestConfig } from '@playwright/test';
-import mainConfig from './playwright.config';
 import path from 'path';
-const absolutePath = path.resolve(process.cwd(), 'api/server/index.js');
+import { devices } from '@playwright/test';
+import type { PlaywrightTestConfig } from '@playwright/test';
+import mainConfig from './playwright.config';
 import dotenv from 'dotenv';
 dotenv.config();
+
+const authFile = path.resolve(process.cwd(), 'e2e/storageState.json');
+const mainWebServer =
+  mainConfig.webServer != null && !Array.isArray(mainConfig.webServer) ? mainConfig.webServer : {};
+const { port: inheritedPort, env: mainWebServerEnv, ...mainWebServerConfig } = mainWebServer;
+void inheritedPort;
 
 const config: PlaywrightTestConfig = {
   ...mainConfig,
   retries: 0,
-  globalSetup: require.resolve('./setup/global-setup.local'),
+  globalSetup: undefined,
   globalTeardown: require.resolve('./setup/global-teardown.local'),
+  use: {
+    ...mainConfig.use,
+    baseURL: 'http://127.0.0.1:3180',
+    storageState: authFile,
+  },
+  projects: [
+    {
+      name: 'setup',
+      testMatch: /auth\.setup\.ts/,
+      use: {
+        ...devices['Desktop Chrome'],
+        storageState: { cookies: [], origins: [] },
+      },
+    },
+    {
+      name: 'chromium',
+      testMatch: /a11y/,
+      dependencies: ['setup'],
+      use: {
+        ...devices['Desktop Chrome'],
+        storageState: authFile,
+      },
+    },
+  ],
   webServer: {
-    ...mainConfig.webServer,
-    command: `node ${absolutePath}`,
+    ...mainWebServerConfig,
+    url: 'http://127.0.0.1:3180/health',
+    reuseExistingServer: false,
     env: {
+      ...mainWebServerEnv,
       ...process.env,
+      PORT: '3180',
+      DOMAIN_CLIENT: 'http://127.0.0.1:3180',
+      DOMAIN_SERVER: 'http://127.0.0.1:3180',
+      CORS_ALLOWED_ORIGINS: 'http://127.0.0.1:3180',
+      SSE_ALLOWED_ORIGINS: 'http://127.0.0.1:3180',
       SEARCH: 'false',
       NODE_ENV: 'CI',
       EMAIL_HOST: '',
@@ -50,9 +87,8 @@ const config: PlaywrightTestConfig = {
       MESSAGE_USER_WINDOW: '1',
     },
   },
-  fullyParallel: false, // if you are on Windows, keep this as `false`. On a Mac, `true` could make tests faster (maybe on some Windows too, just try)
-  // workers: 1,
-  testMatch: /a11y/,
+  fullyParallel: false,
+  workers: 1,
   // retries: 0,
 };
 
