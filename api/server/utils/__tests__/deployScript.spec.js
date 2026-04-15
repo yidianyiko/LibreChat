@@ -35,4 +35,13 @@ describe('deploy.sh remote override generation', () => {
     expect(deployScriptSource).toContain('cleanup_remote_images "${IMAGE_TAG}"');
     expect(deployScriptSource).toContain('cleanup_local_images "${IMAGE_TAG}"');
   });
+
+  it('bootstraps the MongoDB replica set and waits for a writable primary in both local and remote deploy flows', () => {
+    expect(deployScriptSource).toContain('bootstrap_local_mongo_replica_set()');
+    expect(deployScriptSource).toContain('bootstrap_remote_mongo_replica_set()');
+    expect(deployScriptSource).toContain("rs.initiate({ _id: 'rs0', members: [{ _id: 0, host: 'mongodb:27017' }] })");
+    expect(deployScriptSource).toContain('db.hello().isWritablePrimary');
+    expect(deployScriptSource).toContain('bootstrap_remote_mongo_replica_set "${PROJECT_DIR}"');
+    expect(deployScriptSource).toContain('bootstrap_local_mongo_replica_set');
+  });
 });

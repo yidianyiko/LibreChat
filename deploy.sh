@@ -52,6 +52,11 @@ CHANGED_FILES=""
 LOCAL_TEST_PROXY=""
 LOCAL_PROXY_BRIDGE_PID=""
 LOCAL_PROXY_BRIDGE_PORT="${LOCAL_PROXY_BRIDGE_PORT:-17897}"
+MONGO_CONTAINER_NAME="chat-mongodb"
+MONGO_REPLICA_SET_NAME="rs0"
+MONGO_REPLICA_SET_MEMBER_HOST="mongodb:27017"
+MONGO_BOOTSTRAP_TIMEOUT_SECONDS="${MONGO_BOOTSTRAP_TIMEOUT_SECONDS:-90}"
+LOCAL_TEST_READY_TIMEOUT_SECONDS="${LOCAL_TEST_READY_TIMEOUT_SECONDS:-90}"
 
 # 日志函数
 log_info() {
@@ -435,6 +440,183 @@ stop_local_test_services() {
     log_info "停止 prod-test 容器..."
     docker compose -f docker-compose.dev.yml --profile prod-test down >/dev/null 2>&1 || true
     stop_local_proxy_bridge
+}
+
+wait_for_local_mongo_container() {
+    local deadline=$((SECONDS + MONGO_BOOTSTRAP_TIMEOUT_SECONDS))
+    local status=""
+
+    while [ "${SECONDS}" -lt "${deadline}" ]; do
+        status=$(docker inspect -f '{{.State.Status}}' "${MONGO_CONTAINER_NAME}" 2>/dev/null || true)
+        if [ "${status}" = "running" ]; then
+            return 0
+        fi
+        sleep 2
+    done
+
+    log_error "MongoDB 容器未在 ${MONGO_BOOTSTRAP_TIMEOUT_SECONDS} 秒内进入 running 状态"
+    docker logs --tail=80 "${MONGO_CONTAINER_NAME}" 2>/dev/null || true
+    return 1
+}
+
+wait_for_local_mongo_shell() {
+    local deadline=$((SECONDS + MONGO_BOOTSTRAP_TIMEOUT_SECONDS))
+
+    while [ "${SECONDS}" -lt "${deadline}" ]; do
+        if docker exec "${MONGO_CONTAINER_NAME}" mongosh --quiet --eval "db.adminCommand({ ping: 1 }).ok" >/dev/null 2>&1; then
+            return 0
+        fi
+        sleep 2
+    done
+
+    log_error "MongoDB 容器未在 ${MONGO_BOOTSTRAP_TIMEOUT_SECONDS} 秒内接受 mongosh 连接"
+    docker logs --tail=80 "${MONGO_CONTAINER_NAME}" 2>/dev/null || true
+    return 1
+}
+
+bootstrap_local_mongo_replica_set() {
+    log_info "检查本地 MongoDB 副本集状态..."
+    wait_for_local_mongo_container
+    wait_for_local_mongo_shell
+
+    local replica_state_output
+    replica_state_output=$(docker exec "${MONGO_CONTAINER_NAME}" mongosh --quiet --eval "try { rs.status(); print('INITIALIZED'); } catch (error) { if (error.codeName === 'NotYetInitialized') { print('NOT_INITIALIZED'); quit(0); } print(error.message); quit(1); }")
+    local replica_state
+    replica_state=$(printf '%s\n' "${replica_state_output}" | tail -n 1 | tr -d '\r')
+
+    if [ "${replica_state}" = "NOT_INITIALIZED" ]; then
+        log_info "初始化本地 MongoDB 副本集 ${MONGO_REPLICA_SET_NAME}..."
+        docker exec "${MONGO_CONTAINER_NAME}" mongosh --quiet --eval "rs.initiate({ _id: 'rs0', members: [{ _id: 0, host: 'mongodb:27017' }] })" >/dev/null
+    else
+        log_info "本地 MongoDB 副本集已存在，跳过初始化"
+    fi
+
+    local deadline=$((SECONDS + MONGO_BOOTSTRAP_TIMEOUT_SECONDS))
+    local primary_state_output=""
+    local primary_state=""
+
+    while [ "${SECONDS}" -lt "${deadline}" ]; do
+        if primary_state_output=$(docker exec "${MONGO_CONTAINER_NAME}" mongosh --quiet --eval "db.hello().isWritablePrimary ? 'PRIMARY_READY' : 'PRIMARY_NOT_READY'" 2>/dev/null); then
+            primary_state=$(printf '%s\n' "${primary_state_output}" | tail -n 1 | tr -d '\r')
+            if [ "${primary_state}" = "PRIMARY_READY" ]; then
+                log_success "本地 MongoDB primary 已就绪"
+                return 0
+            fi
+        fi
+        sleep 2
+    done
+
+    log_error "本地 MongoDB 副本集在 ${MONGO_BOOTSTRAP_TIMEOUT_SECONDS} 秒内未选出 primary"
+    docker exec "${MONGO_CONTAINER_NAME}" mongosh --quiet --eval "try { printjson(rs.status()) } catch (error) { printjson(error) }" 2>/dev/null || true
+    docker logs --tail=80 "${MONGO_CONTAINER_NAME}" 2>/dev/null || true
+    return 1
+}
+
+wait_for_local_test_ready() {
+    if ! check_command curl; then
+        log_warning "未检测到 curl，跳过本地 HTTP 就绪检查"
+        return 0
+    fi
+
+    local deadline=$((SECONDS + LOCAL_TEST_READY_TIMEOUT_SECONDS))
+
+    while [ "${SECONDS}" -lt "${deadline}" ]; do
+        if curl -fsS http://localhost:3080 >/dev/null 2>&1; then
+            return 0
+        fi
+        sleep 2
+    done
+
+    log_error "本地生产测试入口在 ${LOCAL_TEST_READY_TIMEOUT_SECONDS} 秒内未就绪"
+    docker compose -f docker-compose.dev.yml --profile prod-test logs --tail=40 api-prod-test wechat-bridge-prod-test 2>/dev/null || true
+    return 1
+}
+
+bootstrap_remote_mongo_replica_set() {
+    local project_dir="${1:?project_dir is required}"
+
+    log_info "检查远端 MongoDB 副本集状态..."
+
+    ssh "${SERVER_HOST}" bash -s -- "${project_dir}" "${MONGO_CONTAINER_NAME}" "${MONGO_BOOTSTRAP_TIMEOUT_SECONDS}" << 'EOF'
+        set -e
+        PROJECT_DIR=$1
+        MONGO_CONTAINER_NAME=$2
+        MONGO_BOOTSTRAP_TIMEOUT_SECONDS=$3
+
+        cd "${PROJECT_DIR}"
+
+        wait_for_remote_mongo_container() {
+            local deadline=$((SECONDS + MONGO_BOOTSTRAP_TIMEOUT_SECONDS))
+            local status=""
+
+            while [ "${SECONDS}" -lt "${deadline}" ]; do
+                status=$(sudo docker inspect -f '{{.State.Status}}' "${MONGO_CONTAINER_NAME}" 2>/dev/null || true)
+                if [ "${status}" = "running" ]; then
+                    return 0
+                fi
+                sleep 2
+            done
+
+            echo "错误: MongoDB 容器未在 ${MONGO_BOOTSTRAP_TIMEOUT_SECONDS} 秒内进入 running 状态" >&2
+            sudo docker logs --tail=80 "${MONGO_CONTAINER_NAME}" 2>/dev/null || true
+            return 1
+        }
+
+        wait_for_remote_mongo_shell() {
+            local deadline=$((SECONDS + MONGO_BOOTSTRAP_TIMEOUT_SECONDS))
+
+            while [ "${SECONDS}" -lt "${deadline}" ]; do
+                if sudo docker exec "${MONGO_CONTAINER_NAME}" mongosh --quiet --eval "db.adminCommand({ ping: 1 }).ok" >/dev/null 2>&1; then
+                    return 0
+                fi
+                sleep 2
+            done
+
+            echo "错误: MongoDB 容器未在 ${MONGO_BOOTSTRAP_TIMEOUT_SECONDS} 秒内接受 mongosh 连接" >&2
+            sudo docker logs --tail=80 "${MONGO_CONTAINER_NAME}" 2>/dev/null || true
+            return 1
+        }
+
+        wait_for_remote_mongo_container
+        wait_for_remote_mongo_shell
+
+        replica_state_output=$(sudo docker exec "${MONGO_CONTAINER_NAME}" mongosh --quiet --eval "try { rs.status(); print('INITIALIZED'); } catch (error) { if (error.codeName === 'NotYetInitialized') { print('NOT_INITIALIZED'); quit(0); } print(error.message); quit(1); }")
+        replica_state=$(printf '%s\n' "${replica_state_output}" | tail -n 1 | tr -d '\r')
+
+        if [ "${replica_state}" = "NOT_INITIALIZED" ]; then
+            echo "初始化远端 MongoDB 副本集 rs0..."
+            sudo docker exec "${MONGO_CONTAINER_NAME}" mongosh --quiet --eval "rs.initiate({ _id: 'rs0', members: [{ _id: 0, host: 'mongodb:27017' }] })" >/dev/null
+        else
+            echo "远端 MongoDB 副本集已存在，跳过初始化"
+        fi
+
+        deadline=$((SECONDS + MONGO_BOOTSTRAP_TIMEOUT_SECONDS))
+        primary_state_output=""
+        primary_state=""
+
+        while [ "${SECONDS}" -lt "${deadline}" ]; do
+            if primary_state_output=$(sudo docker exec "${MONGO_CONTAINER_NAME}" mongosh --quiet --eval "db.hello().isWritablePrimary ? 'PRIMARY_READY' : 'PRIMARY_NOT_READY'" 2>/dev/null); then
+                primary_state=$(printf '%s\n' "${primary_state_output}" | tail -n 1 | tr -d '\r')
+                if [ "${primary_state}" = "PRIMARY_READY" ]; then
+                    echo "远端 MongoDB primary 已就绪"
+                    exit 0
+                fi
+            fi
+            sleep 2
+        done
+
+        echo "错误: 远端 MongoDB 副本集在 ${MONGO_BOOTSTRAP_TIMEOUT_SECONDS} 秒内未选出 primary" >&2
+        sudo docker exec "${MONGO_CONTAINER_NAME}" mongosh --quiet --eval "try { printjson(rs.status()) } catch (error) { printjson(error) }" 2>/dev/null || true
+        sudo docker logs --tail=80 "${MONGO_CONTAINER_NAME}" 2>/dev/null || true
+        exit 1
+EOF
+
+    if [ $? -ne 0 ]; then
+        log_error "远端 MongoDB 副本集初始化失败"
+        exit 1
+    fi
+
+    log_success "远端 MongoDB 副本集已就绪"
 }
 
 # 陷阱处理
@@ -876,6 +1058,22 @@ deploy_service() {
         PROJECT_DIR=$1
         cd "${PROJECT_DIR}"
 
+        echo "启动 MongoDB / Meilisearch 基础服务..."
+        if [ -f ".deploy/override.yml" ]; then
+            sudo docker-compose -f docker-compose.yml -f .deploy/override.yml up -d mongodb meilisearch
+        else
+            echo "未找到 .deploy/override.yml，使用默认 docker-compose.yml"
+            sudo docker-compose -f docker-compose.yml up -d mongodb meilisearch
+        fi
+EOF
+
+    bootstrap_remote_mongo_replica_set "${PROJECT_DIR}"
+
+    ssh "${SERVER_HOST}" bash -s -- "${PROJECT_DIR}" << 'EOF'
+        set -e
+        PROJECT_DIR=$1
+        cd "${PROJECT_DIR}"
+
         echo "使用 docker-compose 重启 api / wechat-bridge 服务..."
         if [ -f ".deploy/override.yml" ]; then
             sudo docker-compose -f docker-compose.yml -f .deploy/override.yml up -d api wechat-bridge
@@ -995,13 +1193,18 @@ local_test() {
     log_info "清理遗留 prod-test 容器..."
     docker compose -f docker-compose.dev.yml --profile prod-test down 2>/dev/null || true
 
+    log_info "先启动 MongoDB / Meilisearch 基础服务..."
+    docker compose -f docker-compose.dev.yml up -d mongodb meilisearch
+
+    bootstrap_local_mongo_replica_set
+
     log_info "后台启动 prod-test 生产容器（端口 3080，包含 WeChat Bridge）..."
     LOCAL_TEST_PROXY="${LOCAL_TEST_PROXY}" docker compose -f docker-compose.dev.yml --profile prod-test up -d
 
     trap 'stop_local_test_services; exit 0' EXIT INT TERM
 
     log_info "等待后端就绪..."
-    sleep 5
+    wait_for_local_test_ready
 
     log_success "本地生产测试环境已启动"
     echo "访问地址: http://localhost:3080"
