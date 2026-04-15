@@ -3,6 +3,25 @@ import { useLocalize } from '~/hooks';
 import { useWeChatBindingFlow } from './useWeChatBindingFlow';
 import WeChatBindingDialog from './WeChatBindingDialog';
 
+function WeChatIcon() {
+  return (
+    <svg
+      aria-hidden="true"
+      className="icon-md flex-shrink-0 text-[#07C160]"
+      fill="currentColor"
+      focusable="false"
+      viewBox="0 0 24 24"
+    >
+      <path d="M9.23 4C5.24 4 2 6.76 2 10.17c0 1.95 1.04 3.69 2.66 4.83l-.82 3.12 3.28-1.65c.69.16 1.4.24 2.11.24 3.99 0 7.23-2.76 7.23-6.17S13.22 4 9.23 4Z" />
+      <path d="M15.88 9.11c-3.38 0-6.12 2.34-6.12 5.23 0 1.53.77 2.94 2.1 3.93l-.53 2.73 2.83-1.41c.57.11 1.14.16 1.72.16 3.38 0 6.12-2.34 6.12-5.23s-2.74-5.41-6.12-5.41Z" />
+      <circle cx="7.16" cy="9.69" r="0.82" fill="white" />
+      <circle cx="11.18" cy="9.69" r="0.82" fill="white" />
+      <circle cx="13.83" cy="14.28" r="0.74" fill="white" />
+      <circle cx="17.42" cy="14.28" r="0.74" fill="white" />
+    </svg>
+  );
+}
+
 function getWeChatStatusText(
   status: 'unbound' | 'healthy' | 'reauth_required' | undefined,
   localize: ReturnType<typeof useLocalize>,
@@ -45,7 +64,8 @@ export default function WeChatQuickAction() {
   return (
     <>
       <Button aria-label={localize('com_nav_wechat_binding')} onClick={openDialog}>
-        {localize('com_nav_wechat_binding')}
+        <WeChatIcon />
+        <span>{localize('com_nav_wechat_binding')}</span>
       </Button>
       <WeChatBindingDialog
         open={isDialogOpen}

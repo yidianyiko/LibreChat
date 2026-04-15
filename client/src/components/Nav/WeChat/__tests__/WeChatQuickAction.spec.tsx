@@ -139,6 +139,14 @@ describe('WeChatQuickAction', () => {
     );
   });
 
+  it('renders a decorative WeChat icon in the quick action button', () => {
+    render(<WeChatQuickAction />);
+
+    const wechatButton = screen.getByRole('button', { name: 'WeChat' });
+
+    expect(wechatButton.querySelector('svg[aria-hidden="true"]')).not.toBeNull();
+  });
+
   it('waits for WeChat status resolution before auto-starting bind flow', async () => {
     const statusState: {
       data:
