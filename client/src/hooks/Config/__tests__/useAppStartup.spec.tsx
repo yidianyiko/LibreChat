@@ -89,7 +89,7 @@ describe('useAppStartup — MCP permission gating', () => {
     expect(mockUseMCPToolsQuery).toHaveBeenCalledWith({ enabled: true });
   });
 
-  it('suppresses tools query when permission granted but user prop is undefined', () => {
+  it('suppresses servers and tools queries when permission granted but user prop is undefined', () => {
     mockUseHasAccess.mockReturnValue(true);
     mockUseMCPServersQuery.mockReturnValue({
       data: { 'test-server': { url: 'http://test' } },
@@ -98,7 +98,7 @@ describe('useAppStartup — MCP permission gating', () => {
 
     renderHook(() => useAppStartup({ startupConfig: undefined, user: undefined }), { wrapper });
 
-    expect(mockUseMCPServersQuery).toHaveBeenCalledWith({ enabled: true });
+    expect(mockUseMCPServersQuery).toHaveBeenCalledWith({ enabled: false });
     expect(mockUseMCPToolsQuery).toHaveBeenCalledWith({ enabled: false });
   });
 
