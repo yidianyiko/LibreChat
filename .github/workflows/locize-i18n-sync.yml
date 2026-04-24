@@ -1,10 +1,7 @@
 name: Sync Locize Translations & Create Translation PR
 
 on:
-  push:
-    branches: [main]
-  repository_dispatch:
-    types: [locize/versionPublished]
+  workflow_dispatch:
 
 jobs:
   sync-translations:
@@ -22,17 +19,10 @@ jobs:
       - name: Install locize CLI
         run: npm install -g locize-cli
 
-      # Sync translations (Push missing keys & remove deleted ones)
       - name: Sync Locize with Repository
-        if: ${{ github.event_name == 'push' }}
         run: |
           cd client/src/locales
           locize sync --api-key ${{ secrets.LOCIZE_API_KEY }} --project-id ${{ secrets.LOCIZE_PROJECT_ID }} --language en
-
-      # When triggered by repository_dispatch, skip sync step.
-      - name: Skip sync step on non-push events
-        if: ${{ github.event_name != 'push' }}
-        run: echo "Skipping sync as the event is not a push."
 
   create-pull-request:
     name: Create Translation PR on Version Published
@@ -51,7 +41,7 @@ jobs:
         uses: locize/download@v2
         with:
           project-id: ${{ secrets.LOCIZE_PROJECT_ID }}
-          path: "client/src/locales"
+          path: 'client/src/locales'
 
       # 3. Create a Pull Request using built-in functionality.
       - name: Create Pull Request
@@ -59,14 +49,14 @@ jobs:
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           sign-commits: true
-          commit-message: "🌍 i18n: Update translation.json with latest translations"
+          commit-message: '🌍 i18n: Update translation.json with latest translations'
           base: main
           branch: i18n/locize-translation-update
           reviewers: danny-avila
-          title: "🌍 i18n: Update translation.json with latest translations"
+          title: '🌍 i18n: Update translation.json with latest translations'
           body: |
             **Description**:
             - 🎯 **Objective**: Update `translation.json` with the latest translations from locize.
             - 🔍 **Details**: This PR is automatically generated upon receiving a versionPublished event with version "latest". It reflects the newest translations provided by locize.
             - ✅ **Status**: Ready for review.
-          labels: "🌍 i18n"
+          labels: '🌍 i18n'

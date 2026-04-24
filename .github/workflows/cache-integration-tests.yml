@@ -1,19 +1,7 @@
 name: Cache Integration Tests
 
 on:
-  pull_request:
-    branches:
-      - main
-      - dev
-      - dev-staging
-      - release/*
-    paths:
-      - 'packages/api/src/cache/**'
-      - 'packages/api/src/cluster/**'
-      - 'packages/api/src/mcp/**'
-      - 'packages/api/src/stream/**'
-      - 'redis-config/**'
-      - '.github/workflows/cache-integration-tests.yml'
+  workflow_dispatch:
 
 jobs:
   cache_integration_tests:

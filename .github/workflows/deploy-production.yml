@@ -1,15 +1,7 @@
 name: Production Deployment
 
 on:
-  push:
-    branches:
-      - main
-    paths:
-      - 'api/**'
-      - 'client/**'
-      - 'packages/**'
-      - 'Dockerfile.multi'
-  workflow_dispatch:  # Allow manual trigger
+  workflow_dispatch: # Allow manual trigger
 
 env:
   REGISTRY: ghcr.io

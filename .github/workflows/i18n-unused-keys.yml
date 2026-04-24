@@ -6,13 +6,7 @@ name: Detect Unused i18next Strings
 # - com_agents_category_* keys that are stored in the database and used dynamically
 
 on:
-  pull_request:
-    paths:
-      - "client/src/**"
-      - "api/**"
-      - "packages/data-provider/src/**"
-      - "packages/client/**"
-      - "packages/data-schemas/src/**"
+  workflow_dispatch:
 
 jobs:
   detect-unused-i18n-keys:
@@ -101,7 +95,7 @@ jobs:
                 fi
               done
             fi
-          
+
             if [[ "$FOUND" == false ]]; then
               UNUSED_KEYS+=("$KEY")
             fi

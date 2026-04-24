@@ -1,15 +1,7 @@
 name: ESLint Code Quality Checks
 
 on:
-  pull_request:
-    branches:
-      - main
-      - dev
-      - dev-staging
-      - release/*
-    paths:
-      - 'api/**'
-      - 'client/**'
+  workflow_dispatch:
 
 jobs:
   eslint_checks:

@@ -1,7 +1,18 @@
 // file deepcode ignore HardcodedNonCryptoSecret: No hardcoded secrets
+import { useState } from 'react';
 import { ViolationTypes, ErrorTypes, alternateName } from 'librechat-data-provider';
+import {
+  Button,
+  Dialog,
+  DialogTitle,
+  DialogFooter,
+  DialogHeader,
+  DialogContent,
+  DialogDescription,
+} from '@librechat/client';
 import type { LocalizeFunction } from '~/common';
 import { formatJSON, extractJson, isJson } from '~/utils/json';
+import { useNavigateToRecharge } from '~/hooks/Nav';
 import { useLocalize } from '~/hooks';
 import CodeBlock from './CodeBlock';
 
@@ -35,6 +46,72 @@ type TExpiredKey = {
 type TGenericError = {
   info: string;
 };
+
+function TokenBalanceError({
+  json,
+  localize,
+}: {
+  json: TTokenBalance;
+  localize: LocalizeFunction;
+}) {
+  const [open, setOpen] = useState(true);
+  const navigateToRecharge = useNavigateToRecharge();
+  const { balance, tokenCost, promptTokens, generations } = json;
+  const message = `Insufficient Funds! Balance: ${balance}. Prompt tokens: ${promptTokens}. Cost: ${tokenCost}.`;
+  const actionLabel = localize('com_error_token_balance_action');
+  const handleAddCredits = () => {
+    setOpen(false);
+    navigateToRecharge();
+  };
+
+  return (
+    <>
+      <span>{message}</span>
+      <Button
+        type="button"
+        onClick={handleAddCredits}
+        aria-label={actionLabel}
+        className="ml-2 h-8 px-3"
+      >
+        {actionLabel}
+      </Button>
+      {generations && (
+        <>
+          <br />
+          <br />
+        </>
+      )}
+      {generations && (
+        <CodeBlock
+          lang="Generations"
+          error={true}
+          codeChildren={formatJSON(JSON.stringify(generations))}
+        />
+      )}
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogContent className="w-11/12 max-w-md">
+          <DialogHeader>
+            <DialogTitle>{localize('com_error_token_balance_title')}</DialogTitle>
+            <DialogDescription>{localize('com_error_token_balance_description')}</DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button type="button" onClick={() => setOpen(false)} className="px-3">
+              {localize('com_ui_cancel')}
+            </Button>
+            <Button
+              type="button"
+              onClick={handleAddCredits}
+              aria-label={actionLabel}
+              className="px-3"
+            >
+              {actionLabel}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
+  );
+}
 
 const errorMessages = {
   [ErrorTypes.MODERATION]: 'com_error_moderation',
@@ -100,28 +177,9 @@ const errorMessages = {
       windowInMinutes > 1 ? `${windowInMinutes} minutes` : 'minute'
     }.`;
   },
-  token_balance: (json: TTokenBalance) => {
-    const { balance, tokenCost, promptTokens, generations } = json;
-    const message = `Insufficient Funds! Balance: ${balance}. Prompt tokens: ${promptTokens}. Cost: ${tokenCost}.`;
-    return (
-      <>
-        {message}
-        {generations && (
-          <>
-            <br />
-            <br />
-          </>
-        )}
-        {generations && (
-          <CodeBlock
-            lang="Generations"
-            error={true}
-            codeChildren={formatJSON(JSON.stringify(generations))}
-          />
-        )}
-      </>
-    );
-  },
+  token_balance: (json: TTokenBalance, localize: LocalizeFunction) => (
+    <TokenBalanceError json={json} localize={localize} />
+  ),
 };
 
 const Error = ({ text }: { text: string }) => {

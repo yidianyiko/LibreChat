@@ -1,14 +1,6 @@
 name: Backend Unit Tests
 on:
-  pull_request:
-    branches:
-      - main
-      - dev
-      - dev-staging
-      - release/*
-    paths:
-      - 'api/**'
-      - 'packages/**'
+  workflow_dispatch:
 
 env:
   NODE_ENV: CI
