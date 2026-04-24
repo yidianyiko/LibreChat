@@ -141,6 +141,13 @@ Multi-line imports count total character length across all lines. Consolidate va
 - Database: MongoDB
 - Backend runs on `http://localhost:3080/`; frontend dev server on `http://localhost:3090/`
 
+## Deployment Workflow
+
+- For production deployment in this repo, use the local `./deploy.sh` script as the default entrypoint unless the user explicitly asks for a different path.
+- Do not substitute manual server-side `docker compose` commands, `npm run update:deployed`, or the `deploy-compose.yml` flow for a normal production deploy. Those paths are not the canonical deployment workflow for this project.
+- `./deploy.sh` is the source of truth because it builds the production image, syncs deployment config files, updates both `api` and `wechat-bridge`, records rollback metadata, and deploys the `docker-compose.yml` stack.
+- After running `./deploy.sh`, verify the deployed stack with fresh service status, logs, and an HTTP health check before claiming deployment success.
+
 ---
 
 ## Testing

@@ -782,11 +782,14 @@ init_remote_directory() {
 
         # 创建必要的子目录
         mkdir -p "${PROJECT_DIR}/data-node"
-        mkdir -p "${PROJECT_DIR}/meili_data_v1.12"
+        mkdir -p "${PROJECT_DIR}/meili_data_v1.35.1"
         mkdir -p "${PROJECT_DIR}/uploads"
         mkdir -p "${PROJECT_DIR}/logs"
         mkdir -p "${PROJECT_DIR}/images"
         mkdir -p "${PROJECT_DIR}/.deploy"
+        mkdir -p "${PROJECT_DIR}/client"
+
+        chown ${USER}:${USER} "${PROJECT_DIR}/meili_data_v1.35.1"
 
         echo "子目录创建完成"
 EOF
@@ -1111,6 +1114,7 @@ EOF
 
         verify_container LibreChat
         verify_container LibreChat-WeChat-Bridge
+        verify_container chat-meilisearch
 
         # 显示最近日志
         echo ""

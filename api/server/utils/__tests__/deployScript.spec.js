@@ -44,4 +44,14 @@ describe('deploy.sh remote override generation', () => {
     expect(deployScriptSource).toContain('bootstrap_remote_mongo_replica_set "${PROJECT_DIR}"');
     expect(deployScriptSource).toContain('bootstrap_local_mongo_replica_set');
   });
+
+  it('creates the current Meilisearch data directory during remote initialization', () => {
+    expect(deployScriptSource).toContain('mkdir -p "${PROJECT_DIR}/meili_data_v1.35.1"');
+    expect(deployScriptSource).toContain('chown ${USER}:${USER} "${PROJECT_DIR}/meili_data_v1.35.1"');
+    expect(deployScriptSource).toContain('mkdir -p "${PROJECT_DIR}/client"');
+  });
+
+  it('verifies Meilisearch is still running before declaring remote deploy success', () => {
+    expect(deployScriptSource).toContain('verify_container chat-meilisearch');
+  });
 });
