@@ -1,13 +1,13 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useGetStartupConfig, useGetUserBalance } from '~/data-provider';
-import { useNavigateToRecharge } from '~/hooks/Nav';
 import { useAuthContext, useLocalize } from '~/hooks';
 import TokenCreditsItem from './TokenCreditsItem';
 import AutoRefillSettings from './AutoRefillSettings';
 
 function Balance() {
   const localize = useLocalize();
-  const navigateToRecharge = useNavigateToRecharge();
+  const navigate = useNavigate();
   const { isAuthenticated } = useAuthContext();
   const { data: startupConfig } = useGetStartupConfig();
 
@@ -40,12 +40,11 @@ function Balance() {
       <div className="flex items-center justify-end">
         <button
           type="button"
-          onClick={navigateToRecharge}
-          aria-label={localize('com_nav_add_credits')}
+          onClick={() => navigate('/recharge')}
           className="rounded-md bg-green-600 px-3 py-1 text-xs font-medium text-white transition-colors hover:bg-green-700"
-          title={localize('com_nav_add_credits')}
+          title="Add Credits"
         >
-          {localize('com_nav_add_credits_cta')}
+          + Add Credits
         </button>
       </div>
 

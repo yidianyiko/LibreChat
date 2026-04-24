@@ -1,12 +1,10 @@
 import { memo, useRef, useState } from 'react';
 import * as Select from '@ariakit/react/select';
-import { BarChart3, CircleDollarSign, FileText, Import, LinkIcon, LogOut } from 'lucide-react';
+import { BarChart3, FileText, Import, LogOut } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { Avatar, DropdownMenuSeparator, GearIcon } from '@librechat/client';
-import type { Dispatch, SetStateAction } from 'react';
+import { Avatar, DropdownMenuSeparator, GearIcon, LinkIcon } from '@librechat/client';
 import { useGetStartupConfig, useGetUserBalance, SystemRoles } from '~/data-provider';
 import { MyFilesModal } from '~/components/Chat/Input/Files/MyFilesModal';
-import { useNavigateToRecharge } from '~/hooks/Nav';
 import { useLocalize } from '~/hooks';
 import { useAuthContext } from '~/hooks/AuthContext';
 import ImportConversationDialog from './SettingsTabs/Data/ImportConversationDialog';
@@ -14,14 +12,9 @@ import ImportConversations from './SettingsTabs/Data/ImportConversations';
 import Settings from './Settings';
 import WeChatQuickAction from './WeChat/WeChatQuickAction';
 
-type AccountSettingsProps = {
-  setNavVisible?: Dispatch<SetStateAction<boolean>>;
-};
-
-function AccountSettings({ setNavVisible }: AccountSettingsProps) {
+function AccountSettings() {
   const localize = useLocalize();
   const navigate = useNavigate();
-  const navigateToRecharge = useNavigateToRecharge({ setNavVisible });
   const { user, isAuthenticated, logout } = useAuthContext();
   const { data: startupConfig } = useGetStartupConfig();
   const balanceQuery = useGetUserBalance({
@@ -38,15 +31,6 @@ function AccountSettings({ setNavVisible }: AccountSettingsProps) {
 
   return (
     <div className="mt-1 flex flex-col gap-1">
-      <button
-        type="button"
-        onClick={navigateToRecharge}
-        aria-label={localize('com_nav_add_credits')}
-        className="account-settings-recharge flex w-full items-center gap-2 rounded-xl p-2 text-sm text-text-primary transition-all duration-200 ease-in-out hover:bg-surface-active-alt"
-      >
-        <CircleDollarSign className="icon-md flex-shrink-0" aria-hidden="true" />
-        <span className="truncate text-left">{localize('com_nav_add_credits_cta')}</span>
-      </button>
       <ImportConversations
         importFile={pendingImportFile}
         onImportFileHandled={() => setPendingImportFile(null)}
@@ -137,7 +121,7 @@ function AccountSettings({ setNavVisible }: AccountSettingsProps) {
             <div className="mt-3 flex items-center justify-center">
               <button
                 type="button"
-                onClick={navigateToRecharge}
+                onClick={() => navigate('/recharge')}
                 className="rounded-md bg-green-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-green-700"
                 title={localize('com_nav_add_credits')}
               >
