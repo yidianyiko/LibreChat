@@ -249,7 +249,7 @@ const Nav = memo(
             </div>
           </div>
           <Suspense fallback={<Skeleton className="mt-1 h-12 w-full rounded-xl" />}>
-            <AccountSettings />
+            <AccountSettings setNavVisible={setNavVisible} />
           </Suspense>
         </nav>
       </div>

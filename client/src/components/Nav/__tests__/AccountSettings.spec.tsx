@@ -3,12 +3,13 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import AccountSettings from '../AccountSettings';
 
+const mockNavigate = jest.fn();
 const mockInvalidateQueries = jest.fn();
 const mockRefetchQueries = jest.fn();
 const mockShowToast = jest.fn();
 
 jest.mock('react-router-dom', () => ({
-  useNavigate: () => jest.fn(),
+  useNavigate: () => mockNavigate,
 }));
 
 jest.mock('@tanstack/react-query', () => ({
@@ -133,6 +134,7 @@ describe('AccountSettings', () => {
     jest.clearAllMocks();
     mockInvalidateQueries.mockReset();
     mockRefetchQueries.mockReset();
+    mockNavigate.mockReset();
     mockShowToast.mockReset();
     mockUseAuthContext.mockReturnValue({
       user: { name: 'Test User', email: 'test@example.com' },
@@ -186,7 +188,31 @@ describe('AccountSettings', () => {
   it('always shows the recharge button in the account menu', () => {
     render(<AccountSettings />);
 
-    expect(screen.getByRole('button', { name: /add credits/i })).toBeInTheDocument();
+    expect(screen.getAllByRole('button', { name: /add credits/i }).length).toBeGreaterThan(0);
+  });
+
+  it('shows a direct recharge entry above migrate history', () => {
+    render(<AccountSettings />);
+
+    const addCreditsButton = screen.getAllByRole('button', { name: /add credits/i })[0];
+    const migrateButton = screen.getByRole('button', { name: 'com_ui_import_conversation_info' });
+
+    expect(addCreditsButton).toHaveClass('account-settings-recharge');
+    expect(
+      addCreditsButton.compareDocumentPosition(migrateButton) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+    expect(addCreditsButton.closest('.account-settings-popover')).toBeNull();
+  });
+
+  it('closes mobile nav and navigates when direct recharge entry is clicked', () => {
+    const setNavVisible = jest.fn();
+
+    render(<AccountSettings setNavVisible={setNavVisible} />);
+
+    fireEvent.click(screen.getAllByRole('button', { name: /add credits/i })[0]);
+
+    expect(setNavVisible).toHaveBeenCalledWith(false);
+    expect(mockNavigate).toHaveBeenCalledWith('/recharge');
   });
 
   it('shows token credits with approximate USD hint when balance is enabled', () => {

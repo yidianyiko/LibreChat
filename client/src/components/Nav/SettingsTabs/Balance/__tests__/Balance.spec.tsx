@@ -3,8 +3,10 @@ import { render, screen } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import Balance from '../Balance';
 
+const mockNavigate = jest.fn();
+
 jest.mock('react-router-dom', () => ({
-  useNavigate: () => jest.fn(),
+  useNavigate: () => mockNavigate,
 }));
 
 jest.mock('~/hooks', () => ({
@@ -35,8 +37,17 @@ const mockUseGetUserBalance = jest.requireMock('~/data-provider').useGetUserBala
 describe('Balance settings', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    mockNavigate.mockReset();
     mockUseAuthContext.mockReturnValue({ isAuthenticated: true });
-    mockUseLocalize.mockReturnValue((key: string) => key);
+    mockUseLocalize.mockReturnValue((key: string) => {
+      if (key === 'com_nav_add_credits') {
+        return 'Add Credits';
+      }
+      if (key === 'com_nav_add_credits_cta') {
+        return '+ Add Credits';
+      }
+      return key;
+    });
     mockUseGetStartupConfig.mockReturnValue({
       data: {
         balance: { enabled: false },
@@ -49,5 +60,13 @@ describe('Balance settings', () => {
     render(<Balance />);
 
     expect(screen.getByRole('button', { name: /add credits/i })).toBeInTheDocument();
+  });
+
+  it('navigates to recharge when add credits is clicked', () => {
+    render(<Balance />);
+
+    screen.getByRole('button', { name: /add credits/i }).click();
+
+    expect(mockNavigate).toHaveBeenCalledWith('/recharge');
   });
 });
