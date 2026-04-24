@@ -45,5 +45,8 @@ describe('StripeService.createCheckoutSession', () => {
     const callArg = stripeInstance.checkout.sessions.create.mock.calls[0][0];
     expect(callArg.mode).toBe('payment');
     expect(callArg.line_items[0].price_data.recurring).toBeUndefined();
+    expect(callArg.line_items[0].price_data.product_data.description).toBe(
+      'Best for occasional GPT-4o use or frequent day-to-day GPT-4o-mini use · One-time recharge of 5 million token credits · Estimated to cover about 150 GPT-4o conversations or about 5,000 GPT-4o-mini conversations',
+    );
   });
 });

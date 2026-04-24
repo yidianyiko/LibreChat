@@ -6,7 +6,7 @@ import type { PricingTier } from '~/types/recharge';
 /** Tier-specific feature key prefixes. */
 const getTierFeatureKeys = (tierId: string): string[] => {
   const keyBase = `com_recharge_tier_${tierId}_f`;
-  const counts = { explorer: 4, artisan: 5, elite: 5 };
+  const counts = { explorer: 3, artisan: 3, elite: 3 };
   const count = counts[tierId as keyof typeof counts] || 0;
   return Array.from({ length: count }, (_, i) => `${keyBase}${i + 1}`);
 };

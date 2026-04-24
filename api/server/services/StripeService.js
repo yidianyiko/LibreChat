@@ -8,21 +8,24 @@ const PRICING_TIERS = [
   {
     id: 'explorer',
     name: 'Explorer',
-    description: 'The Minimalist Alternative - 150 Premium GPT-4o msgs, 2,000 Base 4o-mini msgs',
+    description:
+      'Best for occasional GPT-4o use or frequent day-to-day GPT-4o-mini use · One-time recharge of 5 million token credits · Estimated to cover about 150 GPT-4o conversations or about 5,000 GPT-4o-mini conversations',
     price: 499, // $4.99 (单位：美分)
     credits: 5000000, // 500万积分
   },
   {
     id: 'artisan',
     name: 'Artisan',
-    description: 'The Creator\'s Safe Haven - 700 Premium GPT-4o msgs, 15,000 Base 4o-mini msgs',
+    description:
+      'Best for steady creative work, writing, analysis, and multi-turn collaboration · One-time recharge of 15 million token credits · Estimated to cover about 700 GPT-4o conversations or about 15,000 GPT-4o-mini conversations',
     price: 1499, // $14.99
     credits: 15000000, // 1500万积分
   },
   {
     id: 'elite',
     name: 'Elite',
-    description: 'The Power Productivity Hub - 2,000 Premium GPT-4o msgs, Unlimited Base 4o-mini msgs',
+    description:
+      'Best for heavy GPT-4o use or sustained high-frequency GPT-4o-mini use · One-time recharge of 35 million token credits · Estimated to cover about 2,000 GPT-4o conversations or about 35,000 GPT-4o-mini conversations',
     price: 3499, // $34.99
     credits: 35000000, // 3500万积分
   },

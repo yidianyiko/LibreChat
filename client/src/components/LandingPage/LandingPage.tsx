@@ -83,6 +83,7 @@ interface PricingTranslation {
   title: string;
   subtitle: string;
   recommended: string;
+  note: string;
   explorer: PricingTier;
   artisan: PricingTier;
   elite: PricingTier;
@@ -170,26 +171,39 @@ export const translations: Translations = {
       title: "Sustainable Preservation.",
       subtitle: "Professional hosting for context-critical intelligence.",
       recommended: "MOST POPULAR",
+      note: "The estimates above reflect typical usage patterns. Actual usage will vary based on prompt length, response length, context size, and whether you use files, tools, or long multi-turn chats.",
       explorer: {
         name: "EXPLORER PLAN",
         sub: "The Minimalist Alternative",
         price: "$4.99",
         cta: "BUY EXPLORER",
-        features: ["150 Premium GPT-4o msgs", "2,000 Base 4o-mini msgs", "Locked Model Guarantee", "8,192 Token Context"]
+        features: [
+          "Best for occasional GPT-4o use or frequent day-to-day GPT-4o-mini use",
+          "One-time recharge of 5 million token credits",
+          "Estimated to cover about 150 GPT-4o conversations or about 5,000 GPT-4o-mini conversations",
+        ]
       },
       artisan: {
         name: "ARTISAN PLAN",
         sub: "The Creator's Safe Haven",
         price: "$14.99",
         cta: "BUY ARTISAN",
-        features: ["700 Premium GPT-4o msgs", "15,000 Base 4o-mini msgs", "Snapshot Selection", "32,768 Token Context", "10 Project Folders"]
+        features: [
+          "Best for steady creative work, writing, analysis, and multi-turn collaboration",
+          "One-time recharge of 15 million token credits",
+          "Estimated to cover about 700 GPT-4o conversations or about 15,000 GPT-4o-mini conversations",
+        ]
       },
       elite: {
         name: "ELITE PLAN",
         sub: "The Power Productivity Hub",
         price: "$34.99",
         cta: "BUY ELITE",
-        features: ["2,000 Premium GPT-4o msgs", "Unlimited Base 4o-mini msgs", "Full 128,000 Context Access", "Tier-5 Priority Lane", "Unlimited Project Folders"]
+        features: [
+          "Best for heavy GPT-4o use or sustained high-frequency GPT-4o-mini use",
+          "One-time recharge of 35 million token credits",
+          "Estimated to cover about 2,000 GPT-4o conversations or about 35,000 GPT-4o-mini conversations",
+        ]
       }
     },
     missionPage: {
@@ -257,26 +271,39 @@ export const translations: Translations = {
       title: "可持续的保存。",
       subtitle: "为关键上下文智能提供专业托管。",
       recommended: "最受欢迎",
+      note: "以上次数仅为一般使用情况下的预估值。实际可用次数会因提问长度、回复长度、上下文规模，以及是否使用文件、工具或多轮长对话而变化。",
       explorer: {
         name: "探索者方案",
         sub: "极简主义的选择",
         price: "$4.99",
         cta: "购买探索者",
-        features: ["150 条 GPT-4o 高级消息", "2,000 条 4o-mini 基础消息", "锁定模型保障", "8,192 Token 上下文"]
+        features: [
+          "适合偶尔使用 GPT-4o，或日常高频使用 GPT-4o-mini",
+          "一次性充值 500 万 token 额度",
+          "一般使用情况下，约合 150 次 GPT-4o 对话，或约 5,000 次 GPT-4o-mini 对话",
+        ]
       },
       artisan: {
         name: "匠心方案",
         sub: "创作者的避风港",
         price: "$14.99",
         cta: "购买匠心",
-        features: ["700 条 GPT-4o 高级消息", "15,000 条 4o-mini 基础消息", "快照选择", "32,768 Token 上下文", "10 个项目文件夹"]
+        features: [
+          "适合稳定创作、写作、分析与多轮协作",
+          "一次性充值 1500 万 token 额度",
+          "一般使用情况下，约合 700 次 GPT-4o 对话，或约 15,000 次 GPT-4o-mini 对话",
+        ]
       },
       elite: {
         name: "精英方案",
         sub: "高效生产力中心",
         price: "$34.99",
         cta: "购买精英",
-        features: ["2,000 条 GPT-4o 高级消息", "无限 4o-mini 基础消息", "完整 128,000 上下文访问", "Tier-5 优先通道", "无限项目文件夹"]
+        features: [
+          "适合重度使用 GPT-4o，或长期高频使用 GPT-4o-mini",
+          "一次性充值 3500 万 token 额度",
+          "一般使用情况下，约合 2,000 次 GPT-4o 对话，或约 35,000 次 GPT-4o-mini 对话",
+        ]
       }
     },
     missionPage: {
@@ -344,26 +371,39 @@ export const translations: Translations = {
       title: "Preservación Sostenible.",
       subtitle: "Alojamiento profesional para inteligencia crítica de contexto.",
       recommended: "MÁS POPULAR",
+      note: "Las estimaciones anteriores reflejan patrones de uso típicos. El uso real variará según la longitud del prompt, la longitud de la respuesta, el tamaño del contexto y si usas archivos, herramientas o chats largos de varios turnos.",
       explorer: {
         name: "PLAN EXPLORER",
         sub: "La alternativa minimalista",
         price: "$4.99",
         cta: "COMPRAR EXPLORER",
-        features: ["150 mensajes Premium GPT-4o", "2,000 mensajes Base 4o-mini", "Garantía de modelo fijo", "Contexto de 8,192 tokens"]
+        features: [
+          "Ideal para uso ocasional de GPT-4o o para un uso diario y frecuente de GPT-4o-mini",
+          "Recarga única de 5 millones de créditos de tokens",
+          "Estimado para cubrir unas 150 conversaciones con GPT-4o o unas 5,000 conversaciones con GPT-4o-mini",
+        ]
       },
       artisan: {
         name: "PLAN ARTISAN",
         sub: "El refugio del creador",
         price: "$14.99",
         cta: "COMPRAR ARTISAN",
-        features: ["700 mensajes Premium GPT-4o", "15,000 mensajes Base 4o-mini", "Selección de snapshot", "Contexto de 32,768 tokens", "10 carpetas de proyecto"]
+        features: [
+          "Ideal para trabajo creativo constante, escritura, análisis y colaboración de varios turnos",
+          "Recarga única de 15 millones de créditos de tokens",
+          "Estimado para cubrir unas 700 conversaciones con GPT-4o o unas 15,000 conversaciones con GPT-4o-mini",
+        ]
       },
       elite: {
         name: "PLAN ELITE",
         sub: "Hub de productividad",
         price: "$34.99",
         cta: "COMPRAR ELITE",
-        features: ["2,000 mensajes Premium GPT-4o", "Mensajes Base 4o-mini ilimitados", "Acceso completo a 128,000 tokens", "Prioridad Tier-5", "Carpetas de proyecto ilimitadas"]
+        features: [
+          "Ideal para uso intensivo de GPT-4o o para uso sostenido y frecuente de GPT-4o-mini",
+          "Recarga única de 35 millones de créditos de tokens",
+          "Estimado para cubrir unas 2,000 conversaciones con GPT-4o o unas 35,000 conversaciones con GPT-4o-mini",
+        ]
       }
     },
     missionPage: {
@@ -431,26 +471,39 @@ export const translations: Translations = {
       title: "持続可能な保存。",
       subtitle: "コンテキスト重視のインテリジェンスのためのプロフェッショナルホスティング。",
       recommended: "最も人気",
+      note: "上記の回数は一般的な利用パターンに基づく目安です。実際の利用量は、プロンプトの長さ、回答の長さ、コンテキストの規模、ファイルやツールの利用、長い複数ターンの会話によって変動します。",
       explorer: {
         name: "エクスプローラープラン",
         sub: "ミニマリストの選択",
         price: "$4.99",
         cta: "エクスプローラーを購入",
-        features: ["150 プレミアム GPT-4o メッセージ", "2,000 ベース 4o-mini メッセージ", "モデル保証", "8,192 トークンコンテキスト"]
+        features: [
+          "GPT-4o をたまに使う方や、日常的に GPT-4o-mini を高頻度で使う方に",
+          "500万 token クレジットの1回限りチャージ",
+          "一般的な利用では、GPT-4o の会話約150回分、または GPT-4o-mini の会話約5,000回分",
+        ]
       },
       artisan: {
         name: "アーティザンプラン",
         sub: "クリエイターの安息地",
         price: "$14.99",
         cta: "アーティザンを購入",
-        features: ["700 プレミアム GPT-4o メッセージ", "15,000 ベース 4o-mini メッセージ", "スナップショット選択", "32,768 トークンコンテキスト", "10 プロジェクトフォルダー"]
+        features: [
+          "継続的な創作、執筆、分析、複数ターンの協業に最適",
+          "1500万 token クレジットの1回限りチャージ",
+          "一般的な利用では、GPT-4o の会話約700回分、または GPT-4o-mini の会話約15,000回分",
+        ]
       },
       elite: {
         name: "エリートプラン",
         sub: "パワー生産性ハブ",
         price: "$34.99",
         cta: "エリートを購入",
-        features: ["2,000 プレミアム GPT-4o メッセージ", "無制限 4o-mini メッセージ", "128,000 フルコンテキストアクセス", "Tier-5 優先レーン", "無制限プロジェクトフォルダー"]
+        features: [
+          "GPT-4o を重度に使う方や、GPT-4o-mini を長期的かつ高頻度で使う方に",
+          "3500万 token クレジットの1回限りチャージ",
+          "一般的な利用では、GPT-4o の会話約2,000回分、または GPT-4o-mini の会話約35,000回分",
+        ]
       }
     },
     missionPage: {
@@ -518,26 +571,39 @@ export const translations: Translations = {
       title: "지속 가능한 보존.",
       subtitle: "컨텍스트 중심 인텔리전스를 위한 전문 호스팅.",
       recommended: "가장 인기",
+      note: "위 추정치는 일반적인 사용 패턴을 기준으로 합니다. 실제 사용량은 프롬프트 길이, 답변 길이, 컨텍스트 크기, 파일이나 도구 사용 여부, 장문의 멀티턴 대화에 따라 달라질 수 있습니다.",
       explorer: {
         name: "익스플로러 플랜",
         sub: "미니멀리스트의 선택",
         price: "$4.99",
         cta: "익스플로러 구매",
-        features: ["150 프리미엄 GPT-4o 메시지", "2,000 기본 4o-mini 메시지", "모델 잠금 보장", "8,192 토큰 컨텍스트"]
+        features: [
+          "가끔 GPT-4o를 쓰거나, 일상적으로 GPT-4o-mini를 자주 쓰는 경우에 적합",
+          "500만 token 크레딧 1회 충전",
+          "일반적인 사용 기준으로 GPT-4o 대화 약 150회 또는 GPT-4o-mini 대화 약 5,000회 분량",
+        ]
       },
       artisan: {
         name: "아티잔 플랜",
         sub: "창작자의 안식처",
         price: "$14.99",
         cta: "아티잔 구매",
-        features: ["700 프리미엄 GPT-4o 메시지", "15,000 기본 4o-mini 메시지", "스냅샷 선택", "32,768 토큰 컨텍스트", "10 프로젝트 폴더"]
+        features: [
+          "지속적인 창작, 글쓰기, 분석, 멀티턴 협업에 적합",
+          "1500만 token 크레딧 1회 충전",
+          "일반적인 사용 기준으로 GPT-4o 대화 약 700회 또는 GPT-4o-mini 대화 약 15,000회 분량",
+        ]
       },
       elite: {
         name: "엘리트 플랜",
         sub: "파워 생산성 허브",
         price: "$34.99",
         cta: "엘리트 구매",
-        features: ["2,000 프리미엄 GPT-4o 메시지", "무제한 4o-mini 메시지", "128,000 전체 컨텍스트 액세스", "Tier-5 우선 레인", "무제한 프로젝트 폴더"]
+        features: [
+          "GPT-4o를 많이 쓰거나 GPT-4o-mini를 장기간 고빈도로 쓰는 경우에 적합",
+          "3500만 token 크레딧 1회 충전",
+          "일반적인 사용 기준으로 GPT-4o 대화 약 2,000회 또는 GPT-4o-mini 대화 약 35,000회 분량",
+        ]
       }
     },
     missionPage: {
@@ -998,6 +1064,9 @@ const LandingPage: React.FC = () => {
                 </div>
               ))}
             </div>
+            <p className="mx-auto mt-8 max-w-4xl text-sm font-medium text-gray-500">
+              {t.pricing.note}
+            </p>
           </div>
         </section>
 
