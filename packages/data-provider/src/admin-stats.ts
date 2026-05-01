@@ -61,6 +61,32 @@ export type TAdminStatsPayments = {
   byTier: TDistributionBucket[];
 };
 
+export type TAdminStatsFinancials = {
+  totalRechargeRevenue: number;
+  userUsageCharged: number;
+  unusedPaidBalance: number;
+  totalCreditsSold: number;
+  totalUsageCredits: number;
+  centsPerCredit: number;
+};
+
+export type TPricingPair = {
+  prompt: number;
+  completion: number;
+};
+
+export type TAdminStatsPricingRow = {
+  model: string;
+  usageCount: number;
+  cost: TPricingPair;
+  user: TPricingPair;
+  markup: TPricingPair;
+};
+
+export type TAdminStatsPricing = {
+  modelRates: TAdminStatsPricingRow[];
+};
+
 export type TAdminStatsResponse = {
   overview: TAdminStatsOverview;
   registration: {
@@ -74,4 +100,6 @@ export type TAdminStatsResponse = {
   };
   quality: TAdminStatsQuality;
   payments: TAdminStatsPayments;
+  financials: TAdminStatsFinancials;
+  pricing: TAdminStatsPricing;
 };

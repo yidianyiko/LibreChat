@@ -2,6 +2,7 @@ const express = require('express');
 const { requireAdmin } = require('@librechat/api');
 const { logger } = require('@librechat/data-schemas');
 const { User, Message, Conversation, Transaction } = require('~/db/models');
+const { defaultRate, getMultiplier, getValueKey, tokenValues } = require('~/models/tx');
 const { requireJwtAuth } = require('~/server/middleware');
 
 const router = express.Router();
@@ -45,6 +46,67 @@ const sumPaymentTotals = (items) => ({
   totalCredits: items[0]?.totalCredits ?? 0,
   totalAmountPaid: items[0]?.totalAmountPaid ?? 0,
 });
+
+const sumFinancialRechargeTotals = (items) => ({
+  totalCreditsSold: items[0]?.totalCreditsSold ?? 0,
+  totalRechargeRevenue: items[0]?.totalRechargeRevenue ?? 0,
+});
+
+const sumFinancialUsageTotals = (items) => ({
+  totalUsageCredits: items[0]?.totalUsageCredits ?? 0,
+});
+
+const getRateValue = (rates, type) => {
+  const rate = rates?.[type];
+  return typeof rate === 'number' ? rate : defaultRate;
+};
+
+const buildFinancials = ({ rechargeTotals, usageTotals }) => {
+  const { totalCreditsSold, totalRechargeRevenue } = sumFinancialRechargeTotals(rechargeTotals);
+  const { totalUsageCredits } = sumFinancialUsageTotals(usageTotals);
+  const centsPerCredit = divide(totalRechargeRevenue, totalCreditsSold);
+  const userUsageCharged = Math.min(
+    totalRechargeRevenue,
+    Math.round(totalUsageCredits * centsPerCredit),
+  );
+
+  return {
+    totalRechargeRevenue,
+    userUsageCharged,
+    unusedPaidBalance: Math.max(totalRechargeRevenue - userUsageCharged, 0),
+    totalCreditsSold,
+    totalUsageCredits,
+    centsPerCredit,
+  };
+};
+
+const buildPricingRows = (usageByModel) =>
+  usageByModel.map(({ _id, count }) => {
+    const model = getBucketKey(_id);
+    const valueKey = getValueKey(model);
+    const costRates = valueKey ? tokenValues[valueKey] : null;
+    const costPrompt = getRateValue(costRates, 'prompt');
+    const costCompletion = getRateValue(costRates, 'completion');
+    const userPrompt = getMultiplier({ model, tokenType: 'prompt' });
+    const userCompletion = getMultiplier({ model, tokenType: 'completion' });
+
+    return {
+      model,
+      usageCount: count,
+      cost: {
+        prompt: costPrompt,
+        completion: costCompletion,
+      },
+      user: {
+        prompt: userPrompt,
+        completion: userCompletion,
+      },
+      markup: {
+        prompt: divide(userPrompt, costPrompt),
+        completion: divide(userCompletion, costCompletion),
+      },
+    };
+  });
 
 /**
  * GET /api/admin/stats
@@ -92,6 +154,8 @@ router.get('/', requireJwtAuth, requireAdmin, async (req, res) => {
       paymentTotalsLast7Days,
       paymentTotalsLast30Days,
       paymentsByTier,
+      financialRechargeTotals,
+      financialUsageTotals,
     ] = await Promise.all([
       User.countDocuments(),
       User.countDocuments({ createdAt: { $gte: last1Day } }),
@@ -309,6 +373,35 @@ router.get('/', requireJwtAuth, requireAdmin, async (req, res) => {
           $sort: { count: -1, _id: 1 },
         },
       ]),
+      Transaction.aggregate([
+        {
+          $match: {
+            context: 'stripe_recharge',
+            tokenType: 'credits',
+          },
+        },
+        {
+          $group: {
+            _id: null,
+            totalCreditsSold: { $sum: '$rawAmount' },
+            totalRechargeRevenue: { $sum: '$metadata.amountPaid' },
+          },
+        },
+      ]),
+      Transaction.aggregate([
+        {
+          $match: {
+            tokenType: { $in: ['prompt', 'completion'] },
+            tokenValue: { $lt: 0 },
+          },
+        },
+        {
+          $group: {
+            _id: null,
+            totalUsageCredits: { $sum: { $multiply: ['$tokenValue', -1] } },
+          },
+        },
+      ]),
     ]);
 
     const dailyUsageMap = new Map();
@@ -352,6 +445,11 @@ router.get('/', requireJwtAuth, requireAdmin, async (req, res) => {
     );
     const paymentTotals7Days = sumPaymentTotals(paymentTotalsLast7Days);
     const paymentTotals30Days = sumPaymentTotals(paymentTotalsLast30Days);
+    const financials = buildFinancials({
+      rechargeTotals: financialRechargeTotals,
+      usageTotals: financialUsageTotals,
+    });
+    const pricingRows = buildPricingRows(usageByModel);
 
     res.json({
       overview: {
@@ -418,6 +516,10 @@ router.get('/', requireJwtAuth, requireAdmin, async (req, res) => {
           last30Days: paymentTotals30Days.totalAmountPaid,
         },
         byTier: toDistributionBuckets(paymentsByTier),
+      },
+      financials,
+      pricing: {
+        modelRates: pricingRows,
       },
     });
   } catch (error) {

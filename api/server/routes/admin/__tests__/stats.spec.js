@@ -27,6 +27,24 @@ jest.mock('~/server/middleware', () => ({
   requireJwtAuth: (_req, _res, next) => next(),
 }));
 
+jest.mock('~/models/tx', () => ({
+  defaultRate: 6,
+  getMultiplier: jest.fn(({ model, tokenType }) => {
+    if (model === 'gpt-4o') {
+      return tokenType === 'prompt' ? 5 : 20;
+    }
+    if (model === 'claude-sonnet-4') {
+      return tokenType === 'prompt' ? 6 : 30;
+    }
+    return 6;
+  }),
+  getValueKey: jest.fn((model) => model),
+  tokenValues: {
+    'gpt-4o': { prompt: 2.5, completion: 10 },
+    'claude-sonnet-4': { prompt: 3, completion: 15 },
+  },
+}));
+
 jest.mock('~/db/models', () => ({
   User: {
     countDocuments: jest.fn(),
@@ -329,6 +347,16 @@ describe('Admin Stats API Routes', () => {
           }
         }
 
+        if (groupStage?.totalCreditsSold != null && groupStage?.totalRechargeRevenue != null) {
+          return Promise.resolve([
+            { _id: null, totalCreditsSold: 180000000, totalRechargeRevenue: 17988 },
+          ]);
+        }
+
+        if (groupStage?.totalUsageCredits != null) {
+          return Promise.resolve([{ _id: null, totalUsageCredits: 90000000 }]);
+        }
+
         return Promise.resolve([]);
       });
 
@@ -440,6 +468,50 @@ describe('Admin Stats API Routes', () => {
           byTier: [
             { key: 'artisan', label: 'artisan', count: 7 },
             { key: 'explorer', label: 'explorer', count: 5 },
+          ],
+        },
+        financials: {
+          totalRechargeRevenue: 17988,
+          userUsageCharged: 8994,
+          unusedPaidBalance: 8994,
+          totalCreditsSold: 180000000,
+          totalUsageCredits: 90000000,
+          centsPerCredit: 0.00009993333333333333,
+        },
+        pricing: {
+          modelRates: [
+            {
+              model: 'gpt-4o',
+              usageCount: 55,
+              cost: {
+                prompt: 2.5,
+                completion: 10,
+              },
+              user: {
+                prompt: 5,
+                completion: 20,
+              },
+              markup: {
+                prompt: 2,
+                completion: 2,
+              },
+            },
+            {
+              model: 'claude-sonnet-4',
+              usageCount: 30,
+              cost: {
+                prompt: 3,
+                completion: 15,
+              },
+              user: {
+                prompt: 6,
+                completion: 30,
+              },
+              markup: {
+                prompt: 2,
+                completion: 2,
+              },
+            },
           ],
         },
       });
@@ -611,6 +683,17 @@ describe('Admin Stats API Routes', () => {
             last30Days: 0,
           },
           byTier: [],
+        },
+        financials: {
+          totalRechargeRevenue: 0,
+          userUsageCharged: 0,
+          unusedPaidBalance: 0,
+          totalCreditsSold: 0,
+          totalUsageCredits: 0,
+          centsPerCredit: 0,
+        },
+        pricing: {
+          modelRates: [],
         },
       });
     });
