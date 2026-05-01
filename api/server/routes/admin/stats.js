@@ -1,7 +1,8 @@
 const express = require('express');
 const { requireAdmin } = require('@librechat/api');
 const { logger } = require('@librechat/data-schemas');
-const { User, Message, Conversation } = require('~/db/models');
+const { User, Message, Conversation, Transaction } = require('~/db/models');
+const { defaultRate, getMultiplier, getValueKey, tokenValues } = require('~/models/tx');
 const { requireJwtAuth } = require('~/server/middleware');
 
 const router = express.Router();
@@ -32,6 +33,78 @@ const toDistributionBuckets = (items) =>
       key,
       label: key,
       count,
+    };
+  });
+
+const getStripeRechargeQuery = (startDate) => ({
+  createdAt: { $gte: startDate },
+  context: 'stripe_recharge',
+  tokenType: 'credits',
+});
+
+const sumPaymentTotals = (items) => ({
+  totalCredits: items[0]?.totalCredits ?? 0,
+  totalAmountPaid: items[0]?.totalAmountPaid ?? 0,
+});
+
+const sumFinancialRechargeTotals = (items) => ({
+  totalCreditsSold: items[0]?.totalCreditsSold ?? 0,
+  totalRechargeRevenue: items[0]?.totalRechargeRevenue ?? 0,
+});
+
+const sumFinancialUsageTotals = (items) => ({
+  totalUsageCredits: items[0]?.totalUsageCredits ?? 0,
+});
+
+const getRateValue = (rates, type) => {
+  const rate = rates?.[type];
+  return typeof rate === 'number' ? rate : defaultRate;
+};
+
+const buildFinancials = ({ rechargeTotals, usageTotals }) => {
+  const { totalCreditsSold, totalRechargeRevenue } = sumFinancialRechargeTotals(rechargeTotals);
+  const { totalUsageCredits } = sumFinancialUsageTotals(usageTotals);
+  const centsPerCredit = divide(totalRechargeRevenue, totalCreditsSold);
+  const userUsageCharged = Math.min(
+    totalRechargeRevenue,
+    Math.round(totalUsageCredits * centsPerCredit),
+  );
+
+  return {
+    totalRechargeRevenue,
+    userUsageCharged,
+    unusedPaidBalance: Math.max(totalRechargeRevenue - userUsageCharged, 0),
+    totalCreditsSold,
+    totalUsageCredits,
+    centsPerCredit,
+  };
+};
+
+const buildPricingRows = (usageByModel) =>
+  usageByModel.map(({ _id, count }) => {
+    const model = getBucketKey(_id);
+    const valueKey = getValueKey(model);
+    const costRates = valueKey ? tokenValues[valueKey] : null;
+    const costPrompt = getRateValue(costRates, 'prompt');
+    const costCompletion = getRateValue(costRates, 'completion');
+    const userPrompt = getMultiplier({ model, tokenType: 'prompt' });
+    const userCompletion = getMultiplier({ model, tokenType: 'completion' });
+
+    return {
+      model,
+      usageCount: count,
+      cost: {
+        prompt: costPrompt,
+        completion: costCompletion,
+      },
+      user: {
+        prompt: userPrompt,
+        completion: userCompletion,
+      },
+      markup: {
+        prompt: divide(userPrompt, costPrompt),
+        completion: divide(userCompletion, costCompletion),
+      },
     };
   });
 
@@ -73,6 +146,16 @@ router.get('/', requireJwtAuth, requireAdmin, async (req, res) => {
       dailyConversationCounts,
       usageByEndpoint,
       usageByModel,
+      paymentsLast1Day,
+      paymentsLast7Days,
+      paymentsLast30Days,
+      payingUsersLast7Days,
+      payingUsersLast30Days,
+      paymentTotalsLast7Days,
+      paymentTotalsLast30Days,
+      paymentsByTier,
+      financialRechargeTotals,
+      financialUsageTotals,
     ] = await Promise.all([
       User.countDocuments(),
       User.countDocuments({ createdAt: { $gte: last1Day } }),
@@ -247,6 +330,78 @@ router.get('/', requireJwtAuth, requireAdmin, async (req, res) => {
           $limit: 10,
         },
       ]),
+      Transaction.countDocuments(getStripeRechargeQuery(last1Day)),
+      Transaction.countDocuments(getStripeRechargeQuery(last7Days)),
+      Transaction.countDocuments(getStripeRechargeQuery(last30Days)),
+      Transaction.distinct('user', getStripeRechargeQuery(last7Days)),
+      Transaction.distinct('user', getStripeRechargeQuery(last30Days)),
+      Transaction.aggregate([
+        {
+          $match: getStripeRechargeQuery(last7Days),
+        },
+        {
+          $group: {
+            _id: null,
+            totalCredits: { $sum: '$rawAmount' },
+            totalAmountPaid: { $sum: '$metadata.amountPaid' },
+          },
+        },
+      ]),
+      Transaction.aggregate([
+        {
+          $match: getStripeRechargeQuery(last30Days),
+        },
+        {
+          $group: {
+            _id: null,
+            totalCredits: { $sum: '$rawAmount' },
+            totalAmountPaid: { $sum: '$metadata.amountPaid' },
+          },
+        },
+      ]),
+      Transaction.aggregate([
+        {
+          $match: getStripeRechargeQuery(last30Days),
+        },
+        {
+          $group: {
+            _id: '$metadata.tierId',
+            count: { $sum: 1 },
+          },
+        },
+        {
+          $sort: { count: -1, _id: 1 },
+        },
+      ]),
+      Transaction.aggregate([
+        {
+          $match: {
+            context: 'stripe_recharge',
+            tokenType: 'credits',
+          },
+        },
+        {
+          $group: {
+            _id: null,
+            totalCreditsSold: { $sum: '$rawAmount' },
+            totalRechargeRevenue: { $sum: '$metadata.amountPaid' },
+          },
+        },
+      ]),
+      Transaction.aggregate([
+        {
+          $match: {
+            tokenType: { $in: ['prompt', 'completion'] },
+            tokenValue: { $lt: 0 },
+          },
+        },
+        {
+          $group: {
+            _id: null,
+            totalUsageCredits: { $sum: { $multiply: ['$tokenValue', -1] } },
+          },
+        },
+      ]),
     ]);
 
     const dailyUsageMap = new Map();
@@ -285,7 +440,16 @@ router.get('/', requireJwtAuth, requireAdmin, async (req, res) => {
       })),
     }));
 
-    const usageDaily = Array.from(dailyUsageMap.values()).sort((a, b) => a.date.localeCompare(b.date));
+    const usageDaily = Array.from(dailyUsageMap.values()).sort((a, b) =>
+      a.date.localeCompare(b.date),
+    );
+    const paymentTotals7Days = sumPaymentTotals(paymentTotalsLast7Days);
+    const paymentTotals30Days = sumPaymentTotals(paymentTotalsLast30Days);
+    const financials = buildFinancials({
+      rechargeTotals: financialRechargeTotals,
+      usageTotals: financialUsageTotals,
+    });
+    const pricingRows = buildPricingRows(usageByModel);
 
     res.json({
       overview: {
@@ -332,6 +496,30 @@ router.get('/', requireJwtAuth, requireAdmin, async (req, res) => {
         assistantMessagesLast7Days,
         feedbackCountLast7Days,
         negativeFeedbackCountLast7Days,
+      },
+      payments: {
+        payments: {
+          last1Day: paymentsLast1Day,
+          last7Days: paymentsLast7Days,
+          last30Days: paymentsLast30Days,
+        },
+        payingUsers: {
+          last7Days: payingUsersLast7Days.length,
+          last30Days: payingUsersLast30Days.length,
+        },
+        creditsSold: {
+          last7Days: paymentTotals7Days.totalCredits,
+          last30Days: paymentTotals30Days.totalCredits,
+        },
+        revenue: {
+          last7Days: paymentTotals7Days.totalAmountPaid,
+          last30Days: paymentTotals30Days.totalAmountPaid,
+        },
+        byTier: toDistributionBuckets(paymentsByTier),
+      },
+      financials,
+      pricing: {
+        modelRates: pricingRows,
       },
     });
   } catch (error) {

@@ -48,6 +48,45 @@ export type TAdminStatsQuality = {
   negativeFeedbackCountLast7Days: number;
 };
 
+export type TPaymentCount = {
+  last7Days: number;
+  last30Days: number;
+};
+
+export type TAdminStatsPayments = {
+  payments: TTimeRangeCount;
+  payingUsers: TPaymentCount;
+  creditsSold: TPaymentCount;
+  revenue: TPaymentCount;
+  byTier: TDistributionBucket[];
+};
+
+export type TAdminStatsFinancials = {
+  totalRechargeRevenue: number;
+  userUsageCharged: number;
+  unusedPaidBalance: number;
+  totalCreditsSold: number;
+  totalUsageCredits: number;
+  centsPerCredit: number;
+};
+
+export type TPricingPair = {
+  prompt: number;
+  completion: number;
+};
+
+export type TAdminStatsPricingRow = {
+  model: string;
+  usageCount: number;
+  cost: TPricingPair;
+  user: TPricingPair;
+  markup: TPricingPair;
+};
+
+export type TAdminStatsPricing = {
+  modelRates: TAdminStatsPricingRow[];
+};
+
 export type TAdminStatsResponse = {
   overview: TAdminStatsOverview;
   registration: {
@@ -60,4 +99,7 @@ export type TAdminStatsResponse = {
     byModel: TDistributionBucket[];
   };
   quality: TAdminStatsQuality;
+  payments: TAdminStatsPayments;
+  financials: TAdminStatsFinancials;
+  pricing: TAdminStatsPricing;
 };
