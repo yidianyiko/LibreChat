@@ -16,7 +16,9 @@ jest.mock('~/data-provider', () => ({
   useGetAdminStats: jest.fn(),
 }));
 
-jest.mock('../components/DailyRegistrationChart', () => jest.fn(() => <div>DailyRegistrationChart</div>));
+jest.mock('../components/DailyRegistrationChart', () =>
+  jest.fn(() => <div>DailyRegistrationChart</div>),
+);
 jest.mock('../components/ProviderPieChart', () => jest.fn(() => <div>ProviderPieChart</div>));
 jest.mock('../components/ActivityTrendChart', () => jest.fn(() => <div>ActivityTrendChart</div>), {
   virtual: true,
@@ -76,6 +78,29 @@ const statsFixture = {
     feedbackCountLast7Days: 12,
     negativeFeedbackCountLast7Days: 3,
   },
+  payments: {
+    payments: {
+      last1Day: 1,
+      last7Days: 4,
+      last30Days: 12,
+    },
+    payingUsers: {
+      last7Days: 3,
+      last30Days: 5,
+    },
+    creditsSold: {
+      last7Days: 60000000,
+      last30Days: 180000000,
+    },
+    revenue: {
+      last7Days: 5996,
+      last30Days: 17988,
+    },
+    byTier: [
+      { key: 'artisan', label: 'artisan', count: 7 },
+      { key: 'explorer', label: 'explorer', count: 5 },
+    ],
+  },
 };
 
 describe('StatsPage', () => {
@@ -128,14 +153,22 @@ describe('StatsPage', () => {
     expect(screen.getByText('com_ui_conversations_7d')).toBeInTheDocument();
     expect(screen.getByText('com_ui_active_rate_7d')).toBeInTheDocument();
     expect(screen.getByText('com_ui_error_rate_7d')).toBeInTheDocument();
+    expect(screen.getByText('com_ui_payments_7d')).toBeInTheDocument();
+    expect(screen.getByText('com_ui_paying_users_30d')).toBeInTheDocument();
+    expect(screen.getByText('com_ui_revenue_30d')).toBeInTheDocument();
+    expect(screen.getByText('com_ui_credits_sold_30d')).toBeInTheDocument();
     expect(screen.getByText('120')).toBeInTheDocument();
     expect(screen.getByText('32')).toBeInTheDocument();
     expect(screen.getByText('8.0%')).toBeInTheDocument();
     expect(screen.getByText('10.0%')).toBeInTheDocument();
+    expect(screen.getByText('4')).toBeInTheDocument();
+    expect(screen.getByText('$179.88')).toBeInTheDocument();
+    expect(screen.getByText('180,000,000')).toBeInTheDocument();
     expect(screen.getByText('DailyRegistrationChart')).toBeInTheDocument();
     expect(screen.getByText('ActivityTrendChart')).toBeInTheDocument();
     expect(screen.getByText('com_ui_usage_by_endpoint')).toBeInTheDocument();
-    expect(screen.getByText('com_ui_usage_by_model')).toBeInTheDocument();
+    expect(screen.getByText('com_ui_model_usage_frequency')).toBeInTheDocument();
+    expect(screen.getByText('com_ui_payments_by_tier')).toBeInTheDocument();
     expect(screen.getByText('QualityMetricsCard')).toBeInTheDocument();
   });
 });

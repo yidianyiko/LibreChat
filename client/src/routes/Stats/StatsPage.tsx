@@ -1,4 +1,12 @@
-import { Activity, AlertTriangle, MessageSquare, UserPlus, Users } from 'lucide-react';
+import {
+  Activity,
+  AlertTriangle,
+  CreditCard,
+  DollarSign,
+  MessageSquare,
+  UserPlus,
+  Users,
+} from 'lucide-react';
 import { SystemRoles } from 'librechat-data-provider';
 
 import { useLocalize } from '~/hooks';
@@ -11,6 +19,12 @@ import DistributionBarChart from './components/DistributionBarChart';
 import ProviderPieChart from './components/ProviderPieChart';
 import QualityMetricsCard from './components/QualityMetricsCard';
 import StatCard from './components/StatCard';
+
+const formatCurrency = (amountInCents: number) =>
+  new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency: 'USD',
+  }).format(amountInCents / 100);
 
 export default function StatsPage() {
   const localize = useLocalize();
@@ -93,6 +107,30 @@ export default function StatsPage() {
       value: `${(stats.overview.errorRateLast7Days * 100).toFixed(1)}%`,
       icon: <AlertTriangle className="h-8 w-8" />,
     },
+    {
+      title: localize('com_ui_payments_7d'),
+      value: stats.payments.payments.last7Days.toLocaleString(),
+      subtitle: `${stats.payments.payments.last30Days} ${localize('com_ui_in_last_30_days')}`,
+      icon: <CreditCard className="h-8 w-8" />,
+    },
+    {
+      title: localize('com_ui_paying_users_30d'),
+      value: stats.payments.payingUsers.last30Days.toLocaleString(),
+      subtitle: `${stats.payments.payingUsers.last7Days} ${localize('com_ui_in_last_7_days')}`,
+      icon: <Users className="h-8 w-8" />,
+    },
+    {
+      title: localize('com_ui_revenue_30d'),
+      value: formatCurrency(stats.payments.revenue.last30Days),
+      subtitle: `${formatCurrency(stats.payments.revenue.last7Days)} ${localize('com_ui_in_last_7_days')}`,
+      icon: <DollarSign className="h-8 w-8" />,
+    },
+    {
+      title: localize('com_ui_credits_sold_30d'),
+      value: stats.payments.creditsSold.last30Days.toLocaleString(),
+      subtitle: `${stats.payments.creditsSold.last7Days.toLocaleString()} ${localize('com_ui_in_last_7_days')}`,
+      icon: <CreditCard className="h-8 w-8" />,
+    },
   ];
 
   return (
@@ -131,9 +169,16 @@ export default function StatsPage() {
 
         <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-2">
           <DistributionBarChart
-            title={localize('com_ui_usage_by_model')}
+            title={localize('com_ui_model_usage_frequency')}
             data={stats.usage.byModel}
           />
+          <DistributionBarChart
+            title={localize('com_ui_payments_by_tier')}
+            data={stats.payments.byTier}
+          />
+        </div>
+
+        <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-2">
           <QualityMetricsCard overview={stats.overview} quality={stats.quality} />
         </div>
       </div>

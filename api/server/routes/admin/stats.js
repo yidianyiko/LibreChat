@@ -1,7 +1,7 @@
 const express = require('express');
 const { requireAdmin } = require('@librechat/api');
 const { logger } = require('@librechat/data-schemas');
-const { User, Message, Conversation } = require('~/db/models');
+const { User, Message, Conversation, Transaction } = require('~/db/models');
 const { requireJwtAuth } = require('~/server/middleware');
 
 const router = express.Router();
@@ -34,6 +34,17 @@ const toDistributionBuckets = (items) =>
       count,
     };
   });
+
+const getStripeRechargeQuery = (startDate) => ({
+  createdAt: { $gte: startDate },
+  context: 'stripe_recharge',
+  tokenType: 'credits',
+});
+
+const sumPaymentTotals = (items) => ({
+  totalCredits: items[0]?.totalCredits ?? 0,
+  totalAmountPaid: items[0]?.totalAmountPaid ?? 0,
+});
 
 /**
  * GET /api/admin/stats
@@ -73,6 +84,14 @@ router.get('/', requireJwtAuth, requireAdmin, async (req, res) => {
       dailyConversationCounts,
       usageByEndpoint,
       usageByModel,
+      paymentsLast1Day,
+      paymentsLast7Days,
+      paymentsLast30Days,
+      payingUsersLast7Days,
+      payingUsersLast30Days,
+      paymentTotalsLast7Days,
+      paymentTotalsLast30Days,
+      paymentsByTier,
     ] = await Promise.all([
       User.countDocuments(),
       User.countDocuments({ createdAt: { $gte: last1Day } }),
@@ -247,6 +266,49 @@ router.get('/', requireJwtAuth, requireAdmin, async (req, res) => {
           $limit: 10,
         },
       ]),
+      Transaction.countDocuments(getStripeRechargeQuery(last1Day)),
+      Transaction.countDocuments(getStripeRechargeQuery(last7Days)),
+      Transaction.countDocuments(getStripeRechargeQuery(last30Days)),
+      Transaction.distinct('user', getStripeRechargeQuery(last7Days)),
+      Transaction.distinct('user', getStripeRechargeQuery(last30Days)),
+      Transaction.aggregate([
+        {
+          $match: getStripeRechargeQuery(last7Days),
+        },
+        {
+          $group: {
+            _id: null,
+            totalCredits: { $sum: '$rawAmount' },
+            totalAmountPaid: { $sum: '$metadata.amountPaid' },
+          },
+        },
+      ]),
+      Transaction.aggregate([
+        {
+          $match: getStripeRechargeQuery(last30Days),
+        },
+        {
+          $group: {
+            _id: null,
+            totalCredits: { $sum: '$rawAmount' },
+            totalAmountPaid: { $sum: '$metadata.amountPaid' },
+          },
+        },
+      ]),
+      Transaction.aggregate([
+        {
+          $match: getStripeRechargeQuery(last30Days),
+        },
+        {
+          $group: {
+            _id: '$metadata.tierId',
+            count: { $sum: 1 },
+          },
+        },
+        {
+          $sort: { count: -1, _id: 1 },
+        },
+      ]),
     ]);
 
     const dailyUsageMap = new Map();
@@ -285,7 +347,11 @@ router.get('/', requireJwtAuth, requireAdmin, async (req, res) => {
       })),
     }));
 
-    const usageDaily = Array.from(dailyUsageMap.values()).sort((a, b) => a.date.localeCompare(b.date));
+    const usageDaily = Array.from(dailyUsageMap.values()).sort((a, b) =>
+      a.date.localeCompare(b.date),
+    );
+    const paymentTotals7Days = sumPaymentTotals(paymentTotalsLast7Days);
+    const paymentTotals30Days = sumPaymentTotals(paymentTotalsLast30Days);
 
     res.json({
       overview: {
@@ -332,6 +398,26 @@ router.get('/', requireJwtAuth, requireAdmin, async (req, res) => {
         assistantMessagesLast7Days,
         feedbackCountLast7Days,
         negativeFeedbackCountLast7Days,
+      },
+      payments: {
+        payments: {
+          last1Day: paymentsLast1Day,
+          last7Days: paymentsLast7Days,
+          last30Days: paymentsLast30Days,
+        },
+        payingUsers: {
+          last7Days: payingUsersLast7Days.length,
+          last30Days: payingUsersLast30Days.length,
+        },
+        creditsSold: {
+          last7Days: paymentTotals7Days.totalCredits,
+          last30Days: paymentTotals30Days.totalCredits,
+        },
+        revenue: {
+          last7Days: paymentTotals7Days.totalAmountPaid,
+          last30Days: paymentTotals30Days.totalAmountPaid,
+        },
+        byTier: toDistributionBuckets(paymentsByTier),
       },
     });
   } catch (error) {

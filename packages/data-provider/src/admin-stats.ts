@@ -48,6 +48,19 @@ export type TAdminStatsQuality = {
   negativeFeedbackCountLast7Days: number;
 };
 
+export type TPaymentCount = {
+  last7Days: number;
+  last30Days: number;
+};
+
+export type TAdminStatsPayments = {
+  payments: TTimeRangeCount;
+  payingUsers: TPaymentCount;
+  creditsSold: TPaymentCount;
+  revenue: TPaymentCount;
+  byTier: TDistributionBucket[];
+};
+
 export type TAdminStatsResponse = {
   overview: TAdminStatsOverview;
   registration: {
@@ -60,4 +73,5 @@ export type TAdminStatsResponse = {
     byModel: TDistributionBucket[];
   };
   quality: TAdminStatsQuality;
+  payments: TAdminStatsPayments;
 };

@@ -1,25 +1,27 @@
-jest.mock('@librechat/api', () => ({
-  requireAdmin: (req, res, next) => {
-    if (req.headers.authorization === 'Bearer admin-token') {
-      req.user = { id: 'admin-id', email: 'admin@test.com', role: 'ADMIN' };
-      next();
-    } else {
-      res.status(403).json({ error: 'Admin privileges required' });
-    }
-  },
-}));
+jest.mock(
+  '@librechat/api',
+  () => ({
+    requireAdmin: (req, res, next) => {
+      if (req.headers.authorization === 'Bearer admin-token') {
+        req.user = { id: 'admin-id', email: 'admin@test.com', role: 'ADMIN' };
+        next();
+      } else {
+        res.status(403).json({ error: 'Admin privileges required' });
+      }
+    },
+  }),
+  { virtual: true },
+);
 
-jest.mock('@librechat/data-schemas', () => ({
-  logger: {
-    error: jest.fn(),
-  },
-}));
-
-jest.mock('@librechat/data-schemas', () => ({
-  logger: {
-    error: jest.fn(),
-  },
-}));
+jest.mock(
+  '@librechat/data-schemas',
+  () => ({
+    logger: {
+      error: jest.fn(),
+    },
+  }),
+  { virtual: true },
+);
 
 jest.mock('~/server/middleware', () => ({
   requireJwtAuth: (_req, _res, next) => next(),
@@ -39,12 +41,17 @@ jest.mock('~/db/models', () => ({
     countDocuments: jest.fn(),
     aggregate: jest.fn(),
   },
+  Transaction: {
+    countDocuments: jest.fn(),
+    distinct: jest.fn(),
+    aggregate: jest.fn(),
+  },
 }));
 
 const request = require('supertest');
 const express = require('express');
 const statsRouter = require('../stats');
-const { User, Message, Conversation } = require('~/db/models');
+const { User, Message, Conversation, Transaction } = require('~/db/models');
 
 const app = express();
 app.use(express.json());
@@ -82,9 +89,7 @@ describe('Admin Stats API Routes', () => {
 
   describe('GET /api/admin/stats', () => {
     it('should return 403 when user is not admin', async () => {
-      const response = await request(app)
-        .get('/api/admin/stats')
-        .expect(403);
+      const response = await request(app).get('/api/admin/stats').expect(403);
 
       expect(response.body.error).toBe('Admin privileges required');
     });
@@ -144,11 +149,19 @@ describe('Admin Stats API Routes', () => {
           return Promise.resolve(9);
         }
 
-        if (query?.isCreatedByUser === false && query?.['feedback.rating'] === 'thumbsDown' && windowDays <= 7) {
+        if (
+          query?.isCreatedByUser === false &&
+          query?.['feedback.rating'] === 'thumbsDown' &&
+          windowDays <= 7
+        ) {
           return Promise.resolve(3);
         }
 
-        if (query?.isCreatedByUser === false && query?.feedback?.$exists === true && windowDays <= 7) {
+        if (
+          query?.isCreatedByUser === false &&
+          query?.feedback?.$exists === true &&
+          windowDays <= 7
+        ) {
           return Promise.resolve(12);
         }
 
@@ -171,26 +184,32 @@ describe('Admin Stats API Routes', () => {
         return Promise.resolve(0);
       });
 
-      Message.distinct
-        .mockImplementation((_field, query) => {
-          const windowDays = getWindowDays(query);
+      Message.distinct.mockImplementation((_field, query) => {
+        const windowDays = getWindowDays(query);
 
-          if (windowDays <= 1) {
-            return Promise.resolve(['user1', 'user2', 'user3', 'user4']);
-          }
+        if (windowDays <= 1) {
+          return Promise.resolve(['user1', 'user2', 'user3', 'user4']);
+        }
 
-          if (windowDays <= 7) {
-            return Promise.resolve(['user1', 'user2', 'user3', 'user4', 'user5', 'user6', 'user7', 'user8']);
-          }
+        if (windowDays <= 7) {
+          return Promise.resolve([
+            'user1',
+            'user2',
+            'user3',
+            'user4',
+            'user5',
+            'user6',
+            'user7',
+            'user8',
+          ]);
+        }
 
-          if (windowDays <= 30) {
-            return Promise.resolve(
-              Array.from({ length: 20 }, (_, index) => `user${index + 1}`),
-            );
-          }
+        if (windowDays <= 30) {
+          return Promise.resolve(Array.from({ length: 20 }, (_, index) => `user${index + 1}`));
+        }
 
-          return Promise.resolve([]);
-        });
+        return Promise.resolve([]);
+      });
 
       Message.aggregate.mockImplementation((pipeline) => {
         const firstGroup = pipeline.find((stage) => stage.$group != null)?.$group;
@@ -249,6 +268,69 @@ describe('Admin Stats API Routes', () => {
         { _id: '2026-02-10', conversations: 7 },
         { _id: '2026-02-11', conversations: 5 },
       ]);
+
+      Transaction.countDocuments.mockImplementation((query) => {
+        const windowDays = getWindowDays(query);
+        if (query?.context !== 'stripe_recharge' || query?.tokenType !== 'credits') {
+          return Promise.resolve(0);
+        }
+
+        if (windowDays <= 1) {
+          return Promise.resolve(1);
+        }
+
+        if (windowDays <= 7) {
+          return Promise.resolve(4);
+        }
+
+        if (windowDays <= 30) {
+          return Promise.resolve(12);
+        }
+
+        return Promise.resolve(0);
+      });
+
+      Transaction.distinct.mockImplementation((_field, query) => {
+        const windowDays = getWindowDays(query);
+        if (query?.context !== 'stripe_recharge' || query?.tokenType !== 'credits') {
+          return Promise.resolve([]);
+        }
+
+        if (windowDays <= 7) {
+          return Promise.resolve(['user1', 'user2', 'user3']);
+        }
+
+        if (windowDays <= 30) {
+          return Promise.resolve(['user1', 'user2', 'user3', 'user4', 'user5']);
+        }
+
+        return Promise.resolve([]);
+      });
+
+      Transaction.aggregate.mockImplementation((pipeline) => {
+        const groupStage = pipeline.find((stage) => stage.$group != null)?.$group;
+        if (groupStage?._id === '$metadata.tierId') {
+          return Promise.resolve([
+            { _id: 'artisan', count: 7 },
+            { _id: 'explorer', count: 5 },
+          ]);
+        }
+
+        if (groupStage?.totalCredits != null && groupStage?.totalAmountPaid != null) {
+          const windowDays = getWindowDays(pipeline[0]?.$match);
+          if (windowDays <= 7) {
+            return Promise.resolve([{ _id: null, totalCredits: 60000000, totalAmountPaid: 5996 }]);
+          }
+
+          if (windowDays <= 30) {
+            return Promise.resolve([
+              { _id: null, totalCredits: 180000000, totalAmountPaid: 17988 },
+            ]);
+          }
+        }
+
+        return Promise.resolve([]);
+      });
 
       const response = await request(app)
         .get('/api/admin/stats')
@@ -337,6 +419,29 @@ describe('Admin Stats API Routes', () => {
           feedbackCountLast7Days: 12,
           negativeFeedbackCountLast7Days: 3,
         },
+        payments: {
+          payments: {
+            last1Day: 1,
+            last7Days: 4,
+            last30Days: 12,
+          },
+          payingUsers: {
+            last7Days: 3,
+            last30Days: 5,
+          },
+          creditsSold: {
+            last7Days: 60000000,
+            last30Days: 180000000,
+          },
+          revenue: {
+            last7Days: 5996,
+            last30Days: 17988,
+          },
+          byTier: [
+            { key: 'artisan', label: 'artisan', count: 7 },
+            { key: 'explorer', label: 'explorer', count: 5 },
+          ],
+        },
       });
     });
 
@@ -348,6 +453,9 @@ describe('Admin Stats API Routes', () => {
       Message.countDocuments.mockResolvedValue(0);
       Message.distinct.mockResolvedValue([]);
       Message.aggregate.mockResolvedValue([]);
+      Transaction.countDocuments.mockResolvedValue(0);
+      Transaction.distinct.mockResolvedValue([]);
+      Transaction.aggregate.mockResolvedValue([]);
 
       await request(app)
         .get('/api/admin/stats')
@@ -368,6 +476,9 @@ describe('Admin Stats API Routes', () => {
       Message.countDocuments.mockResolvedValue(0);
       Message.distinct.mockResolvedValue([]);
       Message.aggregate.mockResolvedValue([]);
+      Transaction.countDocuments.mockResolvedValue(0);
+      Transaction.distinct.mockResolvedValue([]);
+      Transaction.aggregate.mockResolvedValue([]);
 
       await request(app)
         .get('/api/admin/stats?days=7')
@@ -409,6 +520,9 @@ describe('Admin Stats API Routes', () => {
       Message.countDocuments.mockResolvedValue(0);
       Message.distinct.mockResolvedValue([]);
       Message.aggregate.mockResolvedValue([]);
+      Transaction.countDocuments.mockResolvedValue(0);
+      Transaction.distinct.mockResolvedValue([]);
+      Transaction.aggregate.mockResolvedValue([]);
 
       const response = await request(app)
         .get('/api/admin/stats')
@@ -477,6 +591,26 @@ describe('Admin Stats API Routes', () => {
           assistantMessagesLast7Days: 0,
           feedbackCountLast7Days: 0,
           negativeFeedbackCountLast7Days: 0,
+        },
+        payments: {
+          payments: {
+            last1Day: 0,
+            last7Days: 0,
+            last30Days: 0,
+          },
+          payingUsers: {
+            last7Days: 0,
+            last30Days: 0,
+          },
+          creditsSold: {
+            last7Days: 0,
+            last30Days: 0,
+          },
+          revenue: {
+            last7Days: 0,
+            last30Days: 0,
+          },
+          byTier: [],
         },
       });
     });
