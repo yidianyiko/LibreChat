@@ -15,6 +15,10 @@
 </p>
 
 <p align="center">
+  <strong>keep4oforever</strong> 是基于 LibreChat 的深度定制 fork，用于我们自己的产品方向和部署需求。
+</p>
+
+<p align="center">
   <a href="https://discord.librechat.ai"> 
     <img
       src="https://img.shields.io/discord/1086345563026489514?label=&logo=discord&style=for-the-badge&logoWidth=20&logoColor=white&labelColor=000000&color=blueviolet">
