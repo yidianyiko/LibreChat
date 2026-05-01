@@ -384,7 +384,6 @@ const Conversations: FC<ConversationsProps> = ({
                 className="outline-none"
                 onRowsRendered={handleRowsRendered}
                 role="presentation"
-                aria-readonly={null}
                 tabIndex={-1}
                 style={{ outline: 'none', scrollbarGutter: 'stable' }}
                 containerRole="presentation"

@@ -74,7 +74,7 @@ export default function WeChatQuickAction() {
         hasBinding={hasBinding}
         isBusy={isBusy}
         onBind={startBinding}
-        onUnbind={() => unbindMutation.mutate()}
+        onUnbind={() => unbindMutation.mutate(undefined)}
         qrCodeDataUrl={qrCodeDataUrl}
         showBindAction={showBindAction}
         showManagementState={showManagementState}

@@ -16,11 +16,13 @@ export default function ImageVision() {
         control={control}
         render={({ field }) => (
           <Checkbox
-            {...field}
-            checked={field.value}
+            name={field.name}
+            id={Capabilities.image_vision}
+            aria-label={localize('com_assistants_image_vision')}
+            ref={field.ref}
+            checked={Boolean(field.value)}
             onCheckedChange={field.onChange}
             className="relative float-left mr-2 inline-flex h-4 w-4 cursor-pointer"
-            value={field.value?.toString()}
           />
         )}
       />
@@ -28,7 +30,7 @@ export default function ImageVision() {
         className="form-check-label text-token-text-primary w-full cursor-pointer"
         htmlFor={Capabilities.image_vision}
         onClick={() =>
-          setValue(Capabilities.image_vision, !getValues(Capabilities.image_vision), {
+          setValue(Capabilities.image_vision, !Boolean(getValues(Capabilities.image_vision)), {
             shouldDirty: true,
           })
         }

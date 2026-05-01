@@ -111,9 +111,10 @@ const UIResourceCarousel: React.FC<UIResourceCarouselProps> = React.memo(({ uiRe
                 <UIResourceRenderer
                   resource={{
                     uri: uiResource.uri,
+                    name: uiResource.uri,
                     mimeType: uiResource.mimeType,
                     text: uiResource.text,
-                  }}
+                  } as Parameters<typeof UIResourceRenderer>[0]['resource']}
                   onUIAction={async (result) => handleUIAction(result, ask)}
                   htmlProps={{
                     autoResizeIframe: { width: true, height: true },

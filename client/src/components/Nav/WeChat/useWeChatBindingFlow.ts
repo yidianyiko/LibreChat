@@ -41,7 +41,7 @@ type TUseWeChatBindingFlowReturn = TUseWeChatBindingFlowParams & {
   bindStartMutation: UseMutationResult<TWeChatBindStartResponse>;
   bindStatusQuery: QueryObserverResult<TWeChatBindStatusResponse>;
   statusQuery: QueryObserverResult<TWeChatStatusResponse>;
-  unbindMutation: UseMutationResult<void>;
+  unbindMutation: UseMutationResult<void, unknown, void>;
   onDialogOpenChange: (open: boolean) => void;
   openDialog: () => void;
   resetBindingFlow: () => void;

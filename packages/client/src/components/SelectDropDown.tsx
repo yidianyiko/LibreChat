@@ -19,7 +19,7 @@ type SelectDropDownProps = {
   value: string | null | Option | OptionWithIcon;
   setValue: DropdownValueSetter | ((value: string) => void);
   tabIndex?: number;
-  availableValues?: string[] | Option[] | OptionWithIcon[];
+  availableValues?: Array<string | Option | OptionWithIcon>;
   emptyTitle?: boolean;
   showAbove?: boolean;
   showLabel?: boolean;

@@ -1,6 +1,6 @@
 import { useMemo, useState, useCallback } from 'react';
-import type { DynamicSettingProps } from 'librechat-data-provider';
 import { Label, HoverCard, HoverCardTrigger, ControlCombobox } from '@librechat/client';
+import type { DynamicSettingProps, OptionWithIcon } from 'librechat-data-provider';
 import { TranslationKeys, useLocalize, useParameterEffects } from '~/hooks';
 import { useChatContext } from '~/Providers';
 import OptionHover from './OptionHover';
@@ -36,14 +36,16 @@ function DynamicCombobox({
     return conversation?.[settingKey] ?? defaultValue;
   }, [conversation, defaultValue, settingKey]);
 
-  const items = useMemo(() => {
+  const items = useMemo<OptionWithIcon[]>(() => {
     if (_items != null) {
       return _items;
     }
-    return (_options ?? []).map((option) => ({
-      label: option,
-      value: option,
-    }));
+    return (_options ?? [])
+      .filter((option): option is string => typeof option === 'string')
+      .map((option) => ({
+        label: option,
+        value: option,
+      }));
   }, [_options, _items]);
 
   const handleChange = useCallback(
@@ -94,7 +96,7 @@ function DynamicCombobox({
             </div>
           )}
           <ControlCombobox
-            displayValue={selectedValue}
+            displayValue={selectedValue == null ? undefined : String(selectedValue)}
             selectPlaceholder={
               selectPlaceholderCode === true
                 ? localize(selectPlaceholder as TranslationKeys)
@@ -107,7 +109,7 @@ function DynamicCombobox({
             }
             isCollapsed={isCollapsed}
             ariaLabel={settingKey}
-            selectedValue={selectedValue ?? ''}
+            selectedValue={selectedValue == null ? '' : String(selectedValue)}
             setValue={handleChange}
             items={items}
             SelectIcon={SelectIcon}

@@ -55,7 +55,7 @@ export default function useCopyToClipboard({
       let messageText = text ?? '';
       if (content) {
         messageText = content.reduce((acc, curr, i) => {
-          if (curr.type === ContentTypes.TEXT) {
+          if (curr.type === ContentTypes.TEXT && curr.text != null) {
             const text = typeof curr.text === 'string' ? curr.text : curr.text.value;
             return acc + text + (i === content.length - 1 ? '' : '\n');
           }

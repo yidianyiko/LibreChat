@@ -6,7 +6,7 @@ import type { TWeChatBindStartResponse } from 'librechat-data-provider';
 export const useStartWeChatBindMutation = (): UseMutationResult<TWeChatBindStartResponse> =>
   useMutation([MutationKeys.bindWeChat], () => dataService.startWeChatBind());
 
-export const useUnbindWeChatMutation = (): UseMutationResult<void> => {
+export const useUnbindWeChatMutation = (): UseMutationResult<void, unknown, void> => {
   const queryClient = useQueryClient();
 
   return useMutation([MutationKeys.unbindWeChat], () => dataService.unbindWeChat(), {

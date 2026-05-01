@@ -6,7 +6,7 @@ import type { TWeChatBindStatusResponse, TWeChatStatusResponse } from 'librechat
 export const useWeChatStatusQuery = (
   config?: UseQueryOptions<TWeChatStatusResponse>,
 ): QueryObserverResult<TWeChatStatusResponse> =>
-  useQuery([QueryKeys.wechatStatus], () => dataService.getWeChatStatus(), {
+  useQuery<TWeChatStatusResponse>([QueryKeys.wechatStatus], () => dataService.getWeChatStatus(), {
     refetchOnWindowFocus: false,
     refetchOnReconnect: false,
     refetchOnMount: false,
@@ -18,7 +18,7 @@ export const useWeChatBindStatusQuery = (
   enabled: boolean,
   config?: UseQueryOptions<TWeChatBindStatusResponse>,
 ): QueryObserverResult<TWeChatBindStatusResponse> =>
-  useQuery(
+  useQuery<TWeChatBindStatusResponse>(
     [QueryKeys.wechatStatus, 'bindStatus', bindSessionId],
     () => dataService.getWeChatBindStatus(bindSessionId ?? ''),
     {

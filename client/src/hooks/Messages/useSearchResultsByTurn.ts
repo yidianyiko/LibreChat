@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
-import { TAttachment, Tools, SearchResultData } from 'librechat-data-provider';
+import { Tools } from 'librechat-data-provider';
+import type { TAttachment, SearchResultData, ResultReference } from 'librechat-data-provider';
 import { useLocalize } from '~/hooks';
 
 interface FileSource {
@@ -8,7 +9,7 @@ interface FileSource {
   pages?: number[];
   relevance?: number;
   pageRelevance?: Record<string, number>;
-  metadata?: any;
+  metadata?: object;
 }
 
 interface DeduplicatedSource {
@@ -17,8 +18,21 @@ interface DeduplicatedSource {
   pages: number[];
   relevance: number;
   pageRelevance: Record<string, number>;
-  metadata?: any;
+  metadata?: object;
 }
+
+type FileSearchResultData = SearchResultData & {
+  sources?: FileSource[];
+};
+
+type AgentFileReference = ResultReference & {
+  snippet: string;
+  fileId: string;
+  fileName: string;
+  pages: number[];
+  pageRelevance: Record<string, number>;
+  metadata?: object;
+};
 
 /**
  * Hook that creates a map of turn numbers to SearchResultData from web search and agent file search attachments
@@ -42,7 +56,8 @@ export function useSearchResultsByTurn(attachments?: TAttachment[]) {
 
       // Handle agent file search attachments (following web search pattern)
       if (attachment.type === Tools.file_search && attachment[Tools.file_search]) {
-        const sources = attachment[Tools.file_search].sources;
+        const searchData: FileSearchResultData = attachment[Tools.file_search];
+        const sources = searchData.sources ?? [];
 
         // Deduplicate sources by fileId and merge pages
         const deduplicatedSources = new Map<string, DeduplicatedSource>();
@@ -103,7 +118,7 @@ export function useSearchResultsByTurn(attachments?: TAttachment[]) {
                 pages: source.pages,
                 pageRelevance: source.pageRelevance,
                 metadata: source.metadata,
-              }) as any,
+              }) satisfies AgentFileReference,
           ),
         };
 

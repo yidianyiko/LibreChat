@@ -19,7 +19,8 @@ export default function useLocalize() {
   }, [lang, i18n]);
 
   return useCallback(
-    (phraseKey: TranslationKeys, options?: TOptions) => t(phraseKey, options),
+    (phraseKey: TranslationKeys | string, options?: TOptions): string =>
+      String((t as (key: string, options?: TOptions) => string)(phraseKey, options)),
     [t],
   );
 }

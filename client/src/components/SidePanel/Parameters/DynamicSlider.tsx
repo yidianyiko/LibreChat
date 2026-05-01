@@ -32,6 +32,10 @@ function DynamicSlider({
     () => (!range && options && options.length > 0) ?? false,
     [options, range],
   );
+  const enumOptions = useMemo(
+    () => (options ?? []).filter((option): option is string => typeof option === 'string'),
+    [options],
+  );
 
   const [setInputValue, inputValue, setLocalValue] = useDebouncedInput<string | number>({
     optionKey: settingKey,
@@ -60,8 +64,8 @@ function DynamicSlider({
   }, [conversation, defaultValue, settingKey, inputValue, isEnum]);
 
   const enumToNumeric = useMemo(() => {
-    if (isEnum && options) {
-      return options.reduce(
+    if (isEnum) {
+      return enumOptions.reduce(
         (acc, mapping, index) => {
           acc[mapping] = index;
           return acc;
@@ -70,11 +74,11 @@ function DynamicSlider({
       );
     }
     return {};
-  }, [isEnum, options]);
+  }, [enumOptions, isEnum]);
 
   const valueToEnumOption = useMemo(() => {
-    if (isEnum && options) {
-      return options.reduce(
+    if (isEnum) {
+      return enumOptions.reduce(
         (acc, option, index) => {
           acc[index] = option;
           return acc;
@@ -83,7 +87,7 @@ function DynamicSlider({
       );
     }
     return {};
-  }, [isEnum, options]);
+  }, [enumOptions, isEnum]);
 
   const getDisplayValue = useCallback(
     (value: string | number | undefined | null): string => {
@@ -126,7 +130,7 @@ function DynamicSlider({
   const handleValueChange = useCallback(
     (value: number) => {
       if (isEnum) {
-        setInputValue(valueToEnumOption[value]);
+        setInputValue(valueToEnumOption[value] ?? '');
       } else {
         setInputValue(value);
       }
@@ -135,14 +139,14 @@ function DynamicSlider({
   );
 
   const max = useMemo(() => {
-    if (isEnum && options) {
-      return options.length - 1;
+    if (isEnum) {
+      return enumOptions.length - 1;
     } else if (range) {
       return range.max;
     } else {
       return 0;
     }
-  }, [isEnum, options, range]);
+  }, [enumOptions.length, isEnum, range]);
 
   if (!range && !isEnum) {
     return null;

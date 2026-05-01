@@ -1,8 +1,8 @@
 import React from 'react';
+import { Outlet, useNavigate, useParams } from 'react-router-dom';
+import { Button } from '@librechat/client';
 import VectorStoreSidePanel from './VectorStore/VectorStoreSidePanel';
 import FilesSectionSelector from './FilesSectionSelector';
-import { Button } from '../ui';
-import { Outlet, useNavigate, useParams } from 'react-router-dom';
 
 export default function VectorStoreView() {
   const params = useParams();

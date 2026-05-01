@@ -60,13 +60,17 @@ export default function Settings({ conversation, setOption, models, readonly }: 
   }, [assistant_id, assistantListMap, endpoint]);
 
   const modelOptions = useMemo(() => {
-    return models.map((model) => ({
-      label:
-        model === activeAssistant?.model
-          ? `${model} (${localize('com_endpoint_assistant_model')})`
-          : model,
-      value: model,
-    }));
+    return models.map((model) => {
+      const value = typeof model === 'string' ? model : String(model.value ?? '');
+      const label = typeof model === 'string' ? model : String(model.label ?? model.value ?? '');
+      return {
+        label:
+          value === activeAssistant?.model
+            ? `${label} (${localize('com_endpoint_assistant_model')})`
+            : label,
+        value,
+      };
+    });
   }, [models, activeAssistant, localize]);
 
   const [assistantValue, setAssistantValue] = useState<Option>(

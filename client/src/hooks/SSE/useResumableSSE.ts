@@ -696,8 +696,9 @@ export default function useResumableSSE(
     }
 
     const resumeStreamId = (submission as TSubmission & { resumeStreamId?: string }).resumeStreamId;
+    const submissionConversationId = submission.conversation?.conversationId ?? undefined;
     console.log('[ResumableSSE] Effect triggered', {
-      conversationId: submission.conversation?.conversationId,
+      conversationId: submissionConversationId,
       hasResumeStreamId: !!resumeStreamId,
       resumeStreamId,
       userMessageId: submission.userMessage?.messageId,
@@ -715,7 +716,7 @@ export default function useResumableSSE(
         setStreamId(resumeStreamId);
         activeGenerationRef.current = {
           streamId: resumeStreamId,
-          conversationId: submission.conversation?.conversationId,
+          conversationId: submissionConversationId,
         };
         // Optimistically add to active jobs (in case it's not already there)
         addActiveJob(resumeStreamId);
@@ -723,13 +724,13 @@ export default function useResumableSSE(
       } else {
         // New generation: start and then subscribe
         console.log('[ResumableSSE] Starting NEW generation');
-        await abortActiveGenerationForConversation(submission.conversation?.conversationId);
+        await abortActiveGenerationForConversation(submissionConversationId);
         const newStreamId = await startGeneration(submission);
         if (newStreamId) {
           setStreamId(newStreamId);
           activeGenerationRef.current = {
             streamId: newStreamId,
-            conversationId: submission.conversation?.conversationId,
+            conversationId: submissionConversationId,
           };
           // Optimistically add to active jobs
           addActiveJob(newStreamId);

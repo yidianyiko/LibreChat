@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useMultiSearch } from '@librechat/client';
 import { Root, Trigger, Content, Portal } from '@radix-ui/react-popover';
-import type { Option } from '~/common';
+import type { Option, OptionWithIcon } from '~/common';
 import MenuItem from '~/components/Chat/Menus/UI/MenuItem';
 import { useLocalize } from '~/hooks';
 import { cn } from '~/utils';
@@ -9,10 +9,10 @@ import { cn } from '~/utils';
 type SelectDropDownProps = {
   id?: string;
   title?: string;
-  value: string | null | Option;
+  value: string | null | Option | OptionWithIcon;
   disabled?: boolean;
   setValue: (value: string) => void;
-  availableValues: string[] | Option[];
+  availableValues: Array<string | Option | OptionWithIcon>;
   emptyTitle?: boolean;
   showAbove?: boolean;
   showLabel?: boolean;
@@ -49,7 +49,7 @@ function SelectDropDownPop({
   // Detemine if we should to convert this component into a searchable select.  If we have enough elements, a search
   // input will appear near the top of the menu, allowing correct filtering of different model menu items. This will
   // reset once the component is unmounted (as per a normal search)
-  const [filteredValues, searchRender] = useMultiSearch<string[] | Option[]>({
+  const [filteredValues, searchRender] = useMultiSearch<Array<string | Option | OptionWithIcon>>({
     availableOptions: availableValues,
   });
   const hasSearchRender = Boolean(searchRender);
@@ -131,15 +131,21 @@ function SelectDropDownPop({
                     />
                   );
                 }
+                const optionValue = String(option.value ?? '');
+                const optionLabel = typeof option.label === 'string' ? option.label : optionValue;
+                const optionDescription =
+                  typeof option.description === 'string' ? option.description : undefined;
+                const optionIcon = React.isValidElement(option.icon) ? option.icon : undefined;
+
                 return (
                   <MenuItem
-                    key={option.value}
-                    title={option.label}
-                    description={option.description}
-                    value={option.value}
-                    icon={option.icon}
-                    selected={!!(value && value === option.value)}
-                    onClick={() => handleSelect(option.value)}
+                    key={optionValue}
+                    title={optionLabel}
+                    description={optionDescription}
+                    value={optionValue}
+                    icon={optionIcon}
+                    selected={!!(value && value === optionValue)}
+                    onClick={() => handleSelect(optionValue)}
                   />
                 );
               })}

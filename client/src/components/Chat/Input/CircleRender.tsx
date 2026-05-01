@@ -1,16 +1,25 @@
 import React from 'react';
-import { ECallState } from 'librechat-data-provider';
-import { CircleIcon, CircleDotsIcon } from '@librechat/client';
+import { Circle, MoreHorizontal } from 'lucide-react';
 
-const CircleRender = ({ rmsLevel, isCameraOn, state }) => {
-  const getIconComponent = (state) => {
-    switch (state) {
-      case ECallState.Thinking:
-        return <CircleDotsIcon />;
+enum CallState {
+  Thinking = 'thinking',
+}
+
+type CircleRenderProps = {
+  rmsLevel: number;
+  isCameraOn: boolean;
+  state: string;
+};
+
+const CircleRender = ({ rmsLevel, isCameraOn, state }: CircleRenderProps) => {
+  const getIconComponent = (callState: string) => {
+    switch (callState) {
+      case CallState.Thinking:
+        return <MoreHorizontal className="h-64 w-64" />;
       default:
         return (
           <div className="smooth-transition" style={{ transform: `scale(${transformScale})` }}>
-            <CircleIcon state={state} size="256" />
+            <Circle className="h-64 w-64" data-state={callState} />
           </div>
         );
     }

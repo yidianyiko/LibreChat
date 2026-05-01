@@ -71,7 +71,7 @@ export default function WeChatBinding() {
             <Button
               aria-label={localize('com_ui_wechat_unbind')}
               disabled={isBusy}
-              onClick={() => unbindMutation.mutate()}
+              onClick={() => unbindMutation.mutate(undefined)}
               variant="destructive"
             >
               {localize('com_ui_wechat_unbind')}
@@ -85,7 +85,7 @@ export default function WeChatBinding() {
         isBusy={isBusy}
         onBind={startBinding}
         onOpenChange={onDialogOpenChange}
-        onUnbind={() => unbindMutation.mutate()}
+        onUnbind={() => unbindMutation.mutate(undefined)}
         open={isDialogOpen}
         qrCodeDataUrl={qrCodeDataUrl}
         showBindAction={showBindAction}

@@ -8,8 +8,7 @@ export const resources = {
   en: { translation: translationEn },
 } as const;
 
-type TranslationSchema = typeof translationEn;
-type TranslationModule = { default: TranslationSchema };
+type TranslationModule = { default: Record<string, string> };
 
 const languageLoaders: Record<string, () => Promise<TranslationModule>> = {
   ar: () => import('./ar/translation.json'),
@@ -56,7 +55,7 @@ const languageLoaders: Record<string, () => Promise<TranslationModule>> = {
 
 const supportedLanguageMap = new Map<string, string>([
   ['en', 'en'],
-  ...Object.keys(languageLoaders).map((lng) => [lng.toLowerCase(), lng]),
+  ...Object.keys(languageLoaders).map((lng) => [lng.toLowerCase(), lng] as const),
 ]);
 
 export const normalizeLanguageTag = (language?: string): string => {

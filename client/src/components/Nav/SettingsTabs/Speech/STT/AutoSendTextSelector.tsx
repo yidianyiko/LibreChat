@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useRecoilState, useRecoilValue } from 'recoil';
 import { Slider, InputNumber, Switch } from '@librechat/client';
+import type { OnInputNumberChange } from '~/common';
 import { cn, defaultTextProps, optionText } from '~/utils/';
 import { useLocalize } from '~/hooks';
 import store from '~/store';
@@ -40,8 +41,9 @@ export default function AutoSendTextSelector() {
     }
   };
 
-  const handleInputChange = (value: number[] | null) => {
-    const newValue = value ? value[0] : 3;
+  const handleInputChange: OnInputNumberChange = (value) => {
+    const parsedValue = typeof value === 'number' ? value : Number.parseInt(String(value ?? 3), 10);
+    const newValue = Number.isNaN(parsedValue) ? 3 : parsedValue;
     setDelayValue(newValue);
     if (isEnabled) {
       setAutoSendText(newValue);
