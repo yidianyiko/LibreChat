@@ -21,7 +21,7 @@ import {
   queueTitleGeneration,
   streamStatusQueryKey,
 } from '~/data-provider';
-import type { ActiveJobsResponse } from '~/data-provider';
+import type { ActiveJobsResponse, StreamStatusResponse } from '~/data-provider';
 import { useAuthContext } from '~/hooks/AuthContext';
 import useEventHandlers from './useEventHandlers';
 import { clearAllDrafts } from '~/utils';
@@ -38,6 +38,11 @@ type ChatHelpers = Pick<
 >;
 
 const MAX_RETRIES = 5;
+
+type ActiveGeneration = {
+  streamId: string;
+  conversationId?: string;
+};
 
 /**
  * Hook for resumable SSE streams.
@@ -94,6 +99,7 @@ export default function useResumableSSE(
   const reconnectAttemptRef = useRef(0);
   const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const submissionRef = useRef<TSubmission | null>(null);
+  const activeGenerationRef = useRef<ActiveGeneration | null>(null);
 
   const {
     setMessages,
@@ -183,6 +189,7 @@ export default function useResumableSSE(
             clearStepMaps();
             // Optimistically remove from active jobs
             removeActiveJob(currentStreamId);
+            activeGenerationRef.current = null;
             (startupConfig?.balance?.enabled ?? false) && balanceQuery.refetch();
             sse.close();
             setStreamId(null);
@@ -360,6 +367,7 @@ export default function useResumableSSE(
             queryClient.invalidateQueries({ queryKey: [QueryKeys.messages, convoId] });
             queryClient.removeQueries({ queryKey: streamStatusQueryKey(convoId) });
           }
+          activeGenerationRef.current = null;
           setIsSubmitting(false);
           setShowStopButton(false);
           setStreamId(null);
@@ -434,6 +442,7 @@ export default function useResumableSSE(
           setIsSubmitting(false);
           setShowStopButton(false);
           setStreamId(null);
+          activeGenerationRef.current = null;
           reconnectAttemptRef.current = 0;
           return;
         }
@@ -475,6 +484,7 @@ export default function useResumableSSE(
           setIsSubmitting(false);
           setShowStopButton(false);
           setStreamId(null);
+          activeGenerationRef.current = null;
         }
       });
 
@@ -552,6 +562,49 @@ export default function useResumableSSE(
       removeActiveJob,
       queryClient,
     ],
+  );
+
+  const abortActiveGenerationForConversation = useCallback(
+    async (conversationId?: string) => {
+      const activeGeneration = activeGenerationRef.current;
+      if (!activeGeneration || !conversationId) {
+        return;
+      }
+      if (activeGeneration.conversationId !== conversationId) {
+        return;
+      }
+
+      console.log('[ResumableSSE] Aborting active generation before replacement:', {
+        streamId: activeGeneration.streamId,
+        conversationId,
+      });
+
+      try {
+        const status = await request.get<StreamStatusResponse>(
+          `${apiBaseUrl()}/api/agents/chat/status/${conversationId}`,
+        );
+        if (!status.active || status.streamId !== activeGeneration.streamId) {
+          console.log('[ResumableSSE] Skipping replacement abort; active generation is stale:', {
+            streamId: activeGeneration.streamId,
+            conversationId,
+            statusStreamId: status.streamId,
+            statusActive: status.active,
+          });
+          return;
+        }
+
+        await request.post(`${apiBaseUrl()}/api/agents/chat/abort`, {
+          streamId: activeGeneration.streamId,
+          conversationId,
+        });
+        removeActiveJob(activeGeneration.streamId);
+      } catch (error) {
+        console.error('[ResumableSSE] Failed to abort active generation before replacement:', error);
+      } finally {
+        activeGenerationRef.current = null;
+      }
+    },
+    [removeActiveJob],
   );
 
   /**
@@ -657,15 +710,24 @@ export default function useResumableSSE(
         // Resume: just subscribe to existing stream, don't start new generation
         console.log('[ResumableSSE] Resuming existing stream:', resumeStreamId);
         setStreamId(resumeStreamId);
+        activeGenerationRef.current = {
+          streamId: resumeStreamId,
+          conversationId: submission.conversation?.conversationId,
+        };
         // Optimistically add to active jobs (in case it's not already there)
         addActiveJob(resumeStreamId);
         subscribeToStream(resumeStreamId, submission, true); // isResume=true
       } else {
         // New generation: start and then subscribe
         console.log('[ResumableSSE] Starting NEW generation');
+        await abortActiveGenerationForConversation(submission.conversation?.conversationId);
         const newStreamId = await startGeneration(submission);
         if (newStreamId) {
           setStreamId(newStreamId);
+          activeGenerationRef.current = {
+            streamId: newStreamId,
+            conversationId: submission.conversation?.conversationId,
+          };
           // Optimistically add to active jobs
           addActiveJob(newStreamId);
           // Queue title generation if this is a new conversation (first message)
