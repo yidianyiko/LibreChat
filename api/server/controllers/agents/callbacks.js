@@ -31,6 +31,19 @@ class ModelEndHandler {
     throw new Error(errorMessage);
   }
 
+  getStopReason(output) {
+    return (
+      output?.response_metadata?.finish_reason ??
+      output?.response_metadata?.stop_reason ??
+      output?.additional_kwargs?.finish_reason ??
+      output?.additional_kwargs?.stop_reason
+    );
+  }
+
+  isOutputLimitReason(reason) {
+    return reason === 'length' || reason === 'max_tokens' || reason === 'max_output_tokens';
+  }
+
   /**
    * @param {string} event
    * @param {ModelEndData | undefined} data
@@ -56,6 +69,19 @@ class ModelEndHandler {
         });
         logger.debug(`[ModelEndHandler] Model refused to respond`, {
           ...info,
+          userId: metadata.user_id,
+          messageId: metadata.run_id,
+          conversationId: metadata.thread_id,
+        });
+      }
+
+      const stopReason = this.getStopReason(data?.output);
+      if (this.isOutputLimitReason(stopReason)) {
+        const modelName = metadata?.ls_model_name || agentContext.clientOptions?.model;
+        errorMessage = `The model stopped because it reached the max output token limit. Increase max_tokens for ${modelName ?? 'this model'} and retry.`;
+        logger.debug('[ModelEndHandler] Model stopped at max output token limit', {
+          stopReason,
+          model: modelName,
           userId: metadata.user_id,
           messageId: metadata.run_id,
           conversationId: metadata.thread_id,

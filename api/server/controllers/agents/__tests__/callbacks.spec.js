@@ -11,6 +11,7 @@ jest.mock('@librechat/api', () => ({
 
 jest.mock('@librechat/data-schemas', () => ({
   logger: {
+    debug: jest.fn(),
     error: jest.fn(),
   },
 }));
@@ -325,5 +326,47 @@ describe('createToolEndCallback', () => {
       expect(artifactPromises).toHaveLength(0);
       expect(res.write).not.toHaveBeenCalled();
     });
+  });
+});
+
+describe('getDefaultHandlers model end handling', () => {
+  let getDefaultHandlers;
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    const callbacks = require('../callbacks');
+    getDefaultHandlers = callbacks.getDefaultHandlers;
+  });
+
+  it('throws a clear error when the model stops because max output tokens were reached', async () => {
+    const handlers = getDefaultHandlers({
+      res: { write: jest.fn() },
+      aggregateContent: jest.fn(),
+      toolEndCallback: jest.fn(),
+      collectedUsage: [],
+    });
+
+    const modelEndHandler = handlers.on_chat_model_end;
+
+    await expect(
+      modelEndHandler.handle(
+        'on_chat_model_end',
+        {
+          output: {
+            response_metadata: { finish_reason: 'length' },
+          },
+        },
+        {
+          user_id: 'user123',
+          run_id: 'run456',
+          thread_id: 'thread789',
+        },
+        {
+          getAgentContext: () => ({
+            clientOptions: { model: 'kimi-k2.5' },
+          }),
+        },
+      ),
+    ).rejects.toThrow('max output token limit');
   });
 });
