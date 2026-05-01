@@ -581,7 +581,7 @@ export default function useResumableSSE(
 
       try {
         const status = await request.get<StreamStatusResponse>(
-          `${apiBaseUrl()}/api/agents/chat/status/${conversationId}`,
+          `${apiBaseUrl()}/api/agents/chat/status/${activeGeneration.streamId}`,
         );
         if (!status.active || status.streamId !== activeGeneration.streamId) {
           console.log('[ResumableSSE] Skipping replacement abort; active generation is stale:', {
@@ -599,7 +599,10 @@ export default function useResumableSSE(
         });
         removeActiveJob(activeGeneration.streamId);
       } catch (error) {
-        console.error('[ResumableSSE] Failed to abort active generation before replacement:', error);
+        console.error(
+          '[ResumableSSE] Failed to abort active generation before replacement:',
+          error,
+        );
       } finally {
         activeGenerationRef.current = null;
       }

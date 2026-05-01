@@ -1,7 +1,7 @@
 import crypto from 'node:crypto';
 import { logger } from '@librechat/data-schemas';
-import { Constants } from 'librechat-data-provider';
-import type { TFile, TMessage, TMessageContentParts } from 'librechat-data-provider';
+import { Constants, parseTextParts } from 'librechat-data-provider';
+import type { Agents, TFile, TMessage, TMessageContentParts } from 'librechat-data-provider';
 import type { ServerRequest } from '~/types';
 import { decrementPendingRequest } from '../middleware';
 import { GenerationJobManager } from '../stream';
@@ -19,7 +19,7 @@ type StartResumableGenerationRequest = ServerRequest & {
 };
 
 type ResumableEndpointOption = {
-  endpoint?: string | null;
+  endpoint?: string;
   modelOptions?: { model?: string | null };
   model_parameters?: { model?: string | null };
 };
@@ -30,9 +30,9 @@ type SaveMessageOptions = {
 
 type UserMessageMeta = {
   messageId: string;
-  parentMessageId?: string | null;
-  conversationId?: string | null;
-  text?: string | null;
+  parentMessageId?: string;
+  conversationId?: string;
+  text?: string;
 };
 
 type SavedMessage = Partial<TMessage> & {
@@ -48,6 +48,7 @@ type SavedMessage = Partial<TMessage> & {
   error?: boolean;
   isCreatedByUser?: boolean;
   agent_id?: string;
+  image_urls?: Agents.MessageContentImageUrl[];
 };
 
 type ConversationRecord = {
@@ -57,8 +58,8 @@ type ConversationRecord = {
 
 type ClientResponse = Partial<TMessage> & {
   messageId: string;
-  conversationId?: string | null;
-  endpoint?: string | null;
+  conversationId?: string;
+  endpoint?: string;
   databasePromise?: Promise<{
     conversation?: ConversationRecord;
   }>;
@@ -73,7 +74,11 @@ type ProgressResponseShim = {
 
 type SendMessageOptions = {
   user: string;
-  onStart: (userMessage: SavedMessage, responseMessageId: string, isNewConversation: boolean) => void;
+  onStart: (
+    userMessage: SavedMessage,
+    responseMessageId: string,
+    isNewConversation: boolean,
+  ) => void;
   getReqData: (data?: { userMessage?: SavedMessage }) => void;
   isContinued?: boolean;
   isRegenerate?: boolean;
@@ -118,6 +123,29 @@ type AddTitleArgs = {
   response: ClientResponse;
   client: ResumableAgentClient;
 };
+
+function optionalString(value: string | null | undefined): string | undefined {
+  return value ?? undefined;
+}
+
+function withTopLevelTextFromContent<
+  T extends { text?: string | null; content?: TMessageContentParts[] },
+>(message: T): T {
+  if (typeof message.text === 'string' && message.text.length > 0) {
+    return message;
+  }
+
+  if (!Array.isArray(message.content) || message.content.length === 0) {
+    return message;
+  }
+
+  const text = parseTextParts(message.content);
+  if (!text) {
+    return message;
+  }
+
+  return { ...message, text };
+}
 
 export interface StartResumableGenerationParams {
   req: StartResumableGenerationRequest;
@@ -199,14 +227,14 @@ export async function startResumableGeneration(
         model:
           params.endpointOption.modelOptions?.model ??
           params.endpointOption.model_parameters?.model ??
-          null,
+          undefined,
       };
 
       if (params.req.body.agent_id) {
         partialMessage.agent_id = params.req.body.agent_id;
       }
 
-      await params.saveMessage(params.req, partialMessage, {
+      await params.saveMessage(params.req, withTopLevelTextFromContent(partialMessage), {
         context:
           'packages/api/src/agents/startResumableGeneration.ts - partial response on disconnect',
       });
@@ -268,9 +296,9 @@ export async function startResumableGeneration(
 
           const meta: UserMessageMeta = {
             messageId: userMsg.messageId,
-            parentMessageId: userMsg.parentMessageId,
-            conversationId: userMsg.conversationId,
-            text: typeof userMsg.text === 'string' ? userMsg.text : null,
+            parentMessageId: optionalString(userMsg.parentMessageId),
+            conversationId: optionalString(userMsg.conversationId),
+            text: optionalString(userMsg.text),
           };
 
           GenerationJobManager.updateMetadata(streamId, {
@@ -280,7 +308,14 @@ export async function startResumableGeneration(
 
           GenerationJobManager.emitChunk(streamId, {
             created: true,
-            message: userMessage,
+            message: {
+              messageId: userMessage.messageId,
+              parentMessageId: optionalString(userMessage.parentMessageId),
+              conversationId: optionalString(userMessage.conversationId),
+              text: optionalString(userMessage.text),
+              sender: userMessage.sender ?? 'User',
+              isCreatedByUser: userMessage.isCreatedByUser ?? true,
+            },
             streamId,
           });
         };
@@ -310,10 +345,13 @@ export async function startResumableGeneration(
         });
 
         const messageId = response.messageId;
-        response.endpoint = params.endpointOption.endpoint;
+        const responseWithText: ClientResponse = withTopLevelTextFromContent({
+          ...response,
+          endpoint: params.endpointOption.endpoint,
+        });
 
-        const databasePromise = response.databasePromise;
-        delete response.databasePromise;
+        const databasePromise = responseWithText.databasePromise;
+        delete responseWithText.databasePromise;
 
         if (!databasePromise) {
           throw new Error('Missing databasePromise from resumable agent response');
@@ -344,15 +382,14 @@ export async function startResumableGeneration(
 
         if (!client.skipSaveUserMessage && userMessage) {
           await params.saveMessage(params.req, userMessage, {
-            context:
-              'packages/api/src/agents/startResumableGeneration.ts - resumable user message',
+            context: 'packages/api/src/agents/startResumableGeneration.ts - resumable user message',
           });
         }
 
         if (client.savedMessageIds && !client.savedMessageIds.has(messageId)) {
           await params.saveMessage(
             params.req,
-            { ...response, user: userId, unfinished: wasAbortedBeforeComplete },
+            { ...responseWithText, user: userId, unfinished: wasAbortedBeforeComplete },
             {
               context:
                 'packages/api/src/agents/startResumableGeneration.ts - resumable response end',
@@ -373,16 +410,33 @@ export async function startResumableGeneration(
           return;
         }
 
+        const requestMessage = userMessage
+          ? {
+              ...sanitizeMessageForTransmit(userMessage),
+              parentMessageId: optionalString(userMessage.parentMessageId),
+              conversationId: optionalString(userMessage.conversationId),
+              text: optionalString(userMessage.text),
+            }
+          : null;
+        const responseMessage = {
+          ...responseWithText,
+          parentMessageId: optionalString(responseWithText.parentMessageId),
+          conversationId: optionalString(responseWithText.conversationId),
+          text: optionalString(responseWithText.text),
+          ...(wasAbortedBeforeComplete ? { unfinished: true } : {}),
+        };
+        const finalConversation = {
+          ...conversation,
+          conversationId: optionalString(conversation.conversationId),
+        };
+
         const finalEvent = {
           final: true,
-          conversation,
-          title: conversation.title,
-          requestMessage: sanitizeMessageForTransmit(userMessage),
-          responseMessage: {
-            ...response,
-            ...(wasAbortedBeforeComplete ? { unfinished: true } : {}),
-          },
-        };
+          conversation: finalConversation,
+          title: conversation.title ?? undefined,
+          requestMessage,
+          responseMessage,
+        } as const;
 
         logger.debug(
           `[startResumableGeneration] Emitting ${
@@ -408,7 +462,7 @@ export async function startResumableGeneration(
           params
             .addTitle(params.req, {
               text: params.text,
-              response,
+              response: responseWithText,
               client,
             })
             .catch((error) => {

@@ -328,6 +328,50 @@ describe('useResumableSSE - 404 error path', () => {
     unmount();
   });
 
+  it('uses the active stream ID to verify replacement jobs for new conversations', async () => {
+    const requestPost = request.post as jest.Mock;
+    const requestGet = request.get as jest.Mock;
+    const generatedConversationId = 'generated-conv-123';
+    requestPost
+      .mockResolvedValueOnce({ streamId: generatedConversationId })
+      .mockResolvedValueOnce({ streamId: 'replacement-stream' });
+    requestGet.mockResolvedValue({ active: true, streamId: generatedConversationId });
+    const chatHelpers = buildChatHelpers();
+    const firstSubmission = buildSubmission({
+      conversation: { conversationId: 'new' },
+      userMessage: { messageId: 'msg-1' },
+    } as Partial<PartialSubmission>);
+    const secondSubmission = buildSubmission({
+      conversation: { conversationId: 'new' },
+      userMessage: { messageId: 'msg-2' },
+    } as Partial<PartialSubmission>);
+
+    const { rerender, unmount } = renderHook(
+      ({ submission }) => useResumableSSE(submission, chatHelpers),
+      { initialProps: { submission: firstSubmission } },
+    );
+
+    await act(async () => {
+      await Promise.resolve();
+    });
+
+    rerender({ submission: secondSubmission });
+
+    await act(async () => {
+      await Promise.resolve();
+    });
+
+    await waitFor(() => {
+      expect(requestGet).toHaveBeenCalledWith(`/api/agents/chat/status/${generatedConversationId}`);
+      expect(requestPost).toHaveBeenNthCalledWith(2, '/api/agents/chat/abort', {
+        streamId: generatedConversationId,
+        conversationId: 'new',
+      });
+      expect(requestPost).toHaveBeenNthCalledWith(3, '/api/agents/chat', { model: 'gpt-4o' });
+    });
+    unmount();
+  });
+
   it('does not abort a stale same-conversation ref when stream status is no longer active', async () => {
     const requestPost = request.post as jest.Mock;
     const requestGet = request.get as jest.Mock;
