@@ -96,6 +96,9 @@ class ModelEndHandler {
       if (modelName) {
         usage.model = modelName;
       }
+      if (agentContext.provider) {
+        usage.provider = agentContext.provider;
+      }
 
       this.collectedUsage.push(usage);
     } catch (error) {
