@@ -1156,6 +1156,28 @@ save_deployed_commit() {
     log_success "已记录部署提交: ${current_commit}"
 }
 
+run_production_smoke() {
+    if [ "${SKIP_PRODUCTION_SMOKE:-false}" = "true" ]; then
+        log_warning "已跳过生产聊天 smoke（SKIP_PRODUCTION_SMOKE=true）"
+        return 0
+    fi
+
+    if [ ! -f "scripts/production-chat-smoke.mjs" ]; then
+        log_error "缺少生产聊天 smoke 脚本: scripts/production-chat-smoke.mjs"
+        exit 1
+    fi
+
+    local smoke_base_url="${PRODUCTION_SMOKE_BASE_URL:-http://${SERVER_IP}:3080}"
+    log_info "执行生产聊天 smoke: ${smoke_base_url}"
+
+    if ! PRODUCTION_SMOKE_BASE_URL="${smoke_base_url}" node scripts/production-chat-smoke.mjs; then
+        log_error "生产聊天 smoke 失败"
+        exit 1
+    fi
+
+    log_success "生产聊天 smoke 通过"
+}
+
 # 本地生产镜像测试
 local_test() {
     local LOCAL_TAG="librechat-local:test"
@@ -1305,6 +1327,7 @@ main() {
         config-only)
             deploy_service "restart-only"
             save_deployed_commit
+            run_production_smoke
             ;;
         no-change)
             log_warning "无变更需要部署，跳过服务重启"
@@ -1318,6 +1341,7 @@ main() {
             deploy_service
             save_image_info
             save_deployed_commit
+            run_production_smoke
             cleanup_remote_images "${IMAGE_TAG}"
             cleanup_local_images "${IMAGE_TAG}"
             ;;
