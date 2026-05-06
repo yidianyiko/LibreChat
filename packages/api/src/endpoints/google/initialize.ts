@@ -6,7 +6,7 @@ import type {
   GoogleConfigOptions,
   GoogleCredentials,
 } from '~/types';
-import { isEnabled, loadServiceKey, checkUserKeyExpiry } from '~/utils';
+import { isEnabled, loadServiceKey } from '~/utils';
 import { getGoogleConfig } from './llm';
 
 /**
@@ -21,28 +21,17 @@ export async function initializeGoogle({
   req,
   endpoint,
   model_parameters,
-  db,
 }: BaseInitializeParams): Promise<InitializeResultBase> {
   void endpoint;
   const appConfig = req.config;
   const { GOOGLE_KEY, GOOGLE_REVERSE_PROXY, GOOGLE_AUTH_HEADER, PROXY } = process.env;
-  const isUserProvided = GOOGLE_KEY === 'user_provided';
-  const { key: expiresAt } = req.body;
-
-  let userKey = null;
-  if (expiresAt && isUserProvided) {
-    checkUserKeyExpiry(expiresAt, EModelEndpoint.google);
-    userKey = await db.getUserKey({ userId: req.user?.id, name: EModelEndpoint.google });
-  }
+  const googleApiKey = GOOGLE_KEY === 'user_provided' ? undefined : GOOGLE_KEY;
 
   let serviceKey: Record<string, unknown> = {};
 
-  /** Check if GOOGLE_KEY is provided at all (including 'user_provided') */
-  const isGoogleKeyProvided =
-    (GOOGLE_KEY && GOOGLE_KEY.trim() !== '') || (isUserProvided && userKey != null);
+  const isGoogleKeyProvided = googleApiKey && googleApiKey.trim() !== '';
 
   if (!isGoogleKeyProvided && loadServiceKey) {
-    /** Only attempt to load service key if GOOGLE_KEY is not provided */
     try {
       const serviceKeyPath =
         process.env.GOOGLE_SERVICE_KEY_FILE || path.join(process.cwd(), 'api', 'data', 'auth.json');
@@ -56,12 +45,10 @@ export async function initializeGoogle({
     }
   }
 
-  const credentials: GoogleCredentials = isUserProvided
-    ? (userKey as GoogleCredentials)
-    : {
-        [AuthKeys.GOOGLE_SERVICE_KEY]: serviceKey,
-        [AuthKeys.GOOGLE_API_KEY]: GOOGLE_KEY,
-      };
+  const credentials: GoogleCredentials = {
+    [AuthKeys.GOOGLE_SERVICE_KEY]: serviceKey,
+    [AuthKeys.GOOGLE_API_KEY]: googleApiKey,
+  };
 
   let clientOptions: GoogleConfigOptions = {};
 

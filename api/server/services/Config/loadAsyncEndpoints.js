@@ -4,17 +4,14 @@ const { loadServiceKey, isUserProvided } = require('@librechat/api');
 const { config } = require('./EndpointService');
 
 async function loadAsyncEndpoints() {
-  let serviceKey, googleUserProvides;
+  let serviceKey;
   const { googleKey } = config;
+  const googleUserProvides = isUserProvided(googleKey);
+  const serverGoogleKey = googleUserProvides ? '' : googleKey;
 
-  /** Check if GOOGLE_KEY is provided at all(including 'user_provided') */
-  const isGoogleKeyProvided = googleKey && googleKey.trim() !== '';
+  const hasServerGoogleKey = serverGoogleKey && serverGoogleKey.trim() !== '';
 
-  if (isGoogleKeyProvided) {
-    /** If GOOGLE_KEY is provided, check if it's user_provided */
-    googleUserProvides = isUserProvided(googleKey);
-  } else {
-    /** Only attempt to load service key if GOOGLE_KEY is not provided */
+  if (!hasServerGoogleKey) {
     const serviceKeyPath =
       process.env.GOOGLE_SERVICE_KEY_FILE || path.join(__dirname, '../../..', 'data', 'auth.json');
 
@@ -26,7 +23,7 @@ async function loadAsyncEndpoints() {
     }
   }
 
-  const google = serviceKey || isGoogleKeyProvided ? { userProvide: googleUserProvides } : false;
+  const google = serviceKey || hasServerGoogleKey ? { userProvide: false } : false;
 
   return { google };
 }
