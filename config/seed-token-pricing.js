@@ -132,9 +132,15 @@ const tokenValues = Object.assign(
     'gpt-5': { prompt: 1.25, completion: 10 },
     'gpt-5.1': { prompt: 1.25, completion: 10 },
     'gpt-5.2': { prompt: 1.75, completion: 14 },
+    'gpt-5.3': { prompt: 1.75, completion: 14 },
+    'gpt-5.4': { prompt: 2.5, completion: 15 },
+    'gpt-5.5': { prompt: 5, completion: 30 },
     'gpt-5-nano': { prompt: 0.05, completion: 0.4 },
     'gpt-5-mini': { prompt: 0.25, completion: 2 },
     'gpt-5-pro': { prompt: 15, completion: 120 },
+    'gpt-5.2-pro': { prompt: 21, completion: 168 },
+    'gpt-5.4-pro': { prompt: 30, completion: 180 },
+    'gpt-5.5-pro': { prompt: 30, completion: 180 },
     o1: { prompt: 15, completion: 60 },
     'o1-mini': { prompt: 1.1, completion: 4.4 },
     'o1-preview': { prompt: 15, completion: 60 },
@@ -164,6 +170,7 @@ const tokenValues = Object.assign(
     'deepseek-reasoner': { prompt: 0.28, completion: 0.42 },
     'deepseek-r1': { prompt: 0.4, completion: 2.0 },
     'deepseek-v3': { prompt: 0.2, completion: 0.8 },
+    'deepseek-v4-flash': { prompt: 0.14, completion: 0.28 },
     'gemma-2': { prompt: 0.01, completion: 0.03 },
     'gemma-3': { prompt: 0.02, completion: 0.04 },
     'gemma-3-27b': { prompt: 0.09, completion: 0.16 },
@@ -275,6 +282,8 @@ const tokenValues = Object.assign(
 // Premium (long context) pricing
 const premiumTokenValues = {
   'claude-opus-4-6': { threshold: 200000, prompt: 10, completion: 37.5 },
+  'gpt-5.5': { threshold: 272000, prompt: 10, completion: 45 },
+  'gpt-5.5-pro': { threshold: 272000, prompt: 60, completion: 270 },
 };
 
 // Provider mapping based on model name patterns

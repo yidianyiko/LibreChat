@@ -57,6 +57,8 @@ const openAIModels = {
   'gpt-5.3': 400000,
   'gpt-5.4': 272000, // standard context; 1M experimental available via API opt-in (2x rate)
   'gpt-5.4-pro': 272000, // same window as gpt-5.4
+  'gpt-5.5': 1050000,
+  'gpt-5.5-pro': 1050000,
   'gpt-5-mini': 400000,
   'gpt-5-nano': 400000,
   'gpt-5-pro': 400000,
@@ -146,6 +148,7 @@ const deepseekModels = {
   deepseek: 128000,
   'deepseek-chat': 128000,
   'deepseek-v3': 128000,
+  'deepseek-v4-flash': 1000000,
   'deepseek.r1': 128000,
   'deepseek-r1': 128000,
   'deepseek-reasoner': 128000,
@@ -365,6 +368,8 @@ export const modelMaxOutputs = {
   'gpt-5.3': 128000,
   'gpt-5.4': 128000,
   'gpt-5.4-pro': 128000,
+  'gpt-5.5': 128000,
+  'gpt-5.5-pro': 128000,
   'gpt-5-mini': 128000,
   'gpt-5-nano': 128000,
   'gpt-5-pro': 128000,

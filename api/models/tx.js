@@ -140,8 +140,9 @@ const tokenValues = Object.assign(
     'gpt-5.2': { prompt: 1.75, completion: 14 },
     'gpt-5.3': { prompt: 1.75, completion: 14 },
     'gpt-5.4': { prompt: 2.5, completion: 15 },
-    // TODO: gpt-5.4-pro pricing not yet officially published — verify before release
-    'gpt-5.4-pro': { prompt: 5, completion: 30 },
+    'gpt-5.5': { prompt: 5, completion: 30 },
+    'gpt-5.4-pro': { prompt: 30, completion: 180 },
+    'gpt-5.5-pro': { prompt: 30, completion: 180 },
     'gpt-5-nano': { prompt: 0.05, completion: 0.4 },
     'gpt-5-mini': { prompt: 0.25, completion: 2 },
     'gpt-5-pro': { prompt: 15, completion: 120 },
@@ -177,6 +178,7 @@ const tokenValues = Object.assign(
     'deepseek-reasoner': { prompt: 0.28, completion: 0.42 },
     'deepseek-r1': { prompt: 0.4, completion: 2.0 },
     'deepseek-v3': { prompt: 0.2, completion: 0.8 },
+    'deepseek-v4-flash': { prompt: 0.14, completion: 0.28 },
     'gemma-2': { prompt: 0.01, completion: 0.03 }, // Base pattern (using gemma-2-9b pricing)
     'gemma-3': { prompt: 0.02, completion: 0.04 }, // Base pattern (using gemma-3n-e4b pricing)
     'gemma-3-27b': { prompt: 0.09, completion: 0.16 },
@@ -313,7 +315,7 @@ const cacheTokenValues = {
   //   gpt-4o (incl. mini), o1 (incl. mini/preview): 50% off
   //   gpt-4.1 (incl. mini/nano), o3 (incl. mini), o4-mini: 75% off
   //   gpt-5.x (excl. pro variants): 90% off
-  //   gpt-5-pro, gpt-5.2-pro, gpt-5.4-pro: no caching
+  //   gpt-5-pro, gpt-5.2-pro, gpt-5.4-pro, gpt-5.5-pro: no caching
   'gpt-4o': { write: 2.5, read: 1.25 },
   'gpt-4o-mini': { write: 0.15, read: 0.075 },
   'gpt-4.1': { write: 2, read: 0.5 },
@@ -324,6 +326,7 @@ const cacheTokenValues = {
   'gpt-5.2': { write: 1.75, read: 0.175 },
   'gpt-5.3': { write: 1.75, read: 0.175 },
   'gpt-5.4': { write: 2.5, read: 0.25 },
+  'gpt-5.5': { write: 5, read: 0.5 },
   'gpt-5-mini': { write: 0.25, read: 0.025 },
   'gpt-5-nano': { write: 0.05, read: 0.005 },
   o1: { write: 15, read: 7.5 },
@@ -336,6 +339,7 @@ const cacheTokenValues = {
   deepseek: { write: 0.28, read: 0.028 },
   'deepseek-chat': { write: 0.28, read: 0.028 },
   'deepseek-reasoner': { write: 0.28, read: 0.028 },
+  'deepseek-v4-flash': { write: 0.14, read: 0.0028 },
   // Moonshot/Kimi models - cache hit: $0.15/1M (k2) or $0.10/1M (k2.5), cache miss: $0.60/1M
   kimi: { write: 0.6, read: 0.15 },
   'kimi-k2': { write: 0.6, read: 0.15 },
@@ -361,6 +365,8 @@ const cacheTokenValues = {
  */
 const premiumTokenValues = {
   'claude-opus-4-6': { threshold: 200000, prompt: 10, completion: 37.5 },
+  'gpt-5.5': { threshold: 272000, prompt: 10, completion: 45 },
+  'gpt-5.5-pro': { threshold: 272000, prompt: 60, completion: 270 },
   'claude-sonnet-4-6': { threshold: 200000, prompt: 6, completion: 22.5 },
   'gemini-3.1': { threshold: 200000, prompt: 4, completion: 18 },
 };
