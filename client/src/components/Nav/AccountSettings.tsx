@@ -1,6 +1,14 @@
 import { memo, useRef, useState } from 'react';
 import * as Select from '@ariakit/react/select';
-import { BarChart3, CircleDollarSign, FileText, Import, LinkIcon, LogOut } from 'lucide-react';
+import {
+  BarChart3,
+  CircleDollarSign,
+  FileText,
+  Import,
+  LinkIcon,
+  LogOut,
+  MessagesSquare,
+} from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Avatar, DropdownMenuSeparator, GearIcon } from '@librechat/client';
 import type { Dispatch, SetStateAction } from 'react';
@@ -76,15 +84,26 @@ function AccountSettings({ setNavVisible }: AccountSettingsProps) {
         <WeChatQuickAction />
       </div>
       {user?.role === SystemRoles.ADMIN && (
-        <button
-          type="button"
-          onClick={() => navigate('/d/stats')}
-          aria-label="Admin Statistics"
-          className="account-settings-stats flex w-full items-center gap-2 rounded-xl p-2 text-sm text-text-primary transition-all duration-200 ease-in-out hover:bg-surface-active-alt"
-        >
-          <BarChart3 className="icon-md flex-shrink-0" aria-hidden="true" />
-          <span className="truncate">{localize('com_nav_statistics')}</span>
-        </button>
+        <>
+          <button
+            type="button"
+            onClick={() => navigate('/d/stats')}
+            aria-label="Admin Statistics"
+            className="account-settings-stats flex w-full items-center gap-2 rounded-xl p-2 text-sm text-text-primary transition-all duration-200 ease-in-out hover:bg-surface-active-alt"
+          >
+            <BarChart3 className="icon-md flex-shrink-0" aria-hidden="true" />
+            <span className="truncate">{localize('com_nav_statistics')}</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => navigate('/d/conversations')}
+            aria-label={localize('com_ui_admin_conversation_review')}
+            className="account-settings-conversations flex w-full items-center gap-2 rounded-xl p-2 text-sm text-text-primary transition-all duration-200 ease-in-out hover:bg-surface-active-alt"
+          >
+            <MessagesSquare className="icon-md flex-shrink-0" aria-hidden="true" />
+            <span className="truncate">{localize('com_ui_admin_conversation_review')}</span>
+          </button>
+        </>
       )}
       <Select.SelectProvider>
         <Select.Select

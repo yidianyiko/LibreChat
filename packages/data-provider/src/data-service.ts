@@ -1,6 +1,11 @@
 import type { AxiosResponse } from 'axios';
 import type { TAdminStatsResponse } from './admin-stats';
 import type {
+  AdminConvoDetail,
+  AdminConvoListResponse,
+  AdminConvoUserListResponse,
+} from './types/admin';
+import type {
   TWeChatBindStartResponse,
   TWeChatBindStatusResponse,
   TWeChatStatusResponse,
@@ -659,9 +664,9 @@ export const importConversationsFile = (
   return request.postMultiPart(endpoints.importConversation(), data, options);
 };
 
-export const importSelectiveConversations = (
-  payload: { conversations: unknown[] },
-): Promise<{
+export const importSelectiveConversations = (payload: {
+  conversations: unknown[];
+}): Promise<{
   message: string;
   success: Array<{ index: number; conversationId: string; title: string }>;
   failed: Array<{ index: number; conversationId: string; title: string; error: string }>;
@@ -1127,4 +1132,26 @@ export const getActiveJobs = (): Promise<ActiveJobsResponse> => {
 
 export const getAdminStats = (days?: number): Promise<TAdminStatsResponse> => {
   return request.get(endpoints.adminStats(days));
+};
+
+export const getAdminConversationUsers = (): Promise<AdminConvoUserListResponse> => {
+  return request.get(endpoints.adminConversationUsers());
+};
+
+export const getAdminUserConversations = (
+  anchorConversationId: string,
+): Promise<AdminConvoListResponse> => {
+  return request.get(endpoints.adminUserConversations(anchorConversationId));
+};
+
+export const getAdminConversationDetail = (conversationId: string): Promise<AdminConvoDetail> => {
+  return request.get(endpoints.adminConversationDetail(conversationId));
+};
+
+export const unlockAdminConversations = (password: string): Promise<void> => {
+  return request.post(endpoints.adminConversationsUnlock(), { password });
+};
+
+export const lockAdminConversations = (): Promise<void> => {
+  return request.post(endpoints.adminConversationsLock());
 };

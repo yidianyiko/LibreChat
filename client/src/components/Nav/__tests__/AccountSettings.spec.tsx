@@ -157,6 +157,9 @@ describe('AccountSettings', () => {
       if (key === 'com_nav_statistics') {
         return 'Statistics';
       }
+      if (key === 'com_ui_admin_conversation_review') {
+        return 'Conversation Review';
+      }
       return key;
     });
     mockUseGetStartupConfig.mockReturnValue({
@@ -301,5 +304,19 @@ describe('AccountSettings', () => {
     });
     expect(screen.getByTestId('wechat-dialog-title')).toHaveTextContent('com_ui_wechat_qr_title');
     expect(screen.getByAltText('com_ui_wechat_qr_title')).toBeInTheDocument();
+  });
+
+  it('shows admin conversation review entry for admins', () => {
+    mockUseAuthContext.mockReturnValue({
+      user: { name: 'Admin User', email: 'admin@example.com', role: 'ADMIN' },
+      isAuthenticated: true,
+      logout: jest.fn(),
+    });
+
+    render(<AccountSettings />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Conversation Review' }));
+
+    expect(mockNavigate).toHaveBeenCalledWith('/d/conversations');
   });
 });

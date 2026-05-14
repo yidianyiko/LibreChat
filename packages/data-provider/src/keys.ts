@@ -68,6 +68,9 @@ export enum QueryKeys {
   agentApiKeys = 'agentApiKeys',
   /* Admin Stats */
   adminStats = 'adminStats',
+  adminConversationUsers = 'adminConversationUsers',
+  adminUserConversations = 'adminUserConversations',
+  adminConversationDetail = 'adminConversationDetail',
 }
 
 // Dynamic query keys that require parameters

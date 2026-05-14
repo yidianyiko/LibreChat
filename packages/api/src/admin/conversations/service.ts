@@ -1,5 +1,10 @@
-import type { AdminConvoDetail, AdminConvoListItem } from 'librechat-data-provider';
+import type {
+  AdminConvoDetail,
+  AdminConvoListItem,
+  AdminConvoUserListItem,
+} from 'librechat-data-provider';
 
+import { anonymizeUserId } from './anonymizer';
 import { toAdminConvoDetail, toAdminConvoListItem } from './transformer';
 
 type StringIdValue = { toString(): string } | string;
@@ -59,6 +64,7 @@ type StringFilter = string | { $in: string[] };
 type CursorClause = { updatedAt: { $lt: Date } } | { updatedAt: Date; _id: { $lt: string } };
 
 type ConversationListFilter = {
+  user?: StringIdValue;
   endpoint?: StringFilter;
   model?: StringFilter;
   agent_id?: StringFilter;
@@ -82,12 +88,27 @@ type LeanOnlyQuery<T> = {
   lean(): Promise<T>;
 };
 
+type AggregateQuery<T> = {
+  exec(): Promise<T>;
+};
+
 type ConversationListModel = {
   find(filter: ConversationListFilter): LeanQuery<AdminConversationSource[]>;
 };
 
 type ConversationDetailModel = {
   findOne(filter: { conversationId: string }): LeanOnlyQuery<AdminConversationSource | null>;
+};
+
+type AdminConversationUserAggregateRow = {
+  user: StringIdValue;
+  anchorConversationId: StringIdValue;
+  conversationCount: number;
+  latestUpdatedAt: Date | string;
+};
+
+type ConversationUserModel = {
+  aggregate(pipeline: unknown[]): AggregateQuery<AdminConversationUserAggregateRow[]>;
 };
 
 type MessageModel = {
@@ -101,6 +122,14 @@ type ListModels = {
 type DetailModels = {
   Conversation: ConversationDetailModel;
   Message: MessageModel;
+};
+
+type UserListModels = {
+  Conversation: ConversationUserModel;
+};
+
+type UserConversationModels = {
+  Conversation: ConversationListModel & ConversationDetailModel;
 };
 
 export type AdminConversationListParams = {
@@ -118,6 +147,10 @@ export type AdminConversationListResult = {
   nextCursor: string | null;
 };
 
+export type AdminConversationUserListResult = {
+  items: AdminConvoUserListItem[];
+};
+
 const SUPPORTED_LIST_PARAMS = new Set([
   'cursor',
   'limit',
@@ -131,6 +164,8 @@ const DEFAULT_LIMIT = 25;
 const MAX_LIMIT = 50;
 const DETAIL_MESSAGE_LIMIT = 1001;
 const DETAIL_RENDER_LIMIT = 1000;
+const ADMIN_USER_LIST_LIMIT = 200;
+const ADMIN_USER_CONVERSATION_LIMIT = 200;
 
 export class AdminConversationInvalidRequestError extends Error {
   code = 'invalid_request' as const;
@@ -327,6 +362,70 @@ export const listAdminConversations = async (
   return {
     items: pageRows.map((conversation) => toAdminConvoListItem(conversation, hashSalt)),
     nextCursor,
+  };
+};
+
+const toAdminConvoUserListItem = (
+  row: AdminConversationUserAggregateRow,
+  hashSalt: string,
+): AdminConvoUserListItem => ({
+  anonUserId: anonymizeUserId(toStringId(row.user), hashSalt),
+  anchorConversationId: toStringId(row.anchorConversationId),
+  conversationCount: row.conversationCount,
+  latestUpdatedAt: toIsoDate(row.latestUpdatedAt),
+});
+
+export const listAdminConversationUsers = async (
+  models: UserListModels,
+  hashSalt: string,
+): Promise<AdminConversationUserListResult> => {
+  const rows = await models.Conversation.aggregate([
+    { $sort: { updatedAt: -1, _id: -1 } },
+    {
+      $group: {
+        _id: '$user',
+        anchorConversationId: { $first: '$conversationId' },
+        conversationCount: { $sum: 1 },
+        latestUpdatedAt: { $first: '$updatedAt' },
+      },
+    },
+    { $sort: { latestUpdatedAt: -1, _id: 1 } },
+    { $limit: ADMIN_USER_LIST_LIMIT },
+    {
+      $project: {
+        _id: 0,
+        user: '$_id',
+        anchorConversationId: 1,
+        conversationCount: 1,
+        latestUpdatedAt: 1,
+      },
+    },
+  ]).exec();
+
+  return {
+    items: rows.map((row) => toAdminConvoUserListItem(row, hashSalt)),
+  };
+};
+
+export const listAdminConversationsForUserAnchor = async (
+  models: UserConversationModels,
+  anchorConversationId: string,
+  hashSalt: string,
+): Promise<AdminConversationListResult | null> => {
+  const anchor = await models.Conversation.findOne({ conversationId: anchorConversationId }).lean();
+
+  if (!anchor) {
+    return null;
+  }
+
+  const rows = await models.Conversation.find({ user: anchor.user })
+    .sort({ updatedAt: -1, _id: -1 })
+    .limit(ADMIN_USER_CONVERSATION_LIMIT)
+    .lean();
+
+  return {
+    items: rows.map((conversation) => toAdminConvoListItem(conversation, hashSalt)),
+    nextCursor: null,
   };
 };
 

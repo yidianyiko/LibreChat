@@ -553,3 +553,52 @@ export const useGetAdminStats = (
     },
   );
 };
+
+export const useGetAdminConversationUsers = (
+  config?: UseQueryOptions<t.AdminConvoUserListResponse>,
+): QueryObserverResult<t.AdminConvoUserListResponse> => {
+  return useQuery<t.AdminConvoUserListResponse>(
+    [QueryKeys.adminConversationUsers],
+    () => dataService.getAdminConversationUsers(),
+    {
+      refetchOnWindowFocus: false,
+      refetchOnReconnect: false,
+      refetchOnMount: false,
+      ...config,
+    },
+  );
+};
+
+export const useGetAdminUserConversations = (
+  anchorConversationId: string | null,
+  config?: UseQueryOptions<t.AdminConvoListResponse>,
+): QueryObserverResult<t.AdminConvoListResponse> => {
+  return useQuery<t.AdminConvoListResponse>(
+    [QueryKeys.adminUserConversations, anchorConversationId],
+    () => dataService.getAdminUserConversations(anchorConversationId ?? ''),
+    {
+      enabled: !!anchorConversationId,
+      refetchOnWindowFocus: false,
+      refetchOnReconnect: false,
+      refetchOnMount: false,
+      ...config,
+    },
+  );
+};
+
+export const useGetAdminConversationDetail = (
+  conversationId: string | null,
+  config?: UseQueryOptions<t.AdminConvoDetail>,
+): QueryObserverResult<t.AdminConvoDetail> => {
+  return useQuery<t.AdminConvoDetail>(
+    [QueryKeys.adminConversationDetail, conversationId],
+    () => dataService.getAdminConversationDetail(conversationId ?? ''),
+    {
+      enabled: !!conversationId,
+      refetchOnWindowFocus: false,
+      refetchOnReconnect: false,
+      refetchOnMount: false,
+      ...config,
+    },
+  );
+};

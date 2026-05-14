@@ -1,4 +1,11 @@
-import type { AdminConvoDetail, AdminConvoListItem, AdminMessageItem } from './index';
+import type {
+  AdminConvoDetail,
+  AdminConvoListItem,
+  AdminConvoListResponse,
+  AdminConvoUserListItem,
+  AdminConvoUserListResponse,
+  AdminMessageItem,
+} from './index';
 import { adminConvoDetailKeys, adminConvoListItemKeys, adminMessageItemKeys } from './index';
 import { ContentTypes } from './types/runs';
 
@@ -38,8 +45,19 @@ test('admin conversation DTO keys are exported through the package barrel', () =
     updatedAt: '2026-05-14T00:00:03.000Z',
   };
   const detail: AdminConvoDetail = { ...listItem, messages: [message], truncated: false };
+  const listResponse: AdminConvoListResponse = { items: [listItem], nextCursor: null };
+  const userListItem: AdminConvoUserListItem = {
+    anonUserId: 'abcdef123456',
+    anchorConversationId: 'convo-1',
+    conversationCount: 2,
+    latestUpdatedAt: '2026-05-14T00:01:00.000Z',
+  };
+  const userListResponse: AdminConvoUserListResponse = { items: [userListItem] };
 
   expect(detail.messages[0].anonUserId).toBe('abcdef123456');
+  expect(listResponse.items[0].conversationId).toBe('convo-1');
+  expect(userListItem).not.toHaveProperty('user');
+  expect(userListResponse.items[0].anchorConversationId).toBe('convo-1');
   expect(Object.keys(listItem).sort()).toEqual([...adminConvoListItemKeys].sort());
   expect(Object.keys(message).sort()).toEqual([...adminMessageItemKeys].sort());
   expect(Object.keys(detail).sort()).toEqual([...adminConvoDetailKeys].sort());

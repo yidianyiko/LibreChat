@@ -1,4 +1,10 @@
-import { getAdminConversationDetail, listAdminConversations, parseListParams } from '../service';
+import {
+  getAdminConversationDetail,
+  listAdminConversationUsers,
+  listAdminConversations,
+  listAdminConversationsForUserAnchor,
+  parseListParams,
+} from '../service';
 
 const hashSalt = '12345678901234567890123456789012';
 
@@ -38,6 +44,14 @@ const createQuery = <T>(result: T): QueryResult<T> => {
 
   return query;
 };
+
+type AggregateResult<T> = {
+  exec: jest.Mock<Promise<T>, []>;
+};
+
+const createAggregate = <T>(result: T): AggregateResult<T> => ({
+  exec: jest.fn(() => Promise.resolve(result)),
+});
 
 describe('admin conversation service', () => {
   it('caps requested list limit at 50', () => {
@@ -209,5 +223,104 @@ describe('admin conversation service', () => {
 
     await expect(getAdminConversationDetail(models, 'missing-convo', hashSalt)).resolves.toBeNull();
     expect(models.Message.find).not.toHaveBeenCalled();
+  });
+
+  it('lists anonymous users grouped by raw owner without exposing raw owner ids', async () => {
+    const aggregateResult = createAggregate([
+      {
+        user: 'raw-user-1',
+        anchorConversationId: 'convo-latest-user-1',
+        conversationCount: 3,
+        latestUpdatedAt: new Date('2026-05-14T00:03:00.000Z'),
+      },
+      {
+        user: 'raw-user-2',
+        anchorConversationId: 'convo-latest-user-2',
+        conversationCount: 1,
+        latestUpdatedAt: '2026-05-13T00:00:00.000Z',
+      },
+    ]);
+    const models = {
+      Conversation: {
+        aggregate: jest.fn(() => aggregateResult),
+      },
+    };
+
+    const result = await listAdminConversationUsers(models, hashSalt);
+
+    expect(models.Conversation.aggregate).toHaveBeenCalledWith([
+      { $sort: { updatedAt: -1, _id: -1 } },
+      {
+        $group: {
+          _id: '$user',
+          anchorConversationId: { $first: '$conversationId' },
+          conversationCount: { $sum: 1 },
+          latestUpdatedAt: { $first: '$updatedAt' },
+        },
+      },
+      { $sort: { latestUpdatedAt: -1, _id: 1 } },
+      { $limit: 200 },
+      {
+        $project: {
+          _id: 0,
+          user: '$_id',
+          anchorConversationId: 1,
+          conversationCount: 1,
+          latestUpdatedAt: 1,
+        },
+      },
+    ]);
+    expect(result.items).toEqual([
+      {
+        anonUserId: expect.any(String),
+        anchorConversationId: 'convo-latest-user-1',
+        conversationCount: 3,
+        latestUpdatedAt: '2026-05-14T00:03:00.000Z',
+      },
+      {
+        anonUserId: expect.any(String),
+        anchorConversationId: 'convo-latest-user-2',
+        conversationCount: 1,
+        latestUpdatedAt: '2026-05-13T00:00:00.000Z',
+      },
+    ]);
+    expect(JSON.stringify(result)).not.toContain('raw-user');
+  });
+
+  it('lists conversations for the raw owner resolved from an anchor conversation', async () => {
+    const anchorQuery = createQuery(makeConversation('anchor', '2026-05-14T00:03:00.000Z'));
+    const listQuery = createQuery([
+      makeConversation('b', '2026-05-14T00:02:00.000Z'),
+      makeConversation('a', '2026-05-14T00:01:00.000Z'),
+    ]);
+    const models = {
+      Conversation: {
+        findOne: jest.fn(() => anchorQuery),
+        find: jest.fn(() => listQuery),
+      },
+    };
+
+    const result = await listAdminConversationsForUserAnchor(models, 'convo-anchor', hashSalt);
+
+    expect(models.Conversation.findOne).toHaveBeenCalledWith({ conversationId: 'convo-anchor' });
+    expect(models.Conversation.find).toHaveBeenCalledWith({ user: 'user-anchor' });
+    expect(listQuery.sort).toHaveBeenCalledWith({ updatedAt: -1, _id: -1 });
+    expect(listQuery.limit).toHaveBeenCalledWith(200);
+    expect(result?.items.map((item) => item.conversationId)).toEqual(['convo-b', 'convo-a']);
+  });
+
+  it('returns null when listing conversations for a missing user anchor', async () => {
+    const anchorQuery = createQuery(null);
+    const models = {
+      Conversation: {
+        findOne: jest.fn(() => anchorQuery),
+        find: jest.fn(),
+      },
+    };
+
+    await expect(
+      listAdminConversationsForUserAnchor(models, 'missing-anchor', hashSalt),
+    ).resolves.toBeNull();
+    expect(models.Conversation.find).not.toHaveBeenCalled();
   });
 });

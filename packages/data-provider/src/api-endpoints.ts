@@ -452,3 +452,12 @@ export const graphToken = (scopes: string) =>
 // Admin Stats
 export const adminStats = (days?: number) =>
   `${BASE_URL}/api/admin/stats${days ? `?days=${days}` : ''}`;
+
+const adminConversationsRoot = `${BASE_URL}/api/admin/conversations`;
+export const adminConversationUsers = () => `${adminConversationsRoot}/users`;
+export const adminUserConversations = (anchorConversationId: string) =>
+  `${adminConversationsRoot}/users/${encodeURIComponent(anchorConversationId)}/conversations`;
+export const adminConversationDetail = (conversationId: string) =>
+  `${adminConversationsRoot}/${encodeURIComponent(conversationId)}`;
+export const adminConversationsUnlock = () => `${adminConversationsRoot}/unlock`;
+export const adminConversationsLock = () => `${adminConversationsRoot}/lock`;

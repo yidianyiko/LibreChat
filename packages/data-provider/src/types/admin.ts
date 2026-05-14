@@ -39,6 +39,24 @@ export const adminMessageItemKeys = [
 
 export const adminConvoDetailKeys = [...adminConvoListItemKeys, 'messages', 'truncated'] as const;
 
+export const adminConvoUserListItemKeys = [
+  'anonUserId',
+  'anchorConversationId',
+  'conversationCount',
+  'latestUpdatedAt',
+] as const;
+
+export type AdminConvoUserListItem = {
+  anonUserId: string;
+  anchorConversationId: string;
+  conversationCount: number;
+  latestUpdatedAt: string;
+};
+
+export type AdminConvoUserListResponse = {
+  items: AdminConvoUserListItem[];
+};
+
 export type AdminConvoListItem = {
   id: string;
   conversationId: string;
@@ -78,4 +96,9 @@ export type AdminMessageItem = {
 export type AdminConvoDetail = AdminConvoListItem & {
   messages: AdminMessageItem[];
   truncated: boolean;
+};
+
+export type AdminConvoListResponse = {
+  items: AdminConvoListItem[];
+  nextCursor: string | null;
 };

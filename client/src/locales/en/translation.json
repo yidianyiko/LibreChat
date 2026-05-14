@@ -1711,5 +1711,18 @@
   "com_ui_wechat_reauth_required": "Rebind required",
   "com_ui_wechat_unbind": "Unbind WeChat",
   "com_ui_wechat_unbound": "Not connected",
+  "com_ui_admin_conversation_review": "Conversation Review",
+  "com_ui_admin_conversations_unlock_required": "Unlock conversation review",
+  "com_ui_admin_conversations_function_password": "Function password",
+  "com_ui_admin_conversations_unlock_failed": "Unable to unlock conversation review",
+  "com_ui_unlock": "Unlock",
+  "com_ui_admin_conversations_users": "Users",
+  "com_ui_admin_conversations_conversations": "Conversations",
+  "com_ui_admin_conversations_messages": "Messages",
+  "com_ui_admin_conversations_count": "{{0}} conversations",
+  "com_ui_admin_conversations_truncated": "Showing the latest 1000 messages.",
+  "com_ui_admin_conversations_user_message": "User",
+  "com_ui_admin_conversations_assistant_message": "Assistant",
+  "com_ui_admin_conversations_empty_message": "No text content",
   "com_user_message": "You"
 }

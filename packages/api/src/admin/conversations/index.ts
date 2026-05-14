@@ -8,7 +8,9 @@ import { createAdminConvoLimiter } from './limiter';
 import {
   AdminConversationInvalidRequestError,
   getAdminConversationDetail,
+  listAdminConversationUsers,
   listAdminConversations,
+  listAdminConversationsForUserAnchor,
   parseListParams,
 } from './service';
 import { handleLock, handleUnlock } from './unlock';
@@ -52,6 +54,13 @@ type AdminMessageSource = {
   updatedAt?: Date | string;
 };
 
+type AdminConversationUserAggregateRow = {
+  user: StringIdValue;
+  anchorConversationId: StringIdValue;
+  conversationCount: number;
+  latestUpdatedAt: Date | string;
+};
+
 type SortSpec = {
   updatedAt?: -1;
   createdAt?: -1;
@@ -69,6 +78,7 @@ type LeanOnlyQuery<T> = {
 };
 
 type ConversationListFilter = {
+  user?: StringIdValue;
   endpoint?: string | { $in: string[] };
   model?: string | { $in: string[] };
   agent_id?: string | { $in: string[] };
@@ -84,6 +94,7 @@ type AdminConversationModels = {
   Conversation: {
     find(filter: ConversationListFilter): LeanQuery<AdminConversationSource[]>;
     findOne(filter: { conversationId: string }): LeanOnlyQuery<AdminConversationSource | null>;
+    aggregate(pipeline: unknown[]): { exec(): Promise<AdminConversationUserAggregateRow[]> };
   };
   Message: {
     find(filter: { conversationId: string }): LeanQuery<AdminMessageSource[]>;
@@ -166,6 +177,32 @@ export const createAdminConversationsRouter = (models: AdminConversationModels) 
     asyncRoute((req, res) => handleUnlock(config)(req as ServerRequest, res)),
   );
   router.post('/lock', asRequestHandler(handleLock(config)));
+  router.get(
+    '/users',
+    asRequestHandler(requireUnlocked),
+    asyncRoute(async (_req, res) => {
+      const result = await listAdminConversationUsers(models, config.hashSalt);
+
+      return res.status(200).json(result);
+    }),
+  );
+  router.get(
+    '/users/:anchorConversationId/conversations',
+    asRequestHandler(requireUnlocked),
+    asyncRoute(async (req, res) => {
+      const result = await listAdminConversationsForUserAnchor(
+        models,
+        req.params.anchorConversationId,
+        config.hashSalt,
+      );
+
+      if (!result) {
+        return res.status(404).json(NOT_FOUND);
+      }
+
+      return res.status(200).json(result);
+    }),
+  );
   router.get(
     '/',
     asRequestHandler(requireUnlocked),

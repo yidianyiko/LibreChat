@@ -21,6 +21,7 @@ type LeanOnlyResult<T> = {
 type ConversationModelStub = {
   find: jest.Mock<QueryResult<ReturnType<typeof makeConversation>[]>, [unknown]>;
   findOne: jest.Mock<LeanOnlyResult<ReturnType<typeof makeConversation> | null>, [unknown]>;
+  aggregate: jest.Mock<AggregateResult<AdminUserAggregateRow[]>, [unknown[]]>;
 };
 
 type MessageModelStub = {
@@ -43,6 +44,15 @@ type AdminRouterResponse =
   | {
       items: Array<{
         anonUserId: string;
+        anchorConversationId: string;
+        conversationCount: number;
+        latestUpdatedAt: string;
+        user?: string;
+      }>;
+    }
+  | {
+      items: Array<{
+        anonUserId: string;
         conversationId: string;
         user?: string;
       }>;
@@ -62,6 +72,13 @@ type AdminRouterResponse =
       }>;
     };
 
+type AdminUserAggregateRow = {
+  user: string;
+  anchorConversationId: string;
+  conversationCount: number;
+  latestUpdatedAt: string;
+};
+
 const createQuery = <T>(result: T): QueryResult<T> => {
   const query: QueryResult<T> = {
     sort: jest.fn((_sort: unknown) => query),
@@ -74,6 +91,14 @@ const createQuery = <T>(result: T): QueryResult<T> => {
 
 const createLeanQuery = <T>(result: T): LeanOnlyResult<T> => ({
   lean: jest.fn(() => Promise.resolve(result)),
+});
+
+type AggregateResult<T> = {
+  exec: jest.Mock<Promise<T>, []>;
+};
+
+const createAggregate = <T>(result: T): AggregateResult<T> => ({
+  exec: jest.fn(() => Promise.resolve(result)),
 });
 
 const makeConversation = () => ({
@@ -107,6 +132,7 @@ const createModels = () => ({
   Conversation: {
     find: jest.fn(),
     findOne: jest.fn(),
+    aggregate: jest.fn(),
   } as ConversationModelStub,
   Message: {
     find: jest.fn(),
@@ -308,5 +334,61 @@ describe('createAdminConversationsRouter', () => {
     expect(response.status).toBe(400);
     expect(response.body).toEqual({ error: 'invalid_request' });
     expect(models.Conversation.find).not.toHaveBeenCalled();
+  });
+
+  it('lists anonymous user groups after unlock', async () => {
+    const models = createModels();
+    models.Conversation.aggregate.mockReturnValue(
+      createAggregate([
+        {
+          user: 'raw-user-id',
+          anchorConversationId: 'convo-1',
+          conversationCount: 2,
+          latestUpdatedAt: '2026-05-14T00:01:00.000Z',
+        },
+      ]),
+    );
+
+    const response = await requestJson(createApp(models), '/users', {
+      headers: { Cookie: createElevatedCookie() },
+    });
+
+    expect(response.status).toBe(200);
+    expect(response.body).toHaveProperty('items');
+    if (!response.body || !('items' in response.body)) {
+      throw new Error('Expected users response');
+    }
+    expect(response.body.items[0]).toEqual({
+      anonUserId: expect.any(String),
+      anchorConversationId: 'convo-1',
+      conversationCount: 2,
+      latestUpdatedAt: '2026-05-14T00:01:00.000Z',
+    });
+    expect(JSON.stringify(response.body)).not.toContain('raw-user-id');
+  });
+
+  it('lists conversations for a selected anonymous user anchor', async () => {
+    const models = createModels();
+    models.Conversation.findOne.mockReturnValue(createLeanQuery(makeConversation()));
+    models.Conversation.find.mockReturnValue(createQuery([makeConversation()]));
+
+    const response = await requestJson(createApp(models), '/users/convo-1/conversations', {
+      headers: { Cookie: createElevatedCookie() },
+    });
+
+    expect(response.status).toBe(200);
+    expect(models.Conversation.findOne).toHaveBeenCalledWith({ conversationId: 'convo-1' });
+    expect(models.Conversation.find).toHaveBeenCalledWith({ user: 'raw-user-id' });
+    expect(response.body).toHaveProperty('items');
+    if (!response.body || !('items' in response.body)) {
+      throw new Error('Expected user conversations response');
+    }
+    expect(response.body.items[0]).toEqual(
+      expect.objectContaining({
+        anonUserId: expect.any(String),
+        conversationId: 'convo-1',
+      }),
+    );
+    expect(response.body.items[0]).not.toHaveProperty('user');
   });
 });

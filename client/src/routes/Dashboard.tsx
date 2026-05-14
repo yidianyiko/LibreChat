@@ -6,6 +6,7 @@ import {
   EmptyPromptPreview,
 } from '~/components/Prompts';
 import DashboardRoute from './Layouts/Dashboard';
+import AdminConversationsPage from './AdminConversations';
 import StatsPage from './Stats';
 
 const dashboardRoutes = {
@@ -76,6 +77,10 @@ const dashboardRoutes = {
     {
       path: 'stats',
       element: <StatsPage />,
+    },
+    {
+      path: 'conversations',
+      element: <AdminConversationsPage />,
     },
     {
       path: '*',
