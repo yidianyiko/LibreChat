@@ -2,6 +2,7 @@ const accessPermissions = require('./accessPermissions');
 const assistants = require('./assistants');
 const categories = require('./categories');
 const adminAuth = require('./admin/auth');
+const adminConversations = require('./admin/conversations');
 const adminStats = require('./admin/stats');
 const endpoints = require('./endpoints');
 const staticRoute = require('./static');
@@ -35,6 +36,7 @@ module.exports = {
   wechat,
   auth,
   adminAuth,
+  adminConversations,
   adminStats,
   keys,
   apiKeys,

@@ -18,7 +18,7 @@ Give the admin panel a way to browse user conversations for product requirement 
 
 ## Architecture
 
-All new logic lives in TypeScript under `packages/api/src/admin/conversations/`. A thin JS wrapper at `api/server/routes/admin/conversations.js` mounts the routes, matching the convention used by `admin/stats.js`. Mount the wrapper at `app.use('/api/admin/conversations', routes.adminConversations)` in `api/server/index.js`.
+All new feature logic lives in TypeScript under `packages/api/src/admin/conversations/`. A thin JS wrapper at `api/server/routes/admin/conversations.js` applies the existing `requireJwtAuth + requireAdmin` middleware and mounts the TypeScript router, matching the convention used by `admin/stats.js`. Mount the wrapper at `app.use('/api/admin/conversations', routes.adminConversations)` in `api/server/index.js`.
 
 ```
 admin panel (separate frontend)
@@ -38,7 +38,12 @@ packages/api/src/admin/conversations/
    └── index.ts            router wiring
 ```
 
-No schema changes. No backfill. No new collections. Reads go straight to the existing `Conversation` and `Message` collections.
+No document shape changes. No backfill. No new collections. Reads go straight to the existing `Conversation` and `Message` collections. Add only the query indexes needed for this read path:
+
+- `Conversation`: `{ updatedAt: -1, _id: -1 }`
+- `Conversation`: `{ endpoint: 1, model: 1, updatedAt: -1, _id: -1 }`
+- `Conversation`: `{ agent_id: 1, updatedAt: -1, _id: -1 }`
+- `Message`: `{ conversationId: 1, createdAt: 1, _id: 1 }`
 
 ## Security Model
 
@@ -46,7 +51,7 @@ The threat being mitigated is "any admin can casually open any user's chat histo
 
 ### Function password storage
 
-Two new environment variables:
+Four new environment variables:
 
 ```
 ADMIN_CONVERSATIONS_PASSWORD_HASH=$2b$12$...     # bcrypt hash, never plaintext
@@ -66,7 +71,7 @@ POST /api/admin/conversations/unlock
   body: { password: string }
   → 200 + Set-Cookie: lc_admin_convo=<jwt>;
                        HttpOnly; Secure; SameSite=Strict; Path=/api/admin/conversations
-  → 401 { error: 'authentication_required' }   // wrong password, locked, or hash missing
+  → 401 { error: 'authentication_required' }   // wrong password or locked
 ```
 
 The cookie is the only carrier. The token is never returned in the JSON body, so it cannot land in `localStorage`. The cookie's `Path` keeps it out of every other route. JWT payload:
@@ -76,6 +81,8 @@ The cookie is the only carrier. The token is never returned in the JSON body, so
 ```
 
 A matching `POST /api/admin/conversations/lock` clears the cookie when the admin chooses to step down.
+
+Cookie assumption: the admin panel and LibreChat API must be deployed as same-site origins under the browser cookie model (for example, sibling subdomains under the same registrable domain). `SameSite=Strict` will not work if the admin panel is hosted on a different site. Local HTTP development can override only the `Secure` flag through test/dev config; production always sets `Secure`.
 
 ### Brute-force defense
 
@@ -91,9 +98,12 @@ Stable per user across all admin sessions: `hmac_sha256(userId, ADMIN_HASH_SALT)
 
 ### DTO contract
 
-Two TypeScript types in `packages/data-provider/src/types/admin.ts`:
+Types live in `packages/data-provider/src/types/admin.ts` and are exported from `packages/data-provider/src/index.ts`. Reuse the existing feedback and message-content types instead of introducing `unknown` payloads:
 
 ```ts
+import type { TMinimalFeedback } from '../feedback';
+import type { TMessageContentParts } from './assistants';
+
 export type AdminConvoListItem = {
   id: string;
   conversationId: string;
@@ -115,7 +125,7 @@ export type AdminMessageItem = {
   parentMessageId?: string;
   anonUserId: string;
   text?: string;
-  content?: unknown[];   // Mixed type preserved structurally; rendered as-is by admin UI
+  content?: TMessageContentParts[]; // Text/think/error parts only; tool/media payloads are dropped.
   sender?: string;
   isCreatedByUser: boolean;
   model?: string;
@@ -123,7 +133,7 @@ export type AdminMessageItem = {
   tokenCount?: number;
   summaryTokenCount?: number;
   finish_reason?: string;
-  feedback?: { rating: 'thumbsUp' | 'thumbsDown'; tag?: unknown; text?: string };
+  feedback?: TMinimalFeedback;
   error?: boolean;
   unfinished?: boolean;
   createdAt: string;
@@ -132,6 +142,7 @@ export type AdminMessageItem = {
 
 export type AdminConvoDetail = AdminConvoListItem & {
   messages: AdminMessageItem[];
+  truncated: boolean;
 };
 ```
 
@@ -140,7 +151,7 @@ Neither type has a `user`, `email`, `name`, `username`, `openidId`, `files`, `at
 ### Other guarantees
 
 - Server-side hard cap of 50 on `limit`.
-- Cursor pagination only (`createdAt` + `_id` as compound cursor). No `skip` parameter is accepted.
+- Cursor pagination only (`updatedAt` + `_id` as compound cursor, sorted newest first). No `skip` parameter is accepted.
 - A separate `adminConvoLimiter` (60 requests per minute per admin) applies to every route in this subtree.
 - No export route is mounted.
 
@@ -148,33 +159,33 @@ Neither type has a `user`, `email`, `name`, `username`, `openidId`, `files`, `at
 
 `Conversation` → `AdminConvoListItem`:
 
-| Source | Target | Treatment |
-| --- | --- | --- |
-| `_id` | `id` | string |
-| `conversationId` | `conversationId` | direct |
-| `title` | `title` | direct (titles can contain user-typed text; risk is equivalent to message body, which is accepted) |
-| `user` | `anonUserId` | HMAC, 12 hex |
-| `endpoint`, `model`, `agent_id`, `tags` | same | direct |
-| `createdAt`, `updatedAt` | same | ISO string |
-| `files`, `expiredAt`, `importSourceId`, all `conversationPreset` fields | — | dropped |
+| Source                                                                  | Target           | Treatment                                                                                          |
+| ----------------------------------------------------------------------- | ---------------- | -------------------------------------------------------------------------------------------------- |
+| `_id`                                                                   | `id`             | string                                                                                             |
+| `conversationId`                                                        | `conversationId` | direct                                                                                             |
+| `title`                                                                 | `title`          | direct (titles can contain user-typed text; risk is equivalent to message body, which is accepted) |
+| `user`                                                                  | `anonUserId`     | HMAC, 12 hex                                                                                       |
+| `endpoint`, `model`, `agent_id`, `tags`                                 | same             | direct                                                                                             |
+| `createdAt`, `updatedAt`                                                | same             | ISO string                                                                                         |
+| `files`, `expiredAt`, `importSourceId`, all `conversationPreset` fields | —                | dropped                                                                                            |
 
 `Message` → `AdminMessageItem`:
 
-| Source | Target | Treatment |
-| --- | --- | --- |
-| `_id`, `messageId`, `parentMessageId`, `conversationId` | same | direct |
-| `user` | `anonUserId` | HMAC, 12 hex |
-| `text`, `content` | same | direct |
-| `sender`, `isCreatedByUser`, `model`, `endpoint` | same | direct |
-| `tokenCount`, `summaryTokenCount`, `finish_reason` | same | direct |
-| `feedback` | same | direct (rating + tag + text retained for product feedback analysis) |
-| `error`, `unfinished` | same | direct |
-| `createdAt`, `updatedAt` | same | ISO string |
-| `files`, `attachments` | — | dropped (uploads are the highest-risk PII surface) |
-| `iconURL` | — | dropped (often user-uploaded avatars) |
-| `metadata` | — | dropped (Mixed type, no static guarantee on contents) |
-| `conversationSignature`, `clientId`, `invocationId`, `thread_id` | — | dropped (no analysis value; useful as cross-session fingerprints) |
-| `_meiliIndex`, `expiredAt`, `addedConvo` | — | dropped |
+| Source                                                           | Target       | Treatment                                                           |
+| ---------------------------------------------------------------- | ------------ | ------------------------------------------------------------------- |
+| `_id`, `messageId`, `parentMessageId`, `conversationId`          | same         | direct                                                              |
+| `user`                                                           | `anonUserId` | HMAC, 12 hex                                                        |
+| `text`, safe textual `content` parts                             | same         | direct for text/think/error only; tool/media payloads are dropped   |
+| `sender`, `isCreatedByUser`, `model`, `endpoint`                 | same         | direct                                                              |
+| `tokenCount`, `summaryTokenCount`, `finish_reason`               | same         | direct                                                              |
+| `feedback`                                                       | same         | direct (rating + tag + text retained for product feedback analysis) |
+| `error`, `unfinished`                                            | same         | direct                                                              |
+| `createdAt`, `updatedAt`                                         | same         | ISO string                                                          |
+| `files`, `attachments`                                           | —            | dropped (uploads are the highest-risk PII surface)                  |
+| `iconURL`                                                        | —            | dropped (often user-uploaded avatars)                               |
+| `metadata`                                                       | —            | dropped (Mixed type, no static guarantee on contents)               |
+| `conversationSignature`, `clientId`, `invocationId`, `thread_id` | —            | dropped (no analysis value; useful as cross-session fingerprints)   |
+| `_meiliIndex`, `expiredAt`, `addedConvo`                         | —            | dropped                                                             |
 
 ## API
 
@@ -194,20 +205,20 @@ Lists conversations.
 
 Query params:
 
-- `cursor` (optional): opaque base64 of `{ ts: ISO, id: string }` from the last item of the previous page.
+- `cursor` (optional): opaque base64 of `{ updatedAt: ISO, id: string }` from the last item of the previous page.
 - `limit` (optional, default 25, hard cap 50).
-- `endpoint`, `model`, `agentId`, `anonUserId` (optional, repeatable): filter by exact match. `anonUserId` is reverse-resolved in the service by hashing every candidate user — instead, the request hits an index where we filter on the raw `user` by matching the same hash output (see "Filtering by anonUserId" below).
+- `endpoint`, `model`, `agentId` (optional, repeatable): filter by exact match.
 - `from`, `to` (optional ISO dates): clamps `updatedAt`.
 
 Response: `{ items: AdminConvoListItem[], nextCursor: string | null }`.
 
 ### `GET /:conversationId`
 
-Returns a single conversation with its messages, ordered by `createdAt` ascending. Response: `AdminConvoDetail`. Message list is capped at a server-side maximum of 1000; if a conversation has more messages, the response includes only the most recent 1000 and sets `truncated: true` on the detail payload. We never paginate inside a single conversation in v1.
+Returns a single conversation with its messages, ordered by `createdAt` ascending. Response: `AdminConvoDetail`. Message list is capped at a server-side maximum of 1000; if a conversation has more messages, the service fetches the most recent 1000, reverses them into ascending order for rendering, and sets `truncated: true`. We never paginate inside a single conversation in v1.
 
-### Filtering by `anonUserId`
+### Anonymous-user drilldown
 
-The list endpoint accepts `anonUserId` so an admin can drill into "all conversations from this anonymous user." We do not store the hash on the document. Approach: maintain a small in-memory LRU map keyed by `anonUserId` → real `userId`, populated as the admin browses (every list item the admin has seen this session has a known mapping). Filtering by `anonUserId` only works for IDs the current admin session has already encountered; otherwise the API returns an empty list. This avoids reversing the hash and avoids exposing a "list all userIds" capability.
+`anonUserId` is display-only in v1. The list endpoint does not accept `anonUserId` because the hash is not stored on documents, cannot be reversed, and should not be implemented by scanning all users or maintaining process-local reverse maps. If product analysis needs "all conversations from this anonymous user," add a follow-up endpoint that uses a selected conversation as the anchor (`conversationId` → raw `user` → same-user query) or materialize a hashed user field with an explicit migration and index.
 
 ### Error shapes
 
@@ -232,12 +243,12 @@ The admin panel implementation lives in its own repository and is out of scope f
 
 New env variables, all required at startup:
 
-| Variable | Purpose |
-| --- | --- |
-| `ADMIN_HASH_SALT` | HMAC key for anonymous IDs; ≥ 32 bytes |
-| `ADMIN_CONVERSATIONS_PASSWORD_HASH` | bcrypt hash of the function password |
-| `ADMIN_CONVERSATIONS_PASSWORD_VERSION` | integer; bump to invalidate live elevated tokens |
-| `ADMIN_CONVO_SESSION_SECRET` | signing secret for elevated JWT; distinct from main JWT secret |
+| Variable                               | Purpose                                                        |
+| -------------------------------------- | -------------------------------------------------------------- |
+| `ADMIN_HASH_SALT`                      | HMAC key for anonymous IDs; ≥ 32 bytes                         |
+| `ADMIN_CONVERSATIONS_PASSWORD_HASH`    | bcrypt hash of the function password                           |
+| `ADMIN_CONVERSATIONS_PASSWORD_VERSION` | integer; bump to invalidate live elevated tokens               |
+| `ADMIN_CONVO_SESSION_SECRET`           | signing secret for elevated JWT; distinct from main JWT secret |
 
 A new npm script `admin:hash-convo-password` invokes a small Node script under `api/scripts/hash-admin-convo-password.js` that reads a password from stdin and prints the bcrypt hash.
 
@@ -249,19 +260,24 @@ Jest tests in `packages/api/src/admin/conversations/__tests__/`:
 - `transformer.spec.ts`: feed a fully populated mock `Conversation` / `Message` doc (including `email`, `password`, `files`, `metadata`, `iconURL`, `clientId`); assert returned DTO keys are a subset of the whitelist; assert `user` field is replaced by `anonUserId` and that no original `user` value appears anywhere in the serialized output.
 - `unlock.spec.ts`: correct password → 200 + cookie; wrong password → 401; 6th attempt within 15 minutes → 401 with no cookie issued, even with correct password; bumping `pwVersion` invalidates an outstanding token.
 - `elevatedAuth.spec.ts`: missing cookie → 401; valid cookie → next handler runs; expired token → 401; wrong scope → 401; mismatched `adminId` → 401.
-- `service.spec.ts`: list pagination cursor round-trip; `limit` capped at 50; filters by endpoint/model/agent; `anonUserId` filter only works for IDs in the session's LRU.
+- `service.spec.ts`: list pagination cursor round-trip on `updatedAt + _id`; `limit` capped at 50; filters by endpoint/model/agent; no `skip` or `anonUserId` query param is accepted; detail responses return `truncated: true` when message count exceeds 1000.
 
-Integration tests in `api/test/` using `mongodb-memory-server`:
+Router tests in `packages/api/src/admin/conversations/__tests__/router.spec.ts`:
 
-- Seed a small set of users + conversations + messages; hit the admin endpoints as both a non-admin and an unlocked admin and a locked admin; assert response status and payload shape.
+- Hit the TypeScript router as a locked admin and an unlocked admin; assert response status, payload shape, unsupported-query rejection, anonymous IDs, and dropped high-risk message fields.
 
-Per project conventions, run tests from the relevant workspace: `cd packages/api && npx jest admin/conversations` and `cd api && npx jest admin/conversations`.
+Wrapper tests in `api/server/routes/admin/__tests__/`:
+
+- Mock `@librechat/api` and `~/db/models`; assert the legacy JS wrapper applies JWT/admin middleware and passes the `Conversation` and `Message` models into the TypeScript router.
+
+Per project conventions, run tests from the relevant workspace: `cd packages/api && npx jest src/admin/conversations --runInBand` and `cd api && npx jest server/routes/admin/__tests__/conversations.spec.js --runInBand`.
 
 ## Risks and Deferred Items
 
 - **No audit trail.** Decision is explicit. If a misuse incident occurs, there is no record of which admin opened which conversation. The function password gate is the only control. Reconsider before this feature is used on production data.
 - **`feedback.text` retained.** This field is a user-typed string and can contain PII. Retained because it is high-value for product analysis. Strip if a future review tightens scope.
 - **Titles and message bodies retained verbatim.** A user may have pasted their email, phone, or API key into a chat. Acknowledged and accepted in this iteration.
+- **Rich content is narrowed in v1.** Text, thinking, and error content parts are retained for analysis. Tool calls, image/audio/video payloads, and nested metadata are dropped because they can contain file handles or cross-session fingerprints.
 - **MeiliSearch keyword search not exposed.** Follow-up: an admin-scoped Meili index path that ignores the per-user filter, keyed off the same elevated session.
 - **No step-up TOTP option.** The function password is a shared secret; if a single admin leaks it, every admin's access is effectively compromised until rotation. Mitigation: short rotation cadence (operator policy).
-- **`anonUserId` filter only works on IDs seen in the current session.** Acceptable in v1 because the primary workflow is browse-then-drill. If the admin panel introduces deep links by `anonUserId`, the in-memory LRU is insufficient and we will need a different reverse-lookup mechanism.
+- **No anonymous-user global drilldown in v1.** This is intentional. A process-local `anonUserId` reverse map would be unreliable across restarts and replicas, while scanning every user to reverse a hash would create a new sensitive enumeration path. Add an anchored or materialized-hash design only when that workflow is explicitly required.

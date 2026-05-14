@@ -4,6 +4,8 @@ export * from './cdn';
 export * from './auth';
 /* API Keys */
 export * from './apiKeys';
+/* Admin */
+export * from './admin';
 /* MCP */
 export * from './mcp/registry/MCPServersRegistry';
 export * from './mcp/MCPManager';
