@@ -71,22 +71,12 @@ describe('parseAdminConversationReviewConfig', () => {
     ).toThrow('ADMIN_CONVO_SESSION_SECRET must be at least 32 bytes');
   });
 
-  it('allows an insecure cookie override only for local non-production config', () => {
+  it('allows an explicit insecure cookie override', () => {
     expect(
       parseAdminConversationReviewConfig({
         ...validEnv,
-        NODE_ENV: 'development',
         ADMIN_CONVO_COOKIE_SECURE: 'false',
       }).secureCookie,
     ).toBe(false);
-  });
-
-  it('rejects an insecure cookie override in production', () => {
-    expect(() =>
-      parseAdminConversationReviewConfig({
-        ...validEnv,
-        ADMIN_CONVO_COOKIE_SECURE: 'false',
-      }),
-    ).toThrow('ADMIN_CONVO_COOKIE_SECURE=false is only allowed outside production');
   });
 });

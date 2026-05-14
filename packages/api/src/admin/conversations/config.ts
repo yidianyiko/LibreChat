@@ -55,11 +55,7 @@ const parseSecureCookie = (env: AdminConversationReviewEnv): boolean => {
     return true;
   }
 
-  if (env.NODE_ENV !== 'production') {
-    return false;
-  }
-
-  throw new Error('ADMIN_CONVO_COOKIE_SECURE=false is only allowed outside production');
+  return false;
 };
 
 export const parseAdminConversationReviewConfig = (

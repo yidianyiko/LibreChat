@@ -58,6 +58,7 @@ ADMIN_CONVERSATIONS_PASSWORD_HASH=$2b$12$...     # bcrypt hash, never plaintext
 ADMIN_CONVERSATIONS_PASSWORD_VERSION=1           # integer, bump to invalidate all live elevated tokens
 ADMIN_CONVO_SESSION_SECRET=...                   # JWT signing secret, distinct from main JWT secret
 ADMIN_HASH_SALT=...                              # ≥32 bytes, HMAC key for anonymous IDs
+ADMIN_CONVO_COOKIE_SECURE=false                  # only for HTTP-only deployments; omit for HTTPS
 ```
 
 `config.ts` validates all four at process startup. Any missing or malformed value (bad bcrypt prefix, short salt) terminates the process with a clear log line. There is no weak default.
@@ -249,6 +250,7 @@ New env variables, all required at startup:
 | `ADMIN_CONVERSATIONS_PASSWORD_HASH`    | bcrypt hash of the function password                           |
 | `ADMIN_CONVERSATIONS_PASSWORD_VERSION` | integer; bump to invalidate live elevated tokens               |
 | `ADMIN_CONVO_SESSION_SECRET`           | signing secret for elevated JWT; distinct from main JWT secret |
+| `ADMIN_CONVO_COOKIE_SECURE`            | optional; set `false` only for HTTP-only deployments           |
 
 A new npm script `admin:hash-convo-password` invokes a small Node script under `api/scripts/hash-admin-convo-password.js` that reads a password from stdin and prints the bcrypt hash.
 

@@ -230,7 +230,7 @@ Expected behavior:
 - `ADMIN_CONVERSATIONS_PASSWORD_HASH` is required and must match bcrypt prefix `$2a$`, `$2b$`, or `$2y$`.
 - `ADMIN_CONVERSATIONS_PASSWORD_VERSION` is required and a positive integer.
 - `ADMIN_CONVO_SESSION_SECRET` is required and at least 32 bytes.
-- `ADMIN_CONVO_COOKIE_SECURE=false` is rejected in production.
+- `ADMIN_CONVO_COOKIE_SECURE=false` explicitly disables the Secure cookie flag for HTTP-only deployments; omit it for HTTPS.
 
 - [ ] **Step 3: Confirm transformer is the only DTO boundary**
 
