@@ -283,7 +283,7 @@ router.post('/artifact/:messageId', async (req, res) => {
 router.get('/:conversationId', validateMessageReq, async (req, res) => {
   try {
     const { conversationId } = req.params;
-    const messages = await getMessages({ conversationId }, '-_id -__v -user');
+    const messages = await getMessages({ conversationId, user: req.user.id }, '-_id -__v -user');
     res.status(200).json(messages);
   } catch (error) {
     logger.error('Error fetching messages:', error);
@@ -293,7 +293,7 @@ router.get('/:conversationId', validateMessageReq, async (req, res) => {
 
 router.post('/:conversationId', validateMessageReq, async (req, res) => {
   try {
-    const message = req.body;
+    const message = { ...req.body, conversationId: req.params.conversationId };
     const savedMessage = await saveMessage(
       req,
       { ...message, user: req.user.id },
@@ -313,7 +313,10 @@ router.post('/:conversationId', validateMessageReq, async (req, res) => {
 router.get('/:conversationId/:messageId', validateMessageReq, async (req, res) => {
   try {
     const { conversationId, messageId } = req.params;
-    const message = await getMessages({ conversationId, messageId }, '-_id -__v -user');
+    const message = await getMessages(
+      { conversationId, messageId, user: req.user.id },
+      '-_id -__v -user',
+    );
     if (!message) {
       return res.status(404).json({ error: 'Message not found' });
     }
@@ -339,7 +342,9 @@ router.put('/:conversationId/:messageId', validateMessageReq, async (req, res) =
       return res.status(400).json({ error: 'Invalid index' });
     }
 
-    const message = (await getMessages({ conversationId, messageId }, 'content tokenCount'))?.[0];
+    const message = (
+      await getMessages({ conversationId, messageId, user: req.user.id }, 'content tokenCount')
+    )?.[0];
     if (!message) {
       return res.status(404).json({ error: 'Message not found' });
     }

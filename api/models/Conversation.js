@@ -116,7 +116,7 @@ module.exports = {
         logger.debug(`[saveConvo] ${metadata.context}`);
       }
 
-      const messages = await getMessages({ conversationId }, '_id');
+      const messages = await getMessages({ conversationId, user: req.user.id }, '_id');
       const update = { ...convo, messages, user: req.user.id };
 
       if (newConversationId) {
