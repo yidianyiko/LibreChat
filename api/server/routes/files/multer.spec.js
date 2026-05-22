@@ -169,6 +169,31 @@ describe('Multer Configuration', () => {
 
         storage.getFilename(mockReq, mockFile, firstCb);
       });
+
+      it('should generate unique filenames for repeated imports with the same original name', (done) => {
+        let firstFilename;
+
+        const firstCb = jest.fn((err, filename) => {
+          expect(err).toBeNull();
+          firstFilename = filename;
+          expect(firstFilename).toContain(mockReq.file_id);
+          expect(firstFilename).toMatch(/test-file\.jpg$/);
+
+          delete mockReq.file_id;
+
+          const secondCb = jest.fn((err, filename) => {
+            expect(err).toBeNull();
+            expect(filename).toContain(mockReq.file_id);
+            expect(filename).toMatch(/test-file\.jpg$/);
+            expect(filename).not.toBe(firstFilename);
+            done();
+          });
+
+          storage.getFilename(mockReq, mockFile, secondCb);
+        });
+
+        storage.getFilename(mockReq, mockFile, firstCb);
+      });
     });
   });
 
@@ -480,7 +505,7 @@ describe('Multer Configuration', () => {
     it('should handle edge cases in filename sanitization', (done) => {
       const edgeCaseFiles = [
         { originalname: '', expected: /_/ },
-        { originalname: '.hidden', expected: /^_\.hidden/ },
+        { originalname: '.hidden', expected: /_\.hidden$/ },
         { originalname: '../../../etc/passwd', expected: /passwd/ },
         { originalname: 'file\x00name.txt', expected: /file_name\.txt/ },
       ];

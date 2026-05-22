@@ -19,14 +19,30 @@ jest.mock('@librechat/client', () => ({
   Dialog: ({ children, open }: { children: React.ReactNode; open: boolean }) =>
     open ? <div data-testid="dialog">{children}</div> : null,
   DialogContent: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+  DialogHeader: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+  DialogTitle: ({ children }: { children: React.ReactNode }) => <h2>{children}</h2>,
+  Input: (props: React.InputHTMLAttributes<HTMLInputElement>) => <input {...props} />,
 }));
 
 jest.mock('~/hooks', () => ({
   useLocalize: () => (key: string) => key,
 }));
 
+jest.mock('~/utils/conversationParser', () => ({
+  parseImportFile: jest.fn(async () => ({
+    conversations: [{ id: 'conversation-1', conversationId: 'source-1', rawData: {} }],
+  })),
+  markDuplicates: jest.fn((conversations: Array<Record<string, unknown>>) =>
+    conversations.map((conversation) => ({ ...conversation, isDuplicate: false })),
+  ),
+}));
+
 jest.mock('~/data-provider', () => ({
   useUploadConversationsMutation: jest.fn(),
+}));
+
+jest.mock('~/data-provider/mutations', () => ({
+  useImportSelectiveConversationsMutation: jest.fn(() => ({ mutate: jest.fn() })),
 }));
 
 jest.mock('@tanstack/react-query', () => ({
@@ -36,11 +52,19 @@ jest.mock('@tanstack/react-query', () => ({
 
 const mockUseQueryClient = require('@tanstack/react-query').useQueryClient as jest.Mock;
 
+const createImportFile = () => {
+  const file = new File(['[]'], 'conversations.json', { type: 'application/json' });
+  Object.defineProperty(file, 'text', {
+    value: jest.fn().mockResolvedValue('[]'),
+  });
+  return file;
+};
+
 describe('ImportConversations', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     jest.useFakeTimers();
-    mockUseQueryClient.mockReturnValue({ getQueryData: jest.fn() });
+    mockUseQueryClient.mockReturnValue({ getQueryData: jest.fn(), invalidateQueries: jest.fn() });
 
     const mockMutation = useUploadConversationsMutation as jest.Mock;
     mockMutation.mockImplementation((options) => ({
@@ -61,9 +85,15 @@ describe('ImportConversations', () => {
   it('shows progress modal when file is selected', async () => {
     const { container } = render(<ImportConversations />);
     const input = container.querySelector('input[type="file"]') as HTMLInputElement;
-    const file = new File(['{}'], 'conversations.json', { type: 'application/json' });
+    const file = createImportFile();
 
     fireEvent.change(input, { target: { files: [file] } });
+
+    await waitFor(() => {
+      expect(screen.getByTestId('dialog')).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByText('下一步'));
 
     await waitFor(() => {
       expect(screen.getByTestId('dialog')).toBeInTheDocument();
@@ -73,9 +103,14 @@ describe('ImportConversations', () => {
   it('shows a localized processing toast when import continues in the background', async () => {
     const { container } = render(<ImportConversations />);
     const input = container.querySelector('input[type="file"]') as HTMLInputElement;
-    const file = new File(['{}'], 'conversations.json', { type: 'application/json' });
+    const file = createImportFile();
 
     fireEvent.change(input, { target: { files: [file] } });
+
+    await waitFor(() => {
+      expect(screen.getByTestId('dialog')).toBeInTheDocument();
+    });
+    fireEvent.click(screen.getByText('下一步'));
 
     await waitFor(() => {
       expect(mockShowToast).toHaveBeenCalledWith({
@@ -95,9 +130,14 @@ describe('ImportConversations', () => {
 
     const { container } = render(<ImportConversations />);
     const input = container.querySelector('input[type="file"]') as HTMLInputElement;
-    const file = new File(['{}'], 'conversations.json', { type: 'application/json' });
+    const file = createImportFile();
 
     fireEvent.change(input, { target: { files: [file] } });
+
+    await waitFor(() => {
+      expect(screen.getByTestId('dialog')).toBeInTheDocument();
+    });
+    fireEvent.click(screen.getByText('下一步'));
 
     await waitFor(() => {
       expect(mockShowToast).toHaveBeenCalledWith({

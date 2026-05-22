@@ -246,6 +246,10 @@ function handleUpload(req, res, next) {
   });
 }
 
+function isMissingUploadedImportFile(error) {
+  return error?.code === 'ENOENT' && error?.syscall === 'stat';
+}
+
 /**
  * Imports a conversation from a JSON file and saves it to the database.
  * @route POST /import
@@ -293,6 +297,12 @@ router.post(
     } catch (error) {
       if (timeoutId) {
         clearTimeout(timeoutId);
+      }
+      if (isMissingUploadedImportFile(error)) {
+        logger.warn('Uploaded import file is no longer available', error);
+        return res.status(400).json({
+          message: 'Import file is no longer available. Please upload the file again.',
+        });
       }
       logger.error('Error processing file', error);
       res.status(500).send('Error processing file');

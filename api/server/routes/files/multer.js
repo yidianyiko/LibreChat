@@ -10,6 +10,26 @@ const {
 } = require('librechat-data-provider');
 const { getAppConfig } = require('~/server/services/Config');
 
+const maxFilenameLength = 255;
+
+function createUniqueUploadFilename(fileId, filename) {
+  const prefix = `${fileId}-`;
+  const uniqueFilename = `${prefix}${filename}`;
+  if (uniqueFilename.length <= maxFilenameLength) {
+    return uniqueFilename;
+  }
+
+  const extension = path.extname(filename);
+  const basename = path.basename(filename, extension);
+  const basenameLength = maxFilenameLength - prefix.length - extension.length;
+
+  if (basenameLength > 0) {
+    return `${prefix}${basename.slice(-basenameLength)}${extension}`;
+  }
+
+  return `${prefix}${filename.slice(0, maxFilenameLength - prefix.length)}`;
+}
+
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
     const appConfig = req.config;
@@ -23,7 +43,7 @@ const storage = multer.diskStorage({
     req.file_id = crypto.randomUUID();
     file.originalname = decodeURIComponent(file.originalname);
     const sanitizedFilename = sanitizeFilename(file.originalname);
-    cb(null, sanitizedFilename);
+    cb(null, createUniqueUploadFilename(req.file_id, sanitizedFilename));
   },
 });
 

@@ -57,12 +57,19 @@ function ImportConversations({
   }>({ success: 0, failed: [] });
 
   const uploadFile = useUploadConversationsMutation({
-    onSuccess: () => {
+    onSuccess: (data) => {
+      const isBackgroundImport = data.message
+        .toLowerCase()
+        .includes('processing in the background');
       setIsComplete(true);
       setIsUploading(false);
       showToast({
-        message: localize('com_ui_import_conversation_success'),
-        status: NotificationSeverity.SUCCESS,
+        message: localize(
+          isBackgroundImport
+            ? 'com_ui_import_conversation_processing'
+            : 'com_ui_import_conversation_success',
+        ),
+        status: isBackgroundImport ? NotificationSeverity.INFO : NotificationSeverity.SUCCESS,
       });
       queryClient.invalidateQueries([QueryKeys.allConversations]);
     },

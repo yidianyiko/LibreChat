@@ -84,6 +84,23 @@ describe('Convos Routes', () => {
       expect(response.status).toBe(202);
       expect(response.body.message).toMatch(/processing/i);
     });
+
+    it('should return 400 when the uploaded import file is no longer available', async () => {
+      const { importConversations } = require('~/server/utils/import');
+      const missingFileError = Object.assign(new Error('missing upload'), {
+        code: 'ENOENT',
+        syscall: 'stat',
+        path: '/tmp/test-file.json',
+      });
+      importConversations.mockRejectedValue(missingFileError);
+
+      const response = await request(app).post('/api/convos/import');
+
+      expect(response.status).toBe(400);
+      expect(response.body).toEqual({
+        message: 'Import file is no longer available. Please upload the file again.',
+      });
+    });
   });
 
   describe('DELETE /all', () => {
