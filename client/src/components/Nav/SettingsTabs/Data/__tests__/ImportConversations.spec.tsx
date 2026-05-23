@@ -3,6 +3,7 @@ import { render, fireEvent, waitFor, screen } from '@testing-library/react';
 import { NotificationSeverity } from '~/common';
 import ImportConversations from '../ImportConversations';
 import { useUploadConversationsMutation } from '~/data-provider';
+import { parseImportFile } from '~/utils/conversationParser';
 
 const mockShowToast = jest.fn();
 
@@ -52,11 +53,16 @@ jest.mock('@tanstack/react-query', () => ({
 
 const mockUseQueryClient = require('@tanstack/react-query').useQueryClient as jest.Mock;
 
-const createImportFile = () => {
+const createImportFile = (size?: number) => {
   const file = new File(['[]'], 'conversations.json', { type: 'application/json' });
   Object.defineProperty(file, 'text', {
     value: jest.fn().mockResolvedValue('[]'),
   });
+  if (size != null) {
+    Object.defineProperty(file, 'size', {
+      value: size,
+    });
+  }
   return file;
 };
 
@@ -145,5 +151,25 @@ describe('ImportConversations', () => {
         status: NotificationSeverity.SUCCESS,
       });
     });
+  });
+
+  it('uploads large files directly without local parsing', async () => {
+    const mutate = jest.fn();
+    const mockMutation = useUploadConversationsMutation as jest.Mock;
+    mockMutation.mockImplementation(() => ({ mutate }));
+
+    const { container } = render(<ImportConversations />);
+    const input = container.querySelector('input[type="file"]') as HTMLInputElement;
+    const file = createImportFile(6 * 1024 * 1024);
+
+    fireEvent.change(input, { target: { files: [file] } });
+
+    await waitFor(() => {
+      expect(mutate).toHaveBeenCalledTimes(1);
+    });
+
+    expect(file.text).not.toHaveBeenCalled();
+    expect(parseImportFile).not.toHaveBeenCalled();
+    expect(screen.queryByText('下一步')).not.toBeInTheDocument();
   });
 });

@@ -1454,7 +1454,7 @@ describe('importClaudeConvo', () => {
     await importer(jsonData, requestUserId, () => importBatchBuilder);
 
     expect(importBatchBuilder.startConversation).toHaveBeenCalledWith(
-      EModelEndpoint.anthropic,
+      EModelEndpoint.openAI,
       'claude:conv-123',
     );
     expect(importBatchBuilder.saveMessage).toHaveBeenCalledTimes(2);
@@ -1469,12 +1469,15 @@ describe('importClaudeConvo', () => {
     const userMsg = savedMessages.find((msg) => msg.text === 'Hello Claude');
     expect(userMsg.isCreatedByUser).toBe(true);
     expect(userMsg.sender).toBe('user');
-    expect(userMsg.endpoint).toBe(EModelEndpoint.anthropic);
+    expect(userMsg.endpoint).toBe(EModelEndpoint.openAI);
+    expect(userMsg.model).toBe(openAISettings.model.default);
 
     // Check assistant message
     const assistantMsg = savedMessages.find((msg) => msg.text === 'Hello! How can I help you?');
     expect(assistantMsg.isCreatedByUser).toBe(false);
-    expect(assistantMsg.sender).toBe('Claude');
+    expect(assistantMsg.sender).toBe(`GPT-${openAISettings.model.default.match(/gpt-(.+)/i)[1]}`);
+    expect(assistantMsg.endpoint).toBe(EModelEndpoint.openAI);
+    expect(assistantMsg.model).toBe(openAISettings.model.default);
     expect(assistantMsg.parentMessageId).toBe(userMsg.messageId);
   });
 
@@ -1522,7 +1525,7 @@ describe('importClaudeConvo', () => {
     expect(assistantMsg.content[1].text).toBe('The answer is 4.');
   });
 
-  it('should not include model field (Claude exports do not contain model info)', async () => {
+  it('should use the default OpenAI model when Claude exports do not contain model info', async () => {
     const jsonData = [
       {
         uuid: 'conv-123',
@@ -1547,8 +1550,43 @@ describe('importClaudeConvo', () => {
     await importer(jsonData, requestUserId, () => importBatchBuilder);
 
     const savedMessages = importBatchBuilder.saveMessage.mock.calls.map((call) => call[0]);
-    // Model should not be explicitly set (will use ImportBatchBuilder default)
-    expect(savedMessages[0]).not.toHaveProperty('model');
+    expect(savedMessages[0].endpoint).toBe(EModelEndpoint.openAI);
+    expect(savedMessages[0].model).toBe(openAISettings.model.default);
+  });
+
+  it('should not create conversations when every Claude message is empty', async () => {
+    const jsonData = [
+      {
+        uuid: 'conv-empty',
+        name: 'Empty Conversation',
+        created_at: '2025-01-15T10:00:00.000Z',
+        chat_messages: [
+          {
+            uuid: 'msg-empty',
+            sender: 'assistant',
+            created_at: '2025-01-15T10:00:01.000Z',
+            content: [],
+            text: '',
+          },
+        ],
+      },
+    ];
+
+    const requestUserId = 'user-123';
+    const importBatchBuilder = new ImportBatchBuilder(requestUserId);
+    jest.spyOn(importBatchBuilder, 'startConversation');
+    jest.spyOn(importBatchBuilder, 'saveMessage');
+    jest.spyOn(importBatchBuilder, 'finishConversation');
+
+    const importer = getImporter(jsonData);
+    await importer(jsonData, requestUserId, () => importBatchBuilder);
+
+    expect(importBatchBuilder.startConversation).toHaveBeenCalledWith(
+      EModelEndpoint.openAI,
+      'claude:conv-empty',
+    );
+    expect(importBatchBuilder.saveMessage).not.toHaveBeenCalled();
+    expect(importBatchBuilder.finishConversation).not.toHaveBeenCalled();
   });
 
   it('should correct timestamp inversions (child before parent)', async () => {
@@ -1803,7 +1841,7 @@ describe('importClaudeConvo deduplication', () => {
     await importer(jsonData, requestUserId, () => importBatchBuilder);
 
     expect(importBatchBuilder.startConversation).toHaveBeenCalledWith(
-      EModelEndpoint.anthropic,
+      EModelEndpoint.openAI,
       'claude:conv-456',
     );
   });

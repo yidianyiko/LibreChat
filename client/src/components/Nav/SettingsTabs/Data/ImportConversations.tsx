@@ -17,6 +17,8 @@ import { cn, logger } from '~/utils';
 
 type ImportStep = 'idle' | 'mode-selection' | 'selective-import' | 'uploading';
 
+const directUploadFileSizeThreshold = 5 * 1024 * 1024;
+
 interface ImportConversationsProps {
   renderTrigger?: (props: {
     onClick: () => void;
@@ -112,13 +114,28 @@ function ImportConversations({
     },
   });
 
+  const uploadOriginalFile = useCallback(
+    (selectedFile: File) => {
+      const formData = new FormData();
+      formData.append('file', selectedFile, encodeURIComponent(selectedFile.name));
+      setShowProgressModal(true);
+      setIsUploading(true);
+      uploadFile.mutate(formData);
+    },
+    [uploadFile],
+  );
+
   const processSelectedFile = useCallback(
     async (selectedFile: File) => {
       try {
         setFileName(selectedFile.name);
         setFile(selectedFile);
 
-        // Parse file
+        if (selectedFile.size > directUploadFileSizeThreshold) {
+          uploadOriginalFile(selectedFile);
+          return;
+        }
+
         const text = await selectedFile.text();
         const parseResult = await parseImportFile(text);
 
@@ -140,7 +157,7 @@ function ImportConversations({
         });
       }
     },
-    [queryClient, showToast],
+    [queryClient, showToast, uploadOriginalFile],
   );
 
   const handleFileChange = useCallback(
@@ -160,15 +177,10 @@ function ImportConversations({
       setStep('idle');
 
       if (selection.mode === 'full') {
-        // Upload original file
         if (!file) {
           return;
         }
-        const formData = new FormData();
-        formData.append('file', file, encodeURIComponent(file.name));
-        setShowProgressModal(true);
-        setIsUploading(true);
-        uploadFile.mutate(formData);
+        uploadOriginalFile(file);
       } else if (selection.mode === 'batch') {
         // Extract range and upload
         const { start = 1, end = 500 } = selection;
@@ -181,7 +193,7 @@ function ImportConversations({
         setStep('selective-import');
       }
     },
-    [file, conversations, uploadFile],
+    [file, conversations, uploadOriginalFile],
   );
 
   const uploadSelectedConversations = useCallback(

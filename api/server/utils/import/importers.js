@@ -116,6 +116,11 @@ function extractClaudeContent(msg) {
   return { textContent, thinkingContent };
 }
 
+function getOpenAIImportSender(model) {
+  const gptMatch = model.match(/gpt-(.+)/i);
+  return gptMatch ? `GPT-${gptMatch[1]}` : model || 'assistant';
+}
+
 /**
  * Imports Claude conversations from provided JSON data.
  * Claude export format: array of conversations with chat_messages array.
@@ -153,10 +158,12 @@ async function importClaudeConvo(
         continue;
       }
 
-      importBatchBuilder.startConversation(EModelEndpoint.anthropic, sourceId);
+      importBatchBuilder.startConversation(EModelEndpoint.openAI, sourceId);
 
       let lastMessageId = Constants.NO_PARENT;
       let lastTimestamp = null;
+      const startingMessageCount = importBatchBuilder.messages.length;
+      const model = openAISettings.model.default;
 
       for (const msg of conv.chat_messages || []) {
         const isCreatedByUser = msg.sender === 'human';
@@ -180,10 +187,11 @@ async function importClaudeConvo(
           messageId,
           parentMessageId: lastMessageId,
           text: textContent,
-          sender: isCreatedByUser ? 'user' : 'Claude',
+          sender: isCreatedByUser ? 'user' : getOpenAIImportSender(model),
           isCreatedByUser,
+          model,
           user: requestUserId,
-          endpoint: EModelEndpoint.anthropic,
+          endpoint: EModelEndpoint.openAI,
           createdAt,
         };
 
@@ -198,8 +206,10 @@ async function importClaudeConvo(
         lastMessageId = messageId;
       }
 
-      const createdAt = conv.created_at ? new Date(conv.created_at) : new Date();
-      importBatchBuilder.finishConversation(conv.name || 'Imported Claude Chat', createdAt);
+      if (importBatchBuilder.messages.length > startingMessageCount) {
+        const createdAt = conv.created_at ? new Date(conv.created_at) : new Date();
+        importBatchBuilder.finishConversation(conv.name || 'Imported Claude Chat', createdAt);
+      }
     }
 
     await importBatchBuilder.saveBatch();

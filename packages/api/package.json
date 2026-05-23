@@ -7,7 +7,7 @@
   "module": "dist/index.es.js",
   "types": "./dist/types/index.d.ts",
   "dependencies": {
-    "@tencent-weixin/openclaw-weixin": "^2.1.8"
+    "@tencent-weixin/openclaw-weixin": "^2.4.4"
   },
   "exports": {
     ".": {

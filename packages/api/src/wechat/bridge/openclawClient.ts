@@ -1,4 +1,5 @@
 import crypto from 'node:crypto';
+import openclawWeixinPackage from '@tencent-weixin/openclaw-weixin/package.json';
 
 const DEFAULT_LOGIN_BASE_URL = 'https://ilinkai.weixin.qq.com';
 const DEFAULT_LOGIN_BOT_TYPE = '3';
@@ -6,6 +7,22 @@ const DEFAULT_REQUEST_TIMEOUT_MS = 15_000;
 const TEXT_ITEM_TYPE = 1;
 const BOT_MESSAGE_TYPE = 2;
 const MESSAGE_STATE_FINISH = 2;
+const DEFAULT_BOT_AGENT = 'OpenClaw';
+const BOT_AGENT_MAX_LEN = 256;
+
+interface OpenClawWeixinPackage {
+  version?: string;
+  ilink_appid?: string;
+}
+
+interface BaseInfo {
+  channel_version: string;
+  bot_agent: string;
+}
+
+const openclawWeixinMetadata = openclawWeixinPackage as OpenClawWeixinPackage;
+const ilinkAppId = openclawWeixinMetadata.ilink_appid ?? 'bot';
+const channelVersion = openclawWeixinMetadata.version ?? 'unknown';
 
 interface RequestOptions {
   baseUrl: string;
@@ -75,19 +92,109 @@ function randomWechatUin(): string {
   return Buffer.from(String(value), 'utf-8').toString('base64');
 }
 
-function buildHeaders(botToken?: string, body?: string): HeadersInit {
+function buildClientVersion(version: string): number {
+  const [major = 0, minor = 0, patch = 0] = version
+    .split('.')
+    .map((part) => Number.parseInt(part, 10));
+
+  return ((major & 0xff) << 16) | ((minor & 0xff) << 8) | (patch & 0xff);
+}
+
+function sanitizeBotAgent(raw: string | undefined): string {
+  if (raw == null || raw.trim().length === 0) {
+    return DEFAULT_BOT_AGENT;
+  }
+
+  const productPattern = /^[A-Za-z0-9_.-]{1,32}\/[A-Za-z0-9_.+-]{1,32}$/;
+  const commentPattern = /^[\x20-\x27\x2A-\x7E]{1,64}$/;
+  const tokens = raw.trim().split(/\s+/);
+  const accepted: string[] = [];
+  let pendingProduct: string | null = null;
+
+  for (let index = 0; index < tokens.length; index++) {
+    const token = tokens[index];
+    if (token.startsWith('(') && !token.endsWith(')')) {
+      let comment = token;
+      while (index + 1 < tokens.length && !comment.endsWith(')')) {
+        index++;
+        comment += ` ${tokens[index]}`;
+      }
+
+      if (pendingProduct != null && comment.startsWith('(') && comment.endsWith(')')) {
+        const innerComment = comment.slice(1, -1);
+        if (commentPattern.test(innerComment)) {
+          accepted.push(`${pendingProduct} (${innerComment})`);
+          pendingProduct = null;
+          continue;
+        }
+      }
+    } else if (token.startsWith('(') && token.endsWith(')')) {
+      const innerComment = token.slice(1, -1);
+      if (pendingProduct != null && commentPattern.test(innerComment)) {
+        accepted.push(`${pendingProduct} (${innerComment})`);
+        pendingProduct = null;
+        continue;
+      }
+    }
+
+    if (pendingProduct != null) {
+      accepted.push(pendingProduct);
+      pendingProduct = null;
+    }
+
+    if (productPattern.test(token)) {
+      pendingProduct = token;
+    }
+  }
+
+  if (pendingProduct != null) {
+    accepted.push(pendingProduct);
+  }
+
+  const result: string[] = [];
+  let byteLength = 0;
+  for (const token of accepted) {
+    const nextLength = byteLength + (result.length === 0 ? 0 : 1) + Buffer.byteLength(token);
+    if (nextLength > BOT_AGENT_MAX_LEN) {
+      break;
+    }
+
+    result.push(token);
+    byteLength = nextLength;
+  }
+
+  return result.length > 0 ? result.join(' ') : DEFAULT_BOT_AGENT;
+}
+
+function buildBaseInfo(): BaseInfo {
+  return {
+    channel_version: channelVersion,
+    bot_agent: sanitizeBotAgent(process.env.WECHAT_BRIDGE_BOT_AGENT),
+  };
+}
+
+function addBaseInfo(body?: Record<string, unknown>): Record<string, unknown> | undefined {
+  if (body == null) {
+    return undefined;
+  }
+
+  return {
+    ...body,
+    base_info: buildBaseInfo(),
+  };
+}
+
+function buildHeaders(botToken?: string): HeadersInit {
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
     AuthorizationType: 'ilink_bot_token',
     'X-WECHAT-UIN': randomWechatUin(),
+    'iLink-App-Id': ilinkAppId,
+    'iLink-App-ClientVersion': String(buildClientVersion(channelVersion)),
   };
 
   if (botToken != null && botToken.trim().length > 0) {
     headers.Authorization = `Bearer ${botToken.trim()}`;
-  }
-
-  if (body != null) {
-    headers['Content-Length'] = String(Buffer.byteLength(body, 'utf-8'));
   }
 
   return headers;
@@ -103,12 +210,12 @@ async function requestJson<TResponse>({
 }: RequestOptions): Promise<TResponse> {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), timeoutMs);
-  const payload = body == null ? undefined : JSON.stringify(body);
+  const payload = body == null ? undefined : JSON.stringify(addBaseInfo(body));
 
   try {
     const response = await fetch(new URL(endpoint, ensureTrailingSlash(baseUrl)).toString(), {
       method,
-      headers: buildHeaders(botToken, payload),
+      headers: buildHeaders(botToken),
       body: payload,
       signal: controller.signal,
     });
@@ -134,8 +241,10 @@ export async function startOpenClawQrLogin(params?: {
     qrcode_img_content: string;
   }>({
     baseUrl: DEFAULT_LOGIN_BASE_URL,
+    body: {
+      local_token_list: [],
+    },
     endpoint: `ilink/bot/get_bot_qrcode?bot_type=${encodeURIComponent(botType)}`,
-    method: 'GET',
     timeoutMs: params?.timeoutMs,
   });
 
@@ -188,9 +297,6 @@ export async function getOpenClawUpdates(params: {
     timeoutMs: params.timeoutMs,
     body: {
       get_updates_buf: params.cursor ?? '',
-      base_info: {
-        channel_version: 'librechat-wechat-bridge',
-      },
     },
   });
 }
