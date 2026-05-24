@@ -3,6 +3,18 @@ import { renderHook, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { usePricingQuery, useCreateCheckoutSession } from '../useRechargeQueries';
 
+jest.mock('librechat-data-provider', () => ({
+  request: {
+    get: jest.fn(),
+    post: jest.fn(),
+  },
+}));
+
+const mockRequest = jest.requireMock('librechat-data-provider').request as {
+  get: jest.Mock;
+  post: jest.Mock;
+};
+
 const createWrapper = () => {
   const queryClient = new QueryClient({
     defaultOptions: {
@@ -17,8 +29,8 @@ const createWrapper = () => {
 
 describe('useRechargeQueries', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
-    global.fetch = jest.fn() as any;
+    mockRequest.get.mockReset();
+    mockRequest.post.mockReset();
   });
 
   describe('usePricingQuery', () => {
@@ -28,10 +40,7 @@ describe('useRechargeQueries', () => {
         tiers: [{ id: 'tier_5', name: '$5', credits: 5000000, price: 500, discount: 0 }],
       };
 
-      (global.fetch as any).mockResolvedValueOnce({
-        ok: true,
-        json: async () => mockResponse,
-      });
+      mockRequest.get.mockResolvedValueOnce(mockResponse);
 
       const { result } = renderHook(() => usePricingQuery(), {
         wrapper: createWrapper(),
@@ -39,13 +48,11 @@ describe('useRechargeQueries', () => {
 
       await waitFor(() => expect(result.current.isSuccess).toBe(true));
       expect(result.current.data).toEqual(mockResponse);
+      expect(mockRequest.get).toHaveBeenCalledWith('/api/recharge/pricing');
     });
 
     it('should handle fetch errors', async () => {
-      (global.fetch as any).mockResolvedValueOnce({
-        ok: false,
-        status: 500,
-      });
+      mockRequest.get.mockRejectedValueOnce(new Error('pricing failed'));
 
       const { result } = renderHook(() => usePricingQuery(), {
         wrapper: createWrapper(),
@@ -62,10 +69,7 @@ describe('useRechargeQueries', () => {
         url: 'https://checkout.stripe.com/c/pay/cs_test_123',
       };
 
-      (global.fetch as any).mockResolvedValueOnce({
-        ok: true,
-        json: async () => mockResponse,
-      });
+      mockRequest.post.mockResolvedValueOnce(mockResponse);
 
       const { result } = renderHook(() => useCreateCheckoutSession(), {
         wrapper: createWrapper(),
@@ -73,6 +77,9 @@ describe('useRechargeQueries', () => {
 
       const session = await result.current.mutateAsync({ tierId: 'tier_5' });
       expect(session).toEqual(mockResponse);
+      expect(mockRequest.post).toHaveBeenCalledWith('/api/recharge/create-checkout-session', {
+        tierId: 'tier_5',
+      });
     });
   });
 });

@@ -14,12 +14,6 @@ jest.mock('librechat-data-provider', () => ({
   apiBaseUrl: () => '',
 }));
 
-jest.mock('@librechat/client', () => ({
-  Skeleton: ({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) => (
-    <div data-testid="skeleton" className={className} {...props} />
-  ),
-}));
-
 jest.mock('../DialogImage', () => ({
   __esModule: true,
   default: ({ isOpen, src }: { isOpen: boolean; src: string }) =>
@@ -31,6 +25,8 @@ describe('Image', () => {
     imagePath: '/images/test.png',
     altText: 'Test image',
   };
+
+  const getSkeleton = () => screen.getByRole('button').querySelector('[aria-hidden="true"]');
 
   beforeEach(() => {
     _resetImageCaches();
@@ -59,7 +55,7 @@ describe('Image', () => {
 
     it('does not show skeleton without dimensions', () => {
       render(<Image {...defaultProps} />);
-      expect(screen.queryByTestId('skeleton')).not.toBeInTheDocument();
+      expect(getSkeleton()).not.toBeInTheDocument();
     });
 
     it('does not apply heightStyle without dimensions', () => {
@@ -72,7 +68,7 @@ describe('Image', () => {
   describe('rendering with dimensions', () => {
     it('shows skeleton behind image', () => {
       render(<Image {...defaultProps} width={1024} height={1792} />);
-      expect(screen.getByTestId('skeleton')).toBeInTheDocument();
+      expect(getSkeleton()).toBeInTheDocument();
     });
 
     it('applies computed heightStyle to button', () => {
@@ -91,22 +87,22 @@ describe('Image', () => {
 
     it('skeleton is absolute inset-0', () => {
       render(<Image {...defaultProps} width={512} height={512} />);
-      const skeleton = screen.getByTestId('skeleton');
-      expect(skeleton.className).toContain('absolute');
-      expect(skeleton.className).toContain('inset-0');
+      const skeleton = getSkeleton();
+      expect(skeleton?.className).toContain('absolute');
+      expect(skeleton?.className).toContain('inset-0');
     });
 
     it('marks URL as painted on load and skips skeleton on rerender', () => {
       const { rerender } = render(<Image {...defaultProps} width={512} height={512} />);
       const img = screen.getByRole('img');
 
-      expect(screen.getByTestId('skeleton')).toBeInTheDocument();
+      expect(getSkeleton()).toBeInTheDocument();
 
       fireEvent.load(img);
 
       // Rerender same component — skeleton should not show (URL painted)
       rerender(<Image {...defaultProps} width={512} height={512} />);
-      expect(screen.queryByTestId('skeleton')).not.toBeInTheDocument();
+      expect(getSkeleton()).not.toBeInTheDocument();
     });
   });
 

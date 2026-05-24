@@ -40,6 +40,13 @@ function buildUpdateFields(
     config.refillIntervalUnit != null &&
     config.refillAmount != null;
 
+  if (config.autoRefillEnabled === false) {
+    if (userRecord?.autoRefillEnabled !== false) {
+      updateFields.autoRefillEnabled = false;
+    }
+    return updateFields;
+  }
+
   if (!isAutoRefillConfigValid) {
     return updateFields;
   }

@@ -66,6 +66,7 @@ jest.mock('../useDelayedUploadToast', () => ({
 }));
 
 jest.mock('~/utils/heicConverter', () => ({
+  isLikelyHeicFile: jest.fn(() => false),
   processFileForUpload: jest.fn(async (file: File) => file),
 }));
 

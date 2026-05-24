@@ -11,6 +11,7 @@ jest.mock('~/server/services/Config', () => ({
       dist: '/tmp/dist',
       fonts: '/tmp/fonts',
       assets: '/tmp/assets',
+      publicPath: '/tmp/public',
     },
     fileStrategy: 'local',
     imageOutputType: 'PNG',
@@ -60,7 +61,7 @@ describe('Server Configuration', () => {
     const fs = require('fs');
     const path = require('path');
 
-    const dirs = ['/tmp/dist', '/tmp/fonts', '/tmp/assets'];
+    const dirs = ['/tmp/dist', '/tmp/fonts', '/tmp/assets', '/tmp/public'];
     dirs.forEach((dir) => {
       if (!fs.existsSync(dir)) {
         fs.mkdirSync(dir, { recursive: true });

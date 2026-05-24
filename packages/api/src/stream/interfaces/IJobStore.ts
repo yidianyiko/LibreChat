@@ -71,6 +71,10 @@ export interface UsageMetadata {
   output_tokens?: number;
   /** Model identifier that generated this usage */
   model?: string;
+  /** Provider endpoint that generated this usage */
+  provider?: string;
+  /** Usage bucket used for token-spend context grouping */
+  usage_type?: 'message' | 'summarization';
   /**
    * OpenAI-style cache token details.
    * Present for OpenAI models (GPT-4, o1, etc.)

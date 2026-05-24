@@ -12,6 +12,7 @@ import '@testing-library/jest-dom';
 // expect(element).toHaveTextContent(/react/i)
 // learn more: https://github.com/testing-library/jest-dom
 import '@testing-library/jest-dom/extend-expect';
+import { initializeI18n } from '~/locales/i18n';
 
 // Mock canvas when run unit test cases with jest.
 // 'react-lottie' uses canvas
@@ -37,6 +38,10 @@ Object.defineProperty(window, 'matchMedia', {
 
 beforeEach(() => {
   jest.clearAllMocks();
+});
+
+beforeAll(async () => {
+  await initializeI18n();
 });
 
 // Mock window.matchMedia for tests

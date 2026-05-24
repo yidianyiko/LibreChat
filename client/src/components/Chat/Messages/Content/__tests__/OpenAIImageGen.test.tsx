@@ -34,12 +34,6 @@ jest.mock('~/components/Chat/Messages/Content/Image', () => ({
   ),
 }));
 
-jest.mock('@librechat/client', () => ({
-  PixelCard: ({ progress }: { progress: number }) => (
-    <div data-testid="pixel-card" data-progress={progress} />
-  ),
-}));
-
 jest.mock('../Parts/OpenAIImageGen/ProgressText', () => ({
   __esModule: true,
   default: ({ progress, error }: { progress: number; error: boolean }) => (
@@ -102,13 +96,15 @@ describe('OpenAIImageGen', () => {
 
   describe('PixelCard visibility', () => {
     it('shows PixelCard when progress < 1', () => {
-      render(<OpenAIImageGen {...defaultProps} initialProgress={0.5} />);
-      expect(screen.getByTestId('pixel-card')).toBeInTheDocument();
+      const { container } = render(<OpenAIImageGen {...defaultProps} initialProgress={0.5} />);
+      expect(container.querySelector('canvas')).toBeInTheDocument();
     });
 
     it('hides PixelCard when progress >= 1', () => {
-      render(<OpenAIImageGen {...defaultProps} initialProgress={1} isSubmitting={false} />);
-      expect(screen.queryByTestId('pixel-card')).not.toBeInTheDocument();
+      const { container } = render(
+        <OpenAIImageGen {...defaultProps} initialProgress={1} isSubmitting={false} />,
+      );
+      expect(container.querySelector('canvas')).not.toBeInTheDocument();
     });
   });
 

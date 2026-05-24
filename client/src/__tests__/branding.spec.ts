@@ -5,7 +5,6 @@ const projectRoot = path.resolve(__dirname, '..', '..');
 const localesRoot = path.join(projectRoot, 'src', 'locales');
 
 const uiFiles = [
-  path.join(projectRoot, 'src', 'demo', 'demoData.ts'),
   path.join(projectRoot, 'src', 'components', 'Chat', 'Footer.tsx'),
   path.join(projectRoot, 'src', 'components', 'Agents', 'Marketplace.tsx'),
   path.join(projectRoot, 'vite.config.ts'),

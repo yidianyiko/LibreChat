@@ -24,6 +24,7 @@ export default {
   },
   moduleNameMapper: {
     '^@src/(.*)$': '<rootDir>/src/$1',
+    '^~/server/services/TokenPricingCache$': '<rootDir>/test/legacyTokenPricingCache.cjs',
     '~/(.*)': '<rootDir>/src/$1',
   },
   // coverageThreshold: {

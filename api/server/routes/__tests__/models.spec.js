@@ -3,6 +3,7 @@ const request = require('supertest');
 
 jest.mock('~/server/controllers/ModelController', () => ({
   modelController: jest.fn((req, res) => res.status(200).json({ openAI: ['gpt-4o'] })),
+  modelRatesController: jest.fn((req, res) => res.status(200).json({ openAI: {} })),
 }));
 
 jest.mock('~/server/middleware/', () => ({
