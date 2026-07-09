@@ -29,6 +29,7 @@ router.post(
   middleware.logHeaders,
   middleware.loginLimiter,
   middleware.checkBan,
+  middleware.validateEmailLogin,
   middleware.requireLocalAuth,
   requireAdmin,
   setBalanceConfig,
