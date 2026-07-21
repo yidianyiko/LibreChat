@@ -20,9 +20,22 @@ export function createRoleMethods(mongoose: typeof import('mongoose')) {
         const permissions = role.toObject()?.permissions ?? {};
         role.permissions = role.permissions || {};
         for (const permType of Object.keys(defaultPerms)) {
-          if (permissions[permType] == null || Object.keys(permissions[permType]).length === 0) {
-            role.permissions[permType] = defaultPerms[permType as keyof typeof defaultPerms];
+          const defaultBlock = defaultPerms[permType as keyof typeof defaultPerms] as Record<
+            string,
+            unknown
+          >;
+          const existingBlock = permissions[permType] as Record<string, unknown> | null | undefined;
+          if (existingBlock == null) {
+            role.permissions[permType] = defaultBlock;
+            continue;
           }
+          const mergedBlock: Record<string, unknown> = { ...existingBlock };
+          for (const field of Object.keys(defaultBlock)) {
+            if (mergedBlock[field] == null) {
+              mergedBlock[field] = defaultBlock[field];
+            }
+          }
+          role.permissions[permType] = mergedBlock;
         }
       }
       await role.save();
