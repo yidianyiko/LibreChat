@@ -1176,13 +1176,22 @@ async function loadToolsForExecution({
   const allLoadedTools = [];
   const configurable = { userMCPAuthMap };
 
+  const isPTCRequested = toolNames.includes(AgentConstants.PROGRAMMATIC_TOOL_CALLING);
+  const isExecuteCodeRequested = toolNames.includes(Tools.execute_code);
+
+  let enabledCapabilities;
+  if (actionsEnabled === undefined || isPTCRequested || isExecuteCodeRequested) {
+    enabledCapabilities = await resolveAgentCapabilities(req, appConfig, agent?.id);
+  }
   if (actionsEnabled === undefined) {
-    const enabledCapabilities = await resolveAgentCapabilities(req, appConfig, agent?.id);
     actionsEnabled = enabledCapabilities.has(AgentCapabilities.actions);
   }
+  const codeExecutionEnabled =
+    enabledCapabilities?.has(AgentCapabilities.execute_code) === true &&
+    agent?.tools?.includes(Tools.execute_code) === true;
 
   const isToolSearch = toolNames.includes(AgentConstants.TOOL_SEARCH);
-  const isPTC = toolNames.includes(AgentConstants.PROGRAMMATIC_TOOL_CALLING);
+  const isPTC = isPTCRequested && codeExecutionEnabled;
 
   logger.debug(
     `[loadToolsForExecution] isToolSearch: ${isToolSearch}, toolRegistry: ${toolRegistry?.size ?? 'undefined'}`,
@@ -1230,9 +1239,22 @@ async function loadToolsForExecution({
   }
 
   const requestedNonSpecialToolNames = toolNames.filter((name) => !specialToolNames.has(name));
+  const allowedNonSpecialToolNames = requestedNonSpecialToolNames.filter((name) => {
+    if (name !== Tools.execute_code) {
+      return true;
+    }
+    const allowed = codeExecutionEnabled;
+    if (!allowed) {
+      logger.warn(
+        `[loadToolsForExecution] Skipping unauthorized ${Tools.execute_code}. ` +
+          `User: ${req.user.id} | Agent: ${agent?.id ?? 'unknown'}`,
+      );
+    }
+    return allowed;
+  });
   const allToolNamesToLoad = isPTC
-    ? [...new Set([...requestedNonSpecialToolNames, ...ptcOrchestratedToolNames])]
-    : requestedNonSpecialToolNames;
+    ? [...new Set([...allowedNonSpecialToolNames, ...ptcOrchestratedToolNames])]
+    : allowedNonSpecialToolNames;
 
   const actionToolNames = [];
   const regularToolNames = [];
