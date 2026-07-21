@@ -137,14 +137,15 @@ async function importClaudeConvo(
 ) {
   try {
     // Build source IDs for dedup lookup
-    const sourceIds = jsonData
-      .filter((conv) => conv.uuid)
-      .map((conv) => `claude:${conv.uuid}`);
+    const sourceIds = jsonData.filter((conv) => conv.uuid).map((conv) => `claude:${conv.uuid}`);
     let existingIds;
     try {
       existingIds = await getExistingImportSourceIds(requestUserId, sourceIds);
     } catch (err) {
-      logger.warn(`user: ${requestUserId} | Failed to check for duplicates, proceeding with import`, err);
+      logger.warn(
+        `user: ${requestUserId} | Failed to check for duplicates, proceeding with import`,
+        err,
+      );
       existingIds = new Set();
     }
 
@@ -334,35 +335,60 @@ async function importChatGptConvo(
 ) {
   try {
     // Build source IDs for dedup lookup
-    const sourceIds = jsonData
-      .filter((conv) => conv.id)
-      .map((conv) => `chatgpt:${conv.id}`);
+    const sourceIds = jsonData.filter((conv) => conv.id).map((conv) => `chatgpt:${conv.id}`);
     let existingIds;
     try {
       existingIds = await getExistingImportSourceIds(requestUserId, sourceIds);
     } catch (err) {
-      logger.warn(`user: ${requestUserId} | Failed to check for duplicates, proceeding with import`, err);
+      logger.warn(
+        `user: ${requestUserId} | Failed to check for duplicates, proceeding with import`,
+        err,
+      );
       existingIds = new Set();
     }
 
     const importBatchBuilder = builderFactory(requestUserId);
     let skipped = 0;
+    let imported = 0;
+    let failed = 0;
+    let firstError;
     for (const conv of jsonData) {
       const sourceId = conv.id ? `chatgpt:${conv.id}` : null;
       if (sourceId && existingIds.has(sourceId)) {
         skipped++;
         continue;
       }
-      processConversation(conv, importBatchBuilder, requestUserId, sourceId);
+      try {
+        processConversation(conv, importBatchBuilder, requestUserId, sourceId);
+        imported++;
+      } catch (error) {
+        failed++;
+        firstError = firstError ?? error;
+        logger.error(
+          `user: ${requestUserId} | Failed to import conversation ${sourceId ?? conv.title}`,
+          error,
+        );
+      }
     }
+
+    if (failed > 0 && imported === 0) {
+      throw firstError;
+    }
+
     await importBatchBuilder.saveBatch();
     if (skipped > 0) {
       logger.info(
         `user: ${requestUserId} | ChatGPT import: skipped ${skipped} duplicate conversation(s)`,
       );
     }
+    if (failed > 0) {
+      logger.warn(
+        `user: ${requestUserId} | ChatGPT import: imported ${imported} conversation(s), ${failed} failed`,
+      );
+    }
   } catch (error) {
     logger.error(`user: ${requestUserId} | Error creating conversation from imported file`, error);
+    throw error;
   }
 }
 
@@ -500,7 +526,7 @@ function processConversation(conv, importBatchBuilder, requestUserId, importSour
 
     const isCreatedByUser = role === 'user';
     let sender = isCreatedByUser ? 'user' : 'assistant';
-    const model = mapping.message.metadata.model_slug || openAISettings.model.default;
+    const model = mapping.message.metadata?.model_slug || openAISettings.model.default;
 
     if (!isCreatedByUser) {
       /** Extracted model name from model slug */

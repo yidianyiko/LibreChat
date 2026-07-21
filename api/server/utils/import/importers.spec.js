@@ -1,7 +1,10 @@
 const fs = require('fs');
 const path = require('path');
 const { EModelEndpoint, Constants, openAISettings } = require('librechat-data-provider');
-const { bulkSaveConvos: _bulkSaveConvos, getExistingImportSourceIds } = require('~/models/Conversation');
+const {
+  bulkSaveConvos: _bulkSaveConvos,
+  getExistingImportSourceIds,
+} = require('~/models/Conversation');
 const { getImporter, processAssistantMessage } = require('./importers');
 const { ImportBatchBuilder } = require('./importBatchBuilder');
 const { bulkSaveMessages } = require('~/models/Message');
@@ -768,9 +771,7 @@ describe('importChatGptConvo deduplication', () => {
 
     // Simulate that the first conversation already exists
     const firstConvId = jsonData[0].id;
-    getExistingImportSourceIds.mockResolvedValueOnce(
-      new Set([`chatgpt:${firstConvId}`]),
-    );
+    getExistingImportSourceIds.mockResolvedValueOnce(new Set([`chatgpt:${firstConvId}`]));
 
     const importBatchBuilder = new ImportBatchBuilder(requestUserId);
     jest.spyOn(importBatchBuilder, 'startConversation');
@@ -841,6 +842,106 @@ describe('importChatGptConvo deduplication', () => {
     const firstCall = importBatchBuilder.startConversation.mock.calls[0];
     expect(firstCall[0]).toBe(EModelEndpoint.openAI);
     expect(firstCall[1]).toBe(`chatgpt:${jsonData[0].id}`);
+  });
+});
+
+describe('importChatGptConvo malformed messages', () => {
+  const buildConvo = (id, message) => ({
+    id,
+    title: `convo-${id}`,
+    create_time: 1700000000,
+    mapping: {
+      [`node-${id}`]: {
+        id: `node-${id}`,
+        parent: null,
+        children: [],
+        message,
+      },
+    },
+  });
+
+  const userMessage = (overrides = {}) => ({
+    author: { role: 'user' },
+    content: { content_type: 'text', parts: ['hello'] },
+    create_time: 1700000000,
+    ...overrides,
+  });
+
+  it('should import a message that has no metadata property', async () => {
+    const messageWithoutMetadata = userMessage();
+    delete messageWithoutMetadata.metadata;
+    const jsonData = [buildConvo('no-metadata', messageWithoutMetadata)];
+    const requestUserId = 'user-malformed';
+    getExistingImportSourceIds.mockResolvedValueOnce(new Set());
+
+    const importBatchBuilder = new ImportBatchBuilder(requestUserId);
+    jest.spyOn(importBatchBuilder, 'saveMessage');
+    jest.spyOn(importBatchBuilder, 'saveBatch').mockResolvedValue();
+
+    const importer = getImporter(jsonData);
+    await importer(jsonData, requestUserId, () => importBatchBuilder);
+
+    expect(importBatchBuilder.saveMessage).toHaveBeenCalledTimes(1);
+    expect(importBatchBuilder.saveBatch).toHaveBeenCalled();
+  });
+
+  it('should default the model when metadata has no model_slug', async () => {
+    const jsonData = [
+      buildConvo('no-slug', userMessage({ author: { role: 'assistant' }, metadata: {} })),
+    ];
+    const requestUserId = 'user-malformed';
+    getExistingImportSourceIds.mockResolvedValueOnce(new Set());
+
+    const importBatchBuilder = new ImportBatchBuilder(requestUserId);
+    jest.spyOn(importBatchBuilder, 'saveMessage');
+    jest.spyOn(importBatchBuilder, 'saveBatch').mockResolvedValue();
+
+    const importer = getImporter(jsonData);
+    await importer(jsonData, requestUserId, () => importBatchBuilder);
+
+    expect(importBatchBuilder.saveMessage).toHaveBeenCalledTimes(1);
+    expect(importBatchBuilder.saveMessage.mock.calls[0][0].model).toBe(
+      openAISettings.model.default,
+    );
+  });
+
+  it('should still save healthy conversations when one conversation is malformed', async () => {
+    const malformed = buildConvo('broken', userMessage());
+    malformed.mapping['node-broken'].message.content = null;
+    const jsonData = [
+      malformed,
+      buildConvo('healthy', userMessage({ metadata: { model_slug: 'gpt-4o' } })),
+    ];
+    const requestUserId = 'user-malformed';
+    getExistingImportSourceIds.mockResolvedValueOnce(new Set());
+
+    const importBatchBuilder = new ImportBatchBuilder(requestUserId);
+    jest.spyOn(importBatchBuilder, 'startConversation');
+    jest.spyOn(importBatchBuilder, 'saveBatch').mockResolvedValue();
+
+    const importer = getImporter(jsonData);
+    await importer(jsonData, requestUserId, () => importBatchBuilder);
+
+    expect(importBatchBuilder.saveBatch).toHaveBeenCalled();
+    expect(importBatchBuilder.startConversation).toHaveBeenCalledWith(
+      EModelEndpoint.openAI,
+      'chatgpt:healthy',
+    );
+  });
+
+  it('should throw when every conversation fails to import', async () => {
+    const malformed = buildConvo('broken', userMessage());
+    malformed.mapping['node-broken'].message.content = null;
+    const requestUserId = 'user-malformed';
+    getExistingImportSourceIds.mockResolvedValueOnce(new Set());
+
+    const importBatchBuilder = new ImportBatchBuilder(requestUserId);
+    jest.spyOn(importBatchBuilder, 'saveBatch').mockResolvedValue();
+
+    const jsonData = [malformed];
+    const importer = getImporter(jsonData);
+
+    await expect(importer(jsonData, requestUserId, () => importBatchBuilder)).rejects.toThrow();
   });
 });
 
@@ -1793,9 +1894,7 @@ describe('importClaudeConvo deduplication', () => {
     const requestUserId = 'user-claude-dedup';
 
     // First conversation already exists
-    getExistingImportSourceIds.mockResolvedValueOnce(
-      new Set(['claude:conv-existing']),
-    );
+    getExistingImportSourceIds.mockResolvedValueOnce(new Set(['claude:conv-existing']));
 
     const importBatchBuilder = new ImportBatchBuilder(requestUserId);
     jest.spyOn(importBatchBuilder, 'startConversation');
