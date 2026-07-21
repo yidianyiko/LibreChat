@@ -242,7 +242,7 @@ describe('message route conversation ownership filters', () => {
 
     expect(response.status).toBe(201);
     expect(saveMessage).toHaveBeenCalledWith(
-      expect.objectContaining({ userId: authenticatedUserId }),
+      expect.objectContaining({ user: expect.objectContaining({ id: authenticatedUserId }) }),
       expect.objectContaining({
         messageId: savedMessage.messageId,
         conversationId: urlConversationId,
@@ -253,7 +253,7 @@ describe('message route conversation ownership filters', () => {
     );
     expect(saveMessage.mock.calls[0][1].conversationId).not.toBe(bodyConversationId);
     expect(saveConvo).toHaveBeenCalledWith(
-      expect.objectContaining({ userId: authenticatedUserId }),
+      expect.objectContaining({ user: expect.objectContaining({ id: authenticatedUserId }) }),
       savedMessage,
       { context: 'POST /api/messages/:conversationId' },
     );
