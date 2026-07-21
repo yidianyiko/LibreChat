@@ -65,7 +65,7 @@ describe('GET /api/config allowAccountDeletion', () => {
   });
 
   it('defaults allowAccountDeletion to true when env var is unset', async () => {
-    const response = await request(createApp()).get('/api/config');
+    const response = await request(createApp({ id: 'test-user' })).get('/api/config');
 
     expect(response.statusCode).toBe(200);
     expect(response.body.allowAccountDeletion).toBe(true);
@@ -74,7 +74,7 @@ describe('GET /api/config allowAccountDeletion', () => {
   it('sets allowAccountDeletion to false when ALLOW_ACCOUNT_DELETION=false', async () => {
     process.env.ALLOW_ACCOUNT_DELETION = 'false';
 
-    const response = await request(createApp()).get('/api/config');
+    const response = await request(createApp({ id: 'test-user' })).get('/api/config');
 
     expect(response.statusCode).toBe(200);
     expect(response.body.allowAccountDeletion).toBe(false);
@@ -83,7 +83,7 @@ describe('GET /api/config allowAccountDeletion', () => {
   it('sets allowAccountDeletion to true when ALLOW_ACCOUNT_DELETION=true', async () => {
     process.env.ALLOW_ACCOUNT_DELETION = 'true';
 
-    const response = await request(createApp()).get('/api/config');
+    const response = await request(createApp({ id: 'test-user' })).get('/api/config');
 
     expect(response.statusCode).toBe(200);
     expect(response.body.allowAccountDeletion).toBe(true);
@@ -108,7 +108,7 @@ describe('GET /api/config allowAccountDeletion', () => {
       },
     });
 
-    const response = await request(createApp()).get('/api/config');
+    const response = await request(createApp({ id: 'test-user' })).get('/api/config');
 
     expect(response.statusCode).toBe(200);
     expect(response.body.modelSpecs.list[0].preset.promptPrefix).toContain(
