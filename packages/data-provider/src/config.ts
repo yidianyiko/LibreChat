@@ -777,6 +777,8 @@ export const turnstileSchema = z.object({
 
 export type TTurnstileConfig = z.infer<typeof turnstileSchema>;
 
+export type StartupConfigContext = 'share';
+
 export type TStartupConfig = {
   appTitle: string;
   socialLogins?: string[];
