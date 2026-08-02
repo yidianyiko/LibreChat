@@ -7,6 +7,10 @@ jest.mock('~/server/services/Config/ldap', () => ({
   getLdapConfig: jest.fn(() => null),
 }));
 
+jest.mock('~/server/middleware/', () => ({
+  optionalJwtAuth: (req, _res, next) => next(),
+}));
+
 const mockGetProjectByName = jest.fn();
 jest.mock('~/models/Project', () => ({
   getProjectByName: (...args) => mockGetProjectByName(...args),

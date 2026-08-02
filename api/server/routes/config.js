@@ -5,6 +5,7 @@ const { Constants, CacheKeys, defaultSocialLogins } = require('librechat-data-pr
 const { enrichWebsiteModelSpecs } = require('../../../config/default-preset');
 const { getLdapConfig } = require('~/server/services/Config/ldap');
 const { getAppConfig } = require('~/server/services/Config/app');
+const { optionalJwtAuth } = require('~/server/middleware/');
 const { getProjectByName } = require('~/models/Project');
 const { getLogStores } = require('~/cache');
 
@@ -104,7 +105,7 @@ function buildPublicSharePayload() {
   return payload;
 }
 
-router.get('/', async function (req, res) {
+router.get('/', optionalJwtAuth, async function (req, res) {
   const cache = getLogStores(CacheKeys.CONFIG_STORE);
 
   const isBirthday = () => {
