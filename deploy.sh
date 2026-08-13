@@ -1061,12 +1061,12 @@ deploy_service() {
         PROJECT_DIR=$1
         cd "${PROJECT_DIR}"
 
-        echo "启动 MongoDB / Meilisearch 基础服务..."
+        echo "启动 MongoDB 基础服务..."
         if [ -f ".deploy/override.yml" ]; then
-            sudo docker-compose -f docker-compose.yml -f .deploy/override.yml up -d mongodb meilisearch
+            sudo docker-compose -f docker-compose.yml -f .deploy/override.yml up -d mongodb
         else
             echo "未找到 .deploy/override.yml，使用默认 docker-compose.yml"
-            sudo docker-compose -f docker-compose.yml up -d mongodb meilisearch
+            sudo docker-compose -f docker-compose.yml up -d mongodb
         fi
 EOF
 
@@ -1114,7 +1114,6 @@ EOF
 
         verify_container LibreChat
         verify_container LibreChat-WeChat-Bridge
-        verify_container chat-meilisearch
 
         # 显示最近日志
         echo ""
